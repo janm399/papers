@@ -2,7 +2,7 @@ import sbt.Keys._
 
 scalaVersion := "2.12.4"
 
-organization := "com.bamtech"
+organization := "com.acme"
 
 PB.protoSources in Compile := Seq((sourceDirectory in Compile).value / "protobuf")
 
