@@ -1,0 +1,131 @@
+\documentclass[10 pt, twocolumn]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{caption}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{interval}
+\usepackage{listingsutf8}
+\usepackage{hyperref}
+\usepackage{siunitx}
+\usepackage{algorithm2e}
+\usepackage{rotating}
+\usepackage{adjustbox}
+\usepackage{booktabs}
+\usepackage{pgfplots}
+\usepackage{footmisc}
+\usepackage{amsfonts}
+\usepackage[backend=biber,style=numeric]{biblatex}
+\usepackage[
+  left=1.50cm,
+  right=1.50cm,
+  top=2.00cm,
+  bottom=2.00cm
+]{geometry}
+
+\pgfplotsset{compat=1.15}
+
+\sisetup{load-configurations=abbreviations, binary-units=true}
+\intervalconfig {
+    soft open fences ,
+    separator symbol =; ,
+}
+
+\lstdefinelanguage{JavaScript}{
+  keywords={break, case, catch, continue, debugger, default, delete, do, else, finally, for, function, if, in, instanceof, new, return, switch, this, throw, try, typeof, var, void, while, with},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]",
+  sensitive=true
+}
+
+\lstdefinelanguage{Protobuf}{
+  keywords={message, string, uint32, int32},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]",
+  sensitive=true
+}
+
+\lstset{
+    language=C,
+    keywordstyle={\bfseries},
+    basicstyle=\footnotesize,
+    literate={->}{$\rightarrow{}$}{1} {<-}{$\leftarrow{}$}{1},
+    stringstyle=\color{purple},
+    keepspaces=true,
+    captionpos=b,
+    inputencoding=utf8,
+    escapeinside={\%*}{*)}
+}
+
+\renewcommand\AlCapSty{\text}
+\SetAlCapNameFnt{\footnotesize}
+\SetAlCapFnt{\footnotesize}
+\SetAlgoCaptionSeparator{.}
+\DeclareCaptionLabelFormat{nospace}{#1 #2}
+\captionsetup[table]{labelformat=nospace,labelfont=rm,name=Table,labelsep=period}
+
+\newcommand{\pcode}[1]{
+    \lstinline[basicstyle=\itshape,keywordstyle={}]{#1}
+}
+
+\newcommand*{\lstnumberautorefname}{line}
+
+\newcommand{\icode}[1]{\lstinline{#1}}
+
+\newcommand{\name}[1] {\emph{#1}}
+
+\newcolumntype{R}[2]{%
+    >{\adjustbox{angle=#1,lap=\width-(#2/2)}\bgroup}%
+    l%
+    <{\egroup}%
+}
+\newcommand*\rot{\multicolumn{1}{R{90}{1em}}}
+
+\newcommand{\fig}[3]{
+  \begin{figure}[h]
+    \begin{center}
+        \includegraphics[width=7cm,keepaspectratio]{#1}
+        \caption{#3}
+        \label{fig:#2}
+    \end{center}
+  \end{figure}
+}
+
+\usepackage[most]{tcolorbox}
+\newcounter{example}
+\usepackage{xparse}
+\usepackage{lipsum}
+
+\def\exampletext{Example} % If English
+\NewDocumentEnvironment{example}{ O{} }
+{
+\colorlet{colexam}{red!55!black} % Global example color
+\newtcolorbox[use counter=example]{examplebox}{%
+    % Example Frame Start
+    empty,% Empty previously set parameters
+    title={\exampletext: #1},% use \thetcbcounter to access the example counter text
+    % Attaching a box requires an overlay
+    attach boxed title to top left,
+       % Ensures proper line breaking in longer titles
+       minipage boxed title,
+    % (boxed title style requires an overlay)
+    boxed title style={empty,size=minimal,toprule=0pt,top=4pt,left=3mm,overlay={}},
+    coltitle=colexam,fonttitle=\bfseries,
+    before=\par\medskip\noindent,parbox=false,boxsep=0pt,left=3mm,right=0mm,top=2pt,breakable,pad at break=0mm,
+       before upper=\csname @totalleftmargin\endcsname0pt, % Use instead of parbox=true. This ensures parskip is inherited by box.
+    % Handles box when it exists on one page only
+    overlay unbroken={\draw[colexam,line width=.5pt] ([xshift=-0pt]title.north west) -- ([xshift=-0pt]frame.south west); },
+    % Handles multipage box: first page
+    overlay first={\draw[colexam,line width=.5pt] ([xshift=-0pt]title.north west) -- ([xshift=-0pt]frame.south west); },
+    % Handles multipage box: middle page
+    overlay middle={\draw[colexam,line width=.5pt] ([xshift=-0pt]frame.north west) -- ([xshift=-0pt]frame.south west); },
+    % Handles multipage box: last page
+    overlay last={\draw[colexam,line width=.5pt] ([xshift=-0pt]frame.north west) -- ([xshift=-0pt]frame.south west); },%
+    }
+\begin{examplebox}}
+{\end{examplebox}\endlist}
