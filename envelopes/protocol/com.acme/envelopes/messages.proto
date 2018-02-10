@@ -1,0 +1,16 @@
+syntax = "proto3";
+package com.acme.envelopes;
+
+message Rating {
+  string id = 1;
+  string date = 2;
+  string text = 3;
+  User user = 4;
+  uint32 stars = 5;
+}
+
+message User {
+  string id = 1;
+  string date = 2;
+  string name = 3;
+}
