@@ -26,6 +26,7 @@ public class KafkaConfiguration {
         ConcurrentKafkaListenerContainerFactory<byte[], byte[]> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
+
         factory.setConcurrency(3);
         factory.getContainerProperties().setPollTimeout(3000);
         return factory;
