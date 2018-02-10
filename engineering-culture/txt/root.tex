@@ -12,35 +12,63 @@
   \begin{@twocolumnfalse}
     \maketitle
     \begin{abstract}
-      Many organisations say things like engineers work here not for the money, but for \emph{the great soda}, \emph{for the offices}, or \emph{for the beer o'clock on Fridays}. How is it possible that in some organisations these superficial measures appear to make a huge positive difference; while in other organisations they seem to either not make any difference at all, or sometimes make the morale and attitude worse? 
+      Many organisations say things such as "engineers work here not for the money, but for \emph{the great soda}, \emph{the games consoles in the office}, or \emph{for the beer o'clock on Fridays}." How is it possible that in some organisations these superficial measures appear to make a huge positive difference; while in other organisations they seem to either not make any difference at all, or sometimes make the morale and attitude worse? Are these triklets truly the core of what makes good culture in an organisation?
     \end{abstract}
   \end{@twocolumnfalse}
 ]
 
+\section{An anecdote}
+A small team that is preparing for a production release of a critical system; under the \emph{DevOps} culture, the team is expected to support it in production. This meant working as hard as possible to improve the system's resiliency before it is released. The team prepared scenarios for what would happen if something went wrong; they practiced in several \emph{war games} sessions in a pub, where one member of the team would break something in the development environment, and the remaining team members' task was to fix the problem--assuming they were notified through the monitoring system. Whoever managed to break something that the others did not notice or could not fix, won a beer. The total cost to the team lead was around £50 over several sessions, but the benefit of well-tuned system, and the team cohesion was indeed priceless.
+
+\begin{example}[Interview: The team]
+We found it exciting to be doing something that's we need, but with a twist of the naughty. We discovered several failures that would have caused us major headaches if not fixed by the time we went live. We felt that we really worked together, and that we could trust each other to get things going. 
+\end{example}
+
+\begin{example}[Interview: Team lead]
+It was exciting and invigorating to \emph{hack} together. I was a bit frustrated that there appeared to be no support from the company. I didn't mind the money, but this is precisely the culture that the company has to support. I understand the beancounters' position that they can't be paying for pub outings, though.
+\end{example}
+
+How did this happen? It clearly wasn't organisationally-mandated (nor approved, as it would seem), yet it delivered the results that the organisation needed. It was an example of the team exercising \emph{autonomy}. The morality of the anecdote is somewhat more difficult to judge: the outcome was desired, but result does not justify the means\cite{why-value-autonomy}.
+
 \section{The hidden meaning}
+Notice that in the interviews in the anecdote above, the team members did not once mention any of the \emph{typical corporate values}. It is therefore tempting to dismiss values such as diversity, inclusiveness, teamwork, and similar as \emph{corporate nonsense}, but these are simply the \emph{necessary, not sufficient} conditions. In addition to these standards, many organisations offer the treats mentioned above--coffee, soda, fruit, games, and many others. What difference do they make?
 
+They make a positive difference is when the soda or the console are understood to mean that \emph{the company values} its people; that beer o'clock means that \emph{the company trusts} its teams to make the right choices without explicit supervision \emph{and} when the other actions of the company align with the feeling of being valued and trusted\cite{joel-on-software}.
 
-The positive difference is when the soda or nice offices is understood to mean that \emph{the company values} its people; that beer o'clock means that \emph{the company trusts} its teams to make the right choices without explicit supervision \emph{and} when the other actions of the company align with the feeling of being valued and trusted\cite{joel-on-software}.
-
-The negative or zero difference is when the the organisation does anything that the engineers find unfair, or when the policies suggest that the engineers are not actually being trusted. It is difficult to provide an exhaustive list of what makes one feel not valued or not trusted; though examples from a sample of 152 engineers in various organisations show the following top 5 reasons for not being valued or trusted in \autoref{tbl:not-valued-not-trusted}.
+They bring zero or even negative impact when other policies suggest that the engineers are not actually being valued or trusted. (It is even worse if the organisation does anything that might be seen as dishonest, unfair, or discriminatory.) It is difficult to provide an exhaustive list of what makes one feel not valued or not trusted; though examples from a sample of 152 engineers in various organisations show the following top 5 reasons for not being valued or trusted in \autoref{tbl:not-valued-not-trusted}.
 
 \begin{table}[h]
     \begin{tabular}{lrr}
         \toprule
-                             & Not valued & Not trusted \\
+                                                & !valued & !trusted \\
         \midrule
-        Network monitoring   & 0          & 0 \\
-        Unfair compensation  & 0          & 0 \\
-        Strict working times & 0          & 0 \\
-        Unclear expectations & 0          & 0 \\
-        XXX                  & 0          & 0 \\         
+        Invasive monitoring                 & 0          & 0 \\
+        Unfair compensation                 & 0          & 0 \\
+        Special rules                       & 0          & 0 \\         
+        Requiring, not giving flexibility   & 0          & 0 \\
+        Unclear expectations                & 0          & 0 \\
         \bottomrule
     \end{tabular}
     \caption{Detrimental effects on morale}
     \label{tbl:not-valued-not-trusted}
 \end{table}
 
+The damage done by allowing these top five to spread is immense; it is amplified by not acknowledging the damage, pretending that the deep problems do not exist. The two humorous examples that follow demonstrate just how easy it is to identify examples of trivial pronouncements of value and culture, and just how grating it is when the stated and the experienced values and culture do not align.
+
+\begin{example}[to: everyone@acmecorp.com\cite{employees}]
+Employees are a company's greatest asset - they're your competitive advantage. You want to attract and retain the best; provide them with encouragement, stimulus, and make them feel that they are an integral part of the company's mission.
+\end{example}
+
+\begin{example}[Pointy-haired boss]
+P. H. B. Our differentiating value-added strategy is transformational change. \\
+P. H. B. How was that? Does anyone feel different? \\
+Alice:   My urge to hurl has increased a little bit. \\
+P. H. B. That's what change feels like.
+\end{example}
+
+\section{The visible action}
+Taking the 
 
 \printbibliography
 
-\end{document}
+\end{document} 

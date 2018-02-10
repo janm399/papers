@@ -108,7 +108,7 @@
 \newtcolorbox[use counter=example]{examplebox}{%
     % Example Frame Start
     empty,% Empty previously set parameters
-    title={\exampletext: #1},% use \thetcbcounter to access the example counter text
+    title={#1},% use \thetcbcounter to access the example counter text
     % Attaching a box requires an overlay
     attach boxed title to top left,
        % Ensures proper line breaking in longer titles
