@@ -12,7 +12,7 @@
   \begin{@twocolumnfalse}
     \maketitle
     \begin{abstract}
-      Many organisations say things such as "engineers work here not for the money, but for \emph{the great soda}, \emph{the games consoles in the office}, or \emph{for the beer o'clock on Fridays}." How is it possible that in some organisations these superficial measures appear to make a huge positive difference; while in other organisations they seem to either not make any difference at all, or sometimes make the morale and attitude worse? Are these trinklets truly the core of what makes good culture in an organisation?
+      Many organisations say things such as ``engineers work here not for the money, but for \emph{the great soda}, \emph{the games consoles in the office}, or \emph{for the beer o'clock on Fridays}.'' How is it possible that in some organisations these superficial measures appear to make a huge positive difference; while in other organisations they seem to either not make any difference at all, or sometimes make the morale and attitude worse? Are these trinklets truly the core of what makes good culture in an organisation?
     \end{abstract}
   \end{@twocolumnfalse}
 ]
@@ -66,8 +66,21 @@ Alice:   My urge to hurl has increased a little bit. \\
 P. H. B. That's what change feels like.
 \end{example}
 
-\section{The visible action}
-Taking the 
+It appears that organisations should abandon pronoucements of culture and purpose and focus instead on proper incentives. Unfortunately, Alfie Kohn\cite{alfie-kohn-hbr} writes ``at least two dozen studies over the last three decades have conclusively shown that people who expect to receive a reward for completing a task or for doing that task successfully simply do not perform as well as those who expect no reward at all.'' He concludes that ``incentives (or bribes) simply can't work in the workplace''. DeMarco and Lister\cite{peopleware} go further, stating unequivocally that any kind of workplace competition, any scheme of rewards and punishments, and even the old fashion trick of ``catching people doing something right and rewarding them,'' all do more harm than good. 
+
+That sounds like great news!--it appears that engineers do not care about money, and incentives are harmful, so the organisation does not have to worry. On the topic of compensation, Spolsky\cite{field-guide-to-developers} writes ``they don't care about money, actually, unless you're screwing up on the other things. If you start to hear complaints about salaries where you never heard them before, that's usually a sign that people aren't really loving their job. If potential new hires just won't back down on their demands for outlandish salaries, you're probably dealing with a case of people who are thinking, >>Well, if it's going to have to suck to go to work, at least I should be getting paid well.<< That doesn't mean you can underpay people, \emph{because they do care about justice, and they will get infuriated if they find out that different people are getting different salaries for the same work}, or that \emph{everyone in your shop is making 20\% less than an otherwise identical shop down the road}, and suddenly money will be a big issue. You do have to pay competitively, but all said, of all the things that programmers look at in deciding where to work, as long as the salaries are basically fair, they will be surprisingly low on their list of considerations, and offering high salaries is a surprisingly ineffective tool in overcoming problems like the fact that programmers get 15'' monitors and salespeople yell at them all the time and the job involves making nuclear weapons out of baby seals.''
+
+\begin{example}[Best intentions gone wrong]
+The organisation introduces DevOps culture, which requires its teams to support the systems they develop in production. The organisation recognises the impact this will have, and decides to offer a bonus as compensation for the extra duties. To introduce the change, the company says that the support duties are \emph{voluntary}, though in private the engineers are told that rejecting this \emph{voluntary} duty will affect their bonus. Some engineers say that they have young children, some have medical problems that would make it very difficult for them to take on the support work. The organisation tells those employees that they can indeed opt-out. %The projects need differing levels of support: some projects are critical systems; some are internal tools that are only used during the office hours.
+\end{example}
+
+The organisation is trying to do the right thing: DevOps is indeed a good way to build good quality software, and the experience the engineers gain from this is extremely valuable. The organisation also recognises the impact on its employees, and attempts to be flexible, and offer some benefits for the extra work. However, it fails. Using the word voluntary in this context is \emph{dishonest}: examples of voluntary work are running the work football club, or managing a local technical meet-up, not providing production support. Offering a bonus computed as percentage of salary as compensation leads unequal pay for equal work: different projects need different levels of support, the team sizes are different: this breeds deep resentment. Even worse, the percentage-of-salary bonus may be downright discriminatory (e.g. engineers not getting a bonus \emph{for having children}, or having to do more work for \emph{not having children}).
+
+The only systematic way out of this situation is to rename the bonus to \emph{compensation}, and to compute the amount based on actual work done. Any other approach leads to unequal pay for the equal work or the possibility of discrimination.
+
+Applying this to the first anecdote (where the demands for supporting the system in production clearly lead to more work) result in the organisation \emph{not doing / providing anything extra}, \emph{offering a bonus for the support}, or \emph{offering regular pay for the support}. 
+
+The first option seems to fit the intrinsic motivation argument (the primary reason why people work here is not money); the second option provides clear incentive
 
 \printbibliography
 
