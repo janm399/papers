@@ -17,8 +17,16 @@
   \end{@twocolumnfalse}
 ]
 
-\section{Foo}
-\cite{alfie-kohn-hbr}
+\section{What can ML do?}
+The exercise analysis system sets out to be a computerized personal for resistance or strength exercise. Exercise systems collect heart rate data as the baseline indication of physical exertion. Depending on the chosen sport, the systems typically collect GPS and accelerometer data. Geolocation, acceleration, and heart rate are fairly comprehensive source of data for outdoors sports: think running or cycling. For cycling, geolocation sampled at, say, \SI{50}{\hertz} reliably establishes the route ridden, but is also the source of data for speed and acceleration; with underlying elevation data \& the weight of the rider and the bicycle, it is possible to estimate power output. With the heart rate, it is possible to get a  fairly accurate view of the activity in \autoref{fig:cycling-overall}.
+
+\fig{cycling-overall.png}{cycling-overall}{An afternoon ride}
+
+Everything becomes much more difficult indoors; and then even more difficult when not in a swimming pool, on a rowing machine, or on a spinning bike; when the user turns to resistance exercise. Some exercise machines now come with Bluetooth connectivity that advertise the details of the activity. Turning to the basics, bodyweight exercises do not come with any machine attached; similarly, free weights do not have any beacons, and even if they did, they would not tell us which exercise the user is performing. The geolocation coordinates, if at all available, will show that the user is not moving much; the heart rate lags behind the exertion, so it'll only increase by the time the user is done with a set of a particular exercise (assuming the exercise is done with appropriate intensity).
+
+The only thing left are sensors that the user is wearing; the baseline sensor is the accelerometer in a smart watch. \autoref{fig:exercise-a} shows two time windows that contain exercise.
+
+\fig{exercise-a.png}{exercise-a}{Two exercises}
 
 \printbibliography
 
