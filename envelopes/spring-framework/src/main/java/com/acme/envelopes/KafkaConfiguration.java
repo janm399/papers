@@ -23,6 +23,8 @@ public class KafkaConfiguration {
         this.kafkaProperties = kafkaProperties;
     }
 
+    // TODO: Ewww—this feels a little dirty, especially when combined with
+    // TODO: postProcessor.setMessageHandlerFactory(...) further down
     @Bean
     EnvelopeAwareMessageHandlerMethodFactory envelopeAwareMessageHandlerMethodFactory() {
         return new EnvelopeAwareMessageHandlerMethodFactory();
@@ -33,7 +35,10 @@ public class KafkaConfiguration {
             KafkaListenerAnnotationBeanPostProcessor<?, ?> postProcessor,
             EnvelopeAwareMessageHandlerMethodFactory envelopeAwareMessageHandlerMethodFactory,
             ConsumerFactory<byte[], byte[]> consumerFactory) {
+
+        // TODO: Ewww!
         postProcessor.setMessageHandlerMethodFactory(envelopeAwareMessageHandlerMethodFactory);
+
         ConcurrentKafkaListenerContainerFactory<byte[], byte[]> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
