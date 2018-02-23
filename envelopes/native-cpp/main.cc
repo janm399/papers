@@ -3,6 +3,8 @@
 #include "envelopes.pb.h"
 #include "messages.pb.h"
 
+#include "oom_attack.hpp"
+
 INITIALIZE_EASYLOGGINGPP
 
 using namespace com::acme::envelopes;
@@ -26,5 +28,8 @@ int main(int argc, char** argv) {
     envelope2.payload().UnpackTo(&user2);
 
     LOG(INFO) << user.ShortDebugString();
+
+    oom_attack();
+
     return 0;
 }

@@ -4,7 +4,7 @@ scalaVersion := "2.12.4"
 
 organization := "com.acme"
 
-PB.protoSources in Compile := Seq((sourceDirectory in Compile).value / "protobuf")
+PB.protoSources in Compile := Seq(file("../protobuf"))
 
 // Hook up the PB generator task to the Compile task
 managedSourceDirectories in Compile += target.value / "protobuf-generated"
