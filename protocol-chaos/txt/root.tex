@@ -19,7 +19,7 @@
 ]
 
 \section{Protocol chaos}
-Validation of inputs is acklowledged to be important, yet it is very often not implemented as thoroughly as it should be; not for the lack of understanding its importance, but for the effort it requires. Consider a component that accepts a message to announce a greeting $n$ numer of times; it exposes a REST endpoint at \pcode{POST /greeting} and expects a message with the \pcode{greeting} and \pcode{count} values. The description of the service and the field names in the input message provide intuition about the expected values: the \pcode{greeting} can be one of \pcode{\{ "hello", "hi", "top of the afternoon to you, sir!"\}} and similar; the value for \pcode{count} is an integer in the range of $\interval[open]{1}{5}$. The first level of validation is to check that the values posted indeed represent valid ``types'' (the \pcode{greeting} is text; the \pcode{count} is an integer). This is "included for free" in strongly-typed languages if the input message uses appropriate types for its members; and it is simple to do in weakly-typed languages. The next level of validation should focus on acceptable range of values. For the \pcode{count} property, the validation code should verify that it is indeed in the range of (say) $\interval[open]{1}{5}$. The validation code for the \pcode{greeting} property can be more complex: it is difficult to precisely define valid or invalid \pcode{string}. The possible invalid examples include empty string, very long string, etc; though it remains easy to find an invalid string that nevertheless passes the validation code, and it is just as easy to find valid string that fails. (Consider "Good morning, Llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch!": it is perfectly valid greeting in a small village in North Wales.) If discovering the validation rules for \pcode{greeting} is difficult, it is even more difficult to exhaustively test those rules. 
+Validation of inputs is acklowledged to be important, yet it is very often not implemented as thoroughly as it should be; not for the lack of understanding its importance, but for the effort it requires. Consider a component that accepts a message to announce a greeting $n$ numer of times; it exposes a REST endpoint at \pcode{POST /greeting} and expects a message with the \pcode{greeting} and \pcode{count} values. The description of the service and the field names in the input message provide intuition about the expected values: the \pcode{greeting} can be one of \pcode{\{ "hello", "hi", "top of the afternoon to you, sir!"\}} and similar; the value for \pcode{count} is an integer in the range of $\interval[open]{1}{5}$. The first level of validation is to check that the values posted indeed represent valid ``types'' (the \pcode{greeting} is text; the \pcode{count} is an integer). This is ``included for free'' in strongly-typed languages if the input message uses appropriate types for its members; and it is simple to do in weakly-typed languages. The next level of validation should focus on acceptable range of values. For the \pcode{count} property, the validation code should verify that it is indeed in the range of (say) $\interval[open]{1}{5}$. The validation code for the \pcode{greeting} property can be more complex: it is difficult to precisely define valid or invalid \pcode{string}. The possible invalid examples include empty string, very long string, etc; though it remains easy to find an invalid string that nevertheless passes the validation code, and it is just as easy to find valid string that fails. (Consider ``Good morning, Llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch!'': it is perfectly valid greeting in a small village in North Wales.) If discovering the validation rules for \pcode{greeting} is difficult, it is even more difficult to exhaustively test those rules. 
 
 It is possible to implement a test that verifies that the system under test processes the message as expected. However, this is a very broad requirement, so it is usually split into multiple \emph{unit} tests. But even with this split, the initial problem of imagining and then coding the possible messages still remains. In order to allow valid messages conforming to some protocol to be generated, there needs to be a machine-readable description of the protocol. This description needs to include the elements and their types. The types should include at least integer numbers, floating point numbers, strings, enumerations, arrays, maps, and other messages; it is useful if the protocol description can describe sum types. The protocol tooling should also be able to take the protocol descriptions and generate source code for the target language and framework combination. Protocol Buffers \cite{protobuf} is an example of the protocol definition language and rich tooling that satisfies these requirements. The code in \autoref{code:pb-example} shows how to define a message \pcode{X} with two fields in the Protocol Buffers syntax.
 
@@ -82,7 +82,7 @@ def seed = Seed(System.currentTimeMillis())
 import MessageGenerator._
 import hints._
 
-|Generate one "chaotic" instance of message $X$, using the in-scope $Hints[X]$|
+|Generate one ``chaotic'' instance of message $X$, using the in-scope $Hints[X]$|
 val x = msg[X](parameters, seed)
 println(x)
 \end{lstlisting}
@@ -145,7 +145,7 @@ The more dense the wire representation is, the more important it is to include b
   }
 \end{algorithm} 
 
-An example of such conflicting message of type \pcode{X} from \autoref{code:trivial-protocol-definition} is shown in \autoref{tbl:bit-damage}. The messages have the same \pcode{count} property (set to 583145568), differ in the \pcode{greeting} property by \SI{19}{\bit}s, yet share the same CRC32 value (1540204925). Consider a system that includes a component that "reliably" introduces random bit errors and handles \SI{120000}{messages \per \second}. The interval between undetectable damage to messages that rely on CRC32 to detect errors will be only \SI{4}{\hour}!
+An example of such conflicting message of type \pcode{X} from \autoref{code:trivial-protocol-definition} is shown in \autoref{tbl:bit-damage}. The messages have the same \pcode{count} property (set to 583145568), differ in the \pcode{greeting} property by \SI{19}{\bit}s, yet share the same CRC32 value (1540204925). Consider a system that includes a component that ``reliably'' introduces random bit errors and handles \SI{120000}{messages \per \second}. The interval between undetectable damage to messages that rely on CRC32 to detect errors will be only \SI{4}{\hour}!
 
 \begin{table}[h]
     \begin{tabular}{r*{9}{l}}
@@ -241,7 +241,7 @@ def decode(b: Array[Byte])
   Try(Await.result(Future(X.parseFrom(b)), to))
 }
 
-|Construct "good" payload|
+|Construct ``good'' payload|
 val b  = Array[Byte](8, 1, 12, 3, 65, 66, 67)
 |Construct malicious payload|
 val mb = Array[Byte](8, 1, 12, 3, 65, 66, 67, 
