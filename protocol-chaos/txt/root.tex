@@ -14,6 +14,7 @@
     \begin{abstract}
       Chaos engineering is a way to introduce unexpected failures in order to discover a system's failure modes. The chaos engineering tools usually introduce faults that focus on the connections between the system's components by disrupting the expected operation of the network (by introducing latency, packet loss, all the way to complete network partitions) or by disrupting the operation of the nodes hosting the components (by reducing the available CPU or memory resources). Our work on chaos testing showed that this is not only insufficient, but that more ``damage'' can be achieved by focusing first on how a system handles unexpected input--trivially structurally invalid messages; or structurally valid messages that contain invalid values; or strucurally valid messages with valid, yet damaging or malicious values. Once the system can reliably handle invalid and malicious inputs, the infrastructure chaos engineering can be used to tease out further failure scenarios. 
     \end{abstract}
+    \bigskip
   \end{@twocolumnfalse}
 ]
 
@@ -32,9 +33,7 @@ message X {
 Given this definition, the Protocol Buffers tooling can be used to generate the source code for Scala, Swift, C++, and many other languages. The generated code for each message includes definition of the protocol; the definition is shown in pseudo-code in \autoref{code:pb-definition-pseudo}.
 
 \begin{lstlisting}[caption={Trivial protocol definition}, label={code:pb-definition-pseudo}, language=JavaScript, escapechar=|]
-|The message $X$ contains two fields, both optional.|
-name: "X"
-|$count$, of type \SI{32}{\bit} signed integer|
+|The message $X$ contains two fields, both optional: $count$, of type \SI{32}{\bit} signed integer|
 field {
   name: "count"
   number: 1
@@ -42,7 +41,7 @@ field {
   type: TYPE_INT32
   json_name: "count"
 }
-|$greeting$, of type UTF-8 string|
+|and $greeting$, of type UTF-8 string|
 field {
   name: "greeting"
   number: 2
@@ -231,7 +230,7 @@ JsonFormat.fromJsonString[X](mj)
 |  \ldots|
 \end{lstlisting}
 
-The thread that throws the \pcode{StackOverflowError} arising from \pcode{JsonFormat.fromJsonString[X](mj)} and \pcode{X.validate(mb)} without handling it in a \pcode{try / catch} block terminates. This attack can be mitigated and the impact of the too-deep recursion causing the \pcode{StackOverflowError}s on other parts of the system contained by moving the decoding to a thread from a \emph{dedicated} pool; a suitable language \& framework makes this a fairly easy task. An example of safe, though very inelegant (because of the use of $Await.result$) code in Scala is shown in \autoref{code:so-mitigation}. The $decode$ function can be used as a direct replacement in your code (though production implementation should pay extra attention to properly configure the $ExecutionContext$ with sufficient number of threads and pinning behavior). Non-blocking toolkits (such as Akka\cite{akka} and Play\cite{play} in Scala) use non-blocking style throughout, which means that there is no need to block for the result of the asynchronous operation; the code in \autoref{code:so-mitigation} and the performance measurements represent the worst-case scenarios.
+The thread that throws the \pcode{StackOverflowError} arising from \pcode{JsonFormat.fromJsonString[X](mj)} and \pcode{X.validate(mb)} without handling it in a \pcode{try / catch} block terminates. This attack can be mitigated and the impact of the too-deep recursion causing the \pcode{StackOverflowError}s on other parts of the system contained by moving the decoding to a thread from a \emph{dedicated} pool\footnote{A side benefit of moving the decoding to a dedicated thread pool provides bulk-heading of the decoding code from the rest of the application code}. a suitable language \& framework makes this a fairly easy task. An example of safe, though very inelegant (because of the use of $Await.result$) code in Scala is shown in \autoref{code:so-mitigation}. The $decode$ function can be used as a direct replacement in your code (though production implementation should pay extra attention to properly configure the $ExecutionContext$ with sufficient number of threads and pinning behavior). Non-blocking toolkits (such as Akka\cite{akka} and Play\cite{play} in Scala) use non-blocking style throughout, which means that there is no need to block for the result of the asynchronous operation; the code in \autoref{code:so-mitigation} and the performance measurements represent the worst-case scenarios.
 
 \begin{lstlisting}[caption={Stack Overflow Mitigation}, label={code:so-mitigation}, language=Scala, escapechar=|]
 |The decoding function takes the bytes $b$ to decode and schedules the decoding in the $ec$. It returns the result of the decoding, but will survive a $StackOverflowError$.|
