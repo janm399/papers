@@ -1,0 +1,14 @@
+------------------------------- MODULE hello -------------------------------
+
+EXTENDS TLC
+
+(* --algorithm hello_world
+variable s \in {"Hello, world"};
+begin
+
+end algorithm; *)
+
+=============================================================================
+\* Modification History
+\* Last modified Fri Feb 23 16:00:25 PST 2018 by janmachacek
+\* Created Fri Feb 23 15:58:37 PST 2018 by janmachacek
