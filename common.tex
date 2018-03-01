@@ -14,6 +14,7 @@
 \usepackage{adjustbox}
 \usepackage{booktabs}
 \usepackage{pgfplots}
+\usepackage{tikz}
 \usepackage{footmisc}
 \usepackage{amsfonts}
 \usepackage[backend=biber,style=numeric]{biblatex}
@@ -130,3 +131,5 @@
 \begin{examplebox}}
 {\end{examplebox}\endlist}
 
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{
+            \node[shape=circle,draw,inner sep=1pt] (char) {#1};}}
