@@ -1,5 +1,7 @@
 \input{../../common.tex}
 
+\SetKw{Yield}{yield}
+
 \addbibresource{root.bib}
 
 \title{So you want to build a ML system}
@@ -34,14 +36,51 @@ A proof-of-concept application that allows the users to wear a sensor on their w
 
 \fig{exercise-a.png}{exercise-a}{Two exercises}
 
-\autoref{fig:exercise-a} shows the acceleration from a watch worn on the left wrist. The acceleration is along the $x$, $y$, and $z$ axes (with the Earth contributing \SI{9.8}{\meter\second^{-2}}) sampled at \SI{50}{\hertz}; exercise \circled{1} is the straight bar biceps curl, and \circled{2} is the chest dumbbell flyes. You--the readers, humans--can work out the number of repetitions and you can clearly spot that these are two different exercises, and if you saw enough of these charts, you would be able to learn to identify the two exercises. It should be possible to build a machine function to do the same.
+\autoref{fig:exercise-a} shows the acceleration from a watch worn on the left wrist. The acceleration is along the $x$, $y$, and $z$ axes (with the Earth contributing \SI{9.8}{\meter\second^{-2}}) sampled at \SI{50}{\hertz}; exercise \circled{1} is the straight bar biceps curl, and \circled{2} is the chest dumbbell flyes. You--the readers, humans--can work out the number of repetitions and you can clearly spot that these are two different exercises, and if you saw enough of these figures, you would be able to learn to identify the two exercises. It should be possible to implement a function \pcode{classify(sensor data) -> exercise} that does the same. Even if this function performs perfectly (i.e. it identifies the movement that corresponds to the exercise for every \pcode{sensor data} that matches the exercise, even if the exact \pcode{sensor data} was not in the training set), it will struggle to identify areas of no exercise; unfortunately no exercise does not mean no movement, it simply means that the user is walking from one machine to another, setting up for a different exercise, taking a drink, and so on. These no exercise areas are quite often also areas of repetitive motion (walking) or fairly large movements (setting up); see \autoref{fig:exercise-vs-slacking} where the red shaded areas represent exercise and the rest is other recorded motion.
+
+\fig{exercise-vs-slacking.png}{exercise-vs-slacking}{Exercise vs. slacking}
+
+The figure shows some of the typical challenges of noisy, mislabelled, and unclensed data. For example in \circled{1}, the user has done two exercise sets, but forgot to label the no exercise area properly. The area in \circled{2} shows large movement in the no exercise section--in this particular example, the acceleration actually shows the user dragging an exercise bench. In \circled{3}, the labelling is not entirely accurate: the user started the label before actually starting the exercise. Finally, \circled{4} shows further wide movements in the no exercise section. To deal with the complexity of exercise and no exercise, the classification function needs to be \pcode{classify(sensor data) -> result}, where \pcode{result = exercise | no-exercise}. 
 
 \subsection{Sensors are not enough}
-Suppose there is indeed a function that takes the sensor readings and returns the details of the exercise being performed: \pcode{classify(sensor data) -> exercise}. Even if this function performs perfectly (i.e. it identifies the movement that corresponds to the exercise for every \pcode{sensor data} that matches the exercise, even if the exact \pcode{sensor data} was not in the training set), it only allows to build a system that lags behind the users' movement. Even if the system could read the data from the sensors with zero delay, the system would only be able to tell the user what he or she is doing after ``seeing'' some minimum amount of data, introducing lag. High lag will cause the user experience to be rather frustrating. In our testing, a \SI{100}{\milli\second} lag is noticeable; \SI{250}{\milli\second} lag is still tolerable; anything over \SI{750}{\milli\second} is downright confusing. A good example is the number of repetitions: with an exercise whose single repetition takes around \SI{1}{\second}, a \SI{750}{\milli\second} lag will mean that the system shows 5\textsuperscript{th} repetition when in fact the user is starting on his or her 7\textsuperscript{th}. Compare this to the sensor readings that the cycling computer reports: speed, altitude and similar can be reported as they are measured (typically a few times per second); cadence and power readings usually lag behind the instantaneous measurements because the computers display average values over a short time window. Just like the repetitions in resistance exercise, the lag is confusing; though if the athlete holds fairly steady power output, the reading usually matches the percieved effort.
+Suppose there is indeed a function that takes the sensor readings and returns the details of the exercise being performed: \pcode{classify(sensor data) -> result}. Even if this function performs perfectly, it only allows to build a system that lags behind the users' movement. Even if the system could read the data from the sensors with zero delay, the system would only be able to tell the user what he or she is doing after ``seeing'' some minimum amount of data, introducing lag. High lag will cause the user experience to be rather frustrating. In our testing, a \SI{100}{\milli\second} lag is noticeable; \SI{250}{\milli\second} lag is still tolerable; anything over \SI{750}{\milli\second} is downright confusing. A good example is the number of repetitions: with an exercise whose single repetition takes around \SI{1}{\second}, a \SI{750}{\milli\second} lag will mean that the system shows 5\textsuperscript{th} repetition when in fact the user is starting on his or her 7\textsuperscript{th}. Compare this to the sensor readings that the cycling computer reports: speed, altitude and similar can be reported as they are measured (typically a few times per second); cadence and power readings usually lag behind the instantaneous measurements because the computers display average values over a short time window. Just like the repetitions in resistance exercise, the lag is confusing; though if the athlete holds fairly steady power output, the reading usually matches the percieved effort.
 
 The machine learning resistance exercise system is competing with a simple exercise log on paper notebook. Following users that use such an \emph{ancient} technology reveals the flow that the application has to satisfy. 
 
 To understand what the users expect from an intuitive application, it is necessary
+
+\section{The complexity of sensors}
+The system reads values from the sensors; the values are not read continuously, but read at discrete points in time. The range of sensor values can introduce clipping errors, and the sampling rate can introduce aliasing errors. Good choice of sampling rate and sensor types can reduce these errors: both sampling rates and sensor value range must be significantly greater than expected measurements; even in that case, the system must include enough signal processing to eliminate rogue values. For humans in resistance exercise, the sampling rate is sufficient to be \SI{50}{\hertz}, acceleration is expected to be in the range \SI{\pm40}{\meter\second^{-2}}, rotation \SI{\pm4\pi}{\radian\second^{-1}}. The first stab at implementing the sensor reading code may take the form of a loop in \autoref{alg:naive-sensor-sampling}.
+
+\begin{algorithm}
+  \caption{Simple sensor sampling}
+  \label{alg:naive-sensor-sampling}
+  \DontPrintSemicolon
+  \KwResult{The acceleration and rotation samples}
+  \While{true}{
+    $a \leftarrow getAcceleration()$\;
+    $r \leftarrow getRotation()$\;
+    \Yield{$a, r$}\;
+    $sleep(\SI{20}{\milli\second})$\;
+  }
+\end{algorithm} 
+
+When implemented in real hardware, this algorithm suffers from \emph{timing errors} as well as \emph{high power consumption}. When it comes to reading the samples, is it acceptable to read acceleration before rotation?; moreover the act of obtaining those samples adds time, which means that the \SI{20}{\milli\second} in the $sleep$ is too long, but \SI{19}{\milli\second} is too short. The infinite loop with a \pcode{syscall} prevents the CPU from slowing down into more power-efficient modes. Fortunately, modern hardware typically provides a way to begin the sensor readings, and have the readings send samples to a user-defined function once the sampling buffer is filled. (Viz \autoref{alg:async-sensor-sampling}.)
+
+\SetKwProg{Fn}{Function}{ is}{end}
+\begin{algorithm}
+  \caption{Asynchronous sensor sampling}
+  \label{alg:async-sensor-sampling}
+  \DontPrintSemicolon
+  $accelerationCb \leftarrow$ \Fn{data}{...\;}\;
+  $rotationCb \leftarrow$ \Fn{data}{...\;}\;
+  $beginAccelerationSamples(accelerationCb, \SI{500}{\milli\second})$\;
+  $beginRotationSamples(rotationCb, \SI{500}{\milli\second})$\;
+\end{algorithm} 
+
+This algorithm addresses the high power consumption, as well as some of the sampling errors. The sample buffers given to the functions \pcode{data} always contain fully-read values, but the functions are not necessarily called at the same time. So, even though the \pcode{acceleratioCb} function receives \SI{500}{\milli\second} of acceleration samples and \pcode{rotationCb} function receives \SI{500}{\milli\second} of rotation samples, both buffers may start at different time instants. The system must perform reliable and very fast sensor fusion.
+
+\section{Privacy}
 
 \printbibliography
 
