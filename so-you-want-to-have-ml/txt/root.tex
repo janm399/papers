@@ -22,7 +22,7 @@ The exercise analysis system sets out to be a computerized personal for resistan
 
 \fig{cycling-overall.png}{cycling-overall}{An afternoon ride}
 
-In addition to the post-ride analysis, the sensors provide immediate feedback during the ride. A modern cycling computer records and displays speed, elevation, distance, heart rate, pedalling cadence, and power. An athlete can use these values to inform his or her training; for example, one might train for a time trial aiming for a particular power output over a specific distance. (See \autoref{fig:cycling-power-training}.)
+In addition to the post-ride analysis, the sensors provide immediate feedback during the ride. A modern cycling computer records and displays speed, elevation, distance, heart rate, pedalling cadence, and power. An athlete can use these values to inform his or her training; for example, one might train for a time trial aiming for a particular power output over a specific distance and use the values a cycling computer displays to guide the training sessions. (See \autoref{fig:cycling-power-training}.)
 
 \fig{cycling-power-training.jpg}{cycling-power-training}{Cycling power training}
 
@@ -60,15 +60,16 @@ The system reads values from the sensors; the values are not read continuously, 
   \SetKwFunction{sleep}{sleep}
   $acc \leftarrow$ \sensor{type = accelerometer}\;
   $gyro \leftarrow$ \sensor{type = gyroscope}\;
+  \BlankLine
   \While{true}{
-    \sleep{$\SI{20}{\milli\second}$}\;
+    \sleep{interval = $\SI{20}{\milli\second}$}\;
     $a \leftarrow $ $acc$.\currentValue{}\;
     $r \leftarrow $ $gyro$.\currentValue{}\;
     \Emit{$a, r$}\;
   }
 \end{algorithm} 
 
-When implemented in real hardware, this algorithm suffers from \emph{timing errors} as well as \emph{high power consumption}. When it comes to reading the samples, is it acceptable to read acceleration before rotation?; moreover the act of obtaining those samples adds time, which means that the \SI{20}{\milli\second} in the $sleep$ is too long, but \SI{19}{\milli\second} is too short. The infinite loop with the \pcode{sleep} syscall prevents the CPU from slowing down into more power-efficient modes. Fortunately, modern hardware typically provides a way to begin the sensor readings, with the sensors storing the samples (pairs of \pcode{timestamp -> value}) in a memory buffer without any interaction from the user program, and provide a way to access sections of the buffer at arbitrary intervals. (Viz \autoref{alg:async-sensor-sampling}.)
+When implemented in real hardware, this algorithm suffers from \emph{timing errors} as well as \emph{high power consumption}. When it comes to reading the samples, is it acceptable to read acceleration before rotation?; moreover the act of obtaining those samples adds time, which means that the \SI{20}{\milli\second} in the $sleep$ is too long, but \SI{19}{\milli\second} is too short. The infinite loop with the \pcode{sleep} syscall prevents the CPU from slowing down into more power-efficient modes. Modern hardware typically provides a way to begin the sensor readings, with the sensors storing the samples (pairs of \pcode{timestamp -> value}) in a memory buffer without any interaction from the user program, and provide a way to access sections of the buffer at arbitrary intervals. (Viz \autoref{alg:async-sensor-sampling}.)
 
 \begin{algorithm}
   \caption{Asynchronous sensor sampling}
@@ -99,16 +100,107 @@ When implemented in real hardware, this algorithm suffers from \emph{timing erro
   }
 \end{algorithm} 
 
-This approach addresses the high power consumption, as well as some of the aliasing errors in \autoref{alg:naive-sensor-sampling}. However, the sample buffers read from the sensors are not always precisely aligned with respect to wall time (i.e. time as measured by a [precise] clock on a wall) and might even contain gaps where the sensor wasn't able to obtain a value. 
+This approach addresses the high power consumption, as well as some of the aliasing errors in \autoref{alg:naive-sensor-sampling}. However, the sample buffers read from the sensors are not always precisely aligned with respect to wall time (i.e. time as measured by a [precise] clock on a wall) and might even contain gaps where the sensor wasn't able to obtain a value. \autoref{plot:timing-errors} shows sample buffers obtained from two sensors sampled at \SI{50}{\hertz}: the values should be exactly \SI{20}{\milli\second} apart, and the sample buffers from the two sensors should begin at the same wall time. Unfortunately, the available sensors (and their operating systems / runtimes) usually result in the sample buffers not beginning at the same wall time; similarly, the timestamps of the values in the buffers will not necessarily fall precisely on integer multiples of the sampling period.
 
-(Image here.)
+\begin{figure}[ht]
+  \begin{tikzpicture}
+    \begin{axis}[
+      height=3cm, 
+      width=10cm, 
+      xminorgrids=true,
+      xmajorgrids=true,
+      xlabel={Wall time [ms]}, 
+      ylabel={Sensor},
+      ytick=\empty,
+      yticklabels=\empty,
+      xmin=0,xmax=205,
+      ymin=0,ymax=3,
+      minor tick num=1,
+      legend pos=south east,
+      legend cell align={left}
+      ]
 
-The system has to be able to cope with these misalignments and missing values: its goal is to \emph{fuse} the sensors values so that all samples appear as though they were read from a \emph{single reliable} sensor. If the sample buffers differ by less than 1 sample's period the system can simply force the alignment; though it must keep track of the timing error it introduces. (Diagram here?) If the sample buffers differ by more than 1 sample's period, or if the sample buffer contains \emph{small} gaps, the system should extrapolate the misaligned or missing values. \autoref{fig:sf-gaps} shows the performance of a time-series prediction algorithm applied to gaps of 50 samples--the prediction is fairly accurate in the gaps \circled{1} and \circled{2}, but fails in \circled{3}.
+      \addplot[color=red,mark=|] coordinates {
+        (0,   1) 
+        (20,  1)
+        (40,  1)
+        (60,  1)
+        (80,  1)
+        (100, 1)
+        (120, 1)
+        (140, 1)
+        (160, 1)
+        (180, 1)
+        (200, 1)
+      };
+      \addplot[color=blue,mark=|] coordinates {
+        (5,   2)
+        (25,  2)
+        (45,  2)
+        (65,  2)
+        (85,  2)
+        (105, 2)
+        (125, 2)
+        (145, 2)
+        (165, 2)
+        (185, 2)
+        (205, 2)
+      };
+    \end{axis}
+    \begin{axis}[
+      height=3cm, 
+      width=10cm, 
+      xmin=0,xmax=205,
+      ymin=0,ymax=3,
+      grid=none,
+      ytick=\empty,
+      yticklabels=\empty,
+      minor tick num=1,
+      axis x line*=top,
+      axis y line=none,
+      xlabel={Sample time [ms]}   
+    ]
+      \addplot[color=red,mark=x] coordinates {
+        (4,   1)
+        (21,  1)
+        (40,  1)
+        (61,  1)
+        (81,  1)
+        (102, 1)
+        (122, 1)
+        (141, 1)
+        (160, 1)
+        (179, 1)
+        (196, 1)
+      };
+      \addplot[color=blue,mark=x] coordinates {
+        (6,   2)
+        (27,  2)
+        (45,  2)
+        (68,  2)
+        (83,  2)
+        (102, 2)
+        (125, 2)
+        (150, 2)
+        (163, 2)
+        (189, 2)
+        (204, 2)
+      };
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Timing errors}
+  \label{plot:timing-errors}
+\end{figure}
+
+The system has to be able to cope with these misalignments and missing values: its goal is to \emph{fuse} the sensors values so that all samples appear as though they were read from a \emph{single reliable} sensor. If the sample buffers differ by less than 1 sample's period the system can simply force the alignment; though it must keep track of the timing error it introduces. If the sample buffers differ by more than 1 sample's period, or if the sample buffer contains \emph{small} gaps, the system should extrapolate the misaligned or missing values. \autoref{fig:sf-gaps} shows the performance of a time-series prediction algorithm applied to gaps of 50 samples--the prediction is fairly accurate in the gaps \circled{1} and \circled{2}, but fails in \circled{3}.
 
 \fig{sf-gaps.png}{sf-gaps}{Extrapolating missing values}
 
+\subsection{Low-power sensors}
+sss
 
-(Security \& Attacks here. \cite{Fu:AuI932n8})
+\subsection{Security \& Attacks}
+\cite{Fu:AuI932n8})
 
 \section{Privacy}
 
