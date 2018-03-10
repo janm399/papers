@@ -1,7 +1,5 @@
 \input{../../common.tex}
 
-\SetKw{Yield}{yield}
-
 \addbibresource{root.bib}
 
 \title{So you want to build a ML system}
@@ -56,29 +54,61 @@ The system reads values from the sensors; the values are not read continuously, 
   \caption{Simple sensor sampling}
   \label{alg:naive-sensor-sampling}
   \DontPrintSemicolon
-  \KwResult{The acceleration and rotation samples}
+  \SetKw{Emit}{emit}
+  \SetKwFunction{sensor}{sensor}
+  \SetKwFunction{currentValue}{currentValue}
+  \SetKwFunction{sleep}{sleep}
+  $acc \leftarrow$ \sensor{type = accelerometer}\;
+  $gyro \leftarrow$ \sensor{type = gyroscope}\;
   \While{true}{
-    $a \leftarrow getAcceleration()$\;
-    $r \leftarrow getRotation()$\;
-    \Yield{$a, r$}\;
-    $sleep(\SI{20}{\milli\second})$\;
+    \sleep{$\SI{20}{\milli\second}$}\;
+    $a \leftarrow $ $acc$.\currentValue{}\;
+    $r \leftarrow $ $gyro$.\currentValue{}\;
+    \Emit{$a, r$}\;
   }
 \end{algorithm} 
 
-When implemented in real hardware, this algorithm suffers from \emph{timing errors} as well as \emph{high power consumption}. When it comes to reading the samples, is it acceptable to read acceleration before rotation?; moreover the act of obtaining those samples adds time, which means that the \SI{20}{\milli\second} in the $sleep$ is too long, but \SI{19}{\milli\second} is too short. The infinite loop with a \pcode{syscall} prevents the CPU from slowing down into more power-efficient modes. Fortunately, modern hardware typically provides a way to begin the sensor readings, and have the readings send samples to a user-defined function once the sampling buffer is filled. (Viz \autoref{alg:async-sensor-sampling}.)
+When implemented in real hardware, this algorithm suffers from \emph{timing errors} as well as \emph{high power consumption}. When it comes to reading the samples, is it acceptable to read acceleration before rotation?; moreover the act of obtaining those samples adds time, which means that the \SI{20}{\milli\second} in the $sleep$ is too long, but \SI{19}{\milli\second} is too short. The infinite loop with the \pcode{sleep} syscall prevents the CPU from slowing down into more power-efficient modes. Fortunately, modern hardware typically provides a way to begin the sensor readings, with the sensors storing the samples (pairs of \pcode{timestamp -> value}) in a memory buffer without any interaction from the user program, and provide a way to access sections of the buffer at arbitrary intervals. (Viz \autoref{alg:async-sensor-sampling}.)
 
-\SetKwProg{Fn}{Function}{ is}{end}
 \begin{algorithm}
   \caption{Asynchronous sensor sampling}
   \label{alg:async-sensor-sampling}
+  \SetKwProg{Fn}{Function}{ is}{end}
+  \SetKwFunction{sensor}{sensor}
+  \SetKwFunction{start}{start}
+  \SetKwFunction{timer}{timer}
+  \SetKwFunction{bufferedValuesSince}{bufferedValuesSince}
+  \SetKwFunction{fuse}{fuse}
+  \SetKw{Emit}{emit}
   \DontPrintSemicolon
-  $accelerationCb \leftarrow$ \Fn{data}{...\;}\;
-  $rotationCb \leftarrow$ \Fn{data}{...\;}\;
-  $beginAccelerationSamples(accelerationCb, \SI{500}{\milli\second})$\;
-  $beginRotationSamples(rotationCb, \SI{500}{\milli\second})$\;
+  $acc \leftarrow$ \sensor{type = accelerometer}\;
+  $gyro \leftarrow$ \sensor{type = gyroscope}\;
+  $timestamp \leftarrow DistantPast$\;
+  $timerFun \leftarrow$ \Fn{}{
+    $A \leftarrow$ $acc$.\bufferedValuesSince{timestamp}\;
+    $R \leftarrow$ $gyro$.\bufferedValuesSince{timestamp}\;
+    $S, timestamp \leftarrow$ \fuse{A, R}\;
+    \Emit{S}\;
+  }
+  $timer \leftarrow$ \timer{callback = timerFun}\;
+  \BlankLine
+  Start: \Begin{
+    $acc$.\start{rate = $\SI{50}{\hertz}$}\;
+    $gyro$.\start{rate = $\SI{50}{\hertz}$}\;
+    $timer$.\start{interval = $\SI{500}{\milli\second}$}\;
+  }
 \end{algorithm} 
 
-This algorithm addresses the high power consumption, as well as some of the sampling errors. The sample buffers given to the functions \pcode{data} always contain fully-read values, but the functions are not necessarily called at the same time. So, even though the \pcode{acceleratioCb} function receives \SI{500}{\milli\second} of acceleration samples and \pcode{rotationCb} function receives \SI{500}{\milli\second} of rotation samples, both buffers may start at different time instants. The system must perform reliable and very fast sensor fusion.
+This approach addresses the high power consumption, as well as some of the aliasing errors in \autoref{alg:naive-sensor-sampling}. However, the sample buffers read from the sensors are not always precisely aligned with respect to wall time (i.e. time as measured by a [precise] clock on a wall) and might even contain gaps where the sensor wasn't able to obtain a value. 
+
+(Image here.)
+
+The system has to be able to cope with these misalignments and missing values: its goal is to \emph{fuse} the sensors values so that all samples appear as though they were read from a \emph{single reliable} sensor. If the sample buffers differ by less than 1 sample's period the system can simply force the alignment; though it must keep track of the timing error it introduces. (Diagram here?) If the sample buffers differ by more than 1 sample's period, or if the sample buffer contains \emph{small} gaps, the system should extrapolate the misaligned or missing values. \autoref{fig:sf-gaps} shows the performance of a time-series prediction algorithm applied to gaps of 50 samples--the prediction is fairly accurate in the gaps \circled{1} and \circled{2}, but fails in \circled{3}.
+
+\fig{sf-gaps.png}{sf-gaps}{Extrapolating missing values}
+
+
+(Security \& Attacks here. \cite{Fu:AuI932n8})
 
 \section{Privacy}
 
