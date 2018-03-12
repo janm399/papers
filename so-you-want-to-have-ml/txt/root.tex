@@ -45,9 +45,51 @@ Suppose there is indeed a function that takes the sensor readings and returns th
 
 The machine learning resistance exercise system is competing with a simple exercise log on paper notebook. Following users that use such an \emph{ancient} technology reveals the flow that the application has to satisfy. 
 
-\fig{diary.png}{diary}{Exercise diary}
+\fig{diary.jpg}{diary}{Exercise diary}
 
-The athletes use a diary similar to the one in \autoref{fig:diary} to log the exercises done, to keep track of progress, and to stick to an established sequence of exercises.
+The athletes use a diary similar to the one in \autoref{fig:diary} to log the exercises done, to keep track of progress, and to stick to an established sequence of exercises. The interaction the users need is for the application to show \emph{what to do next}, with all relevant details of weights, repetitions, time, and intensity. This is what a user would be able to trivially look up in the paper diary. The paper diary also easily deals with the scenario when there the exercise space or machine is not available: it is trivial to scan the diary for the alternative exercise. So, the mobile application's interactions need to match that. (See \autoref{fig:ui}.)
+
+\fig{ui.jpg}{ui}{Electronic version of exercise diary}
+
+The model used to predict sequence of exercise sessions and exercises within a session is a Markov chain. This allows the application to deal with the reality of exercise in a public gym, where the station for the next suggested exercise might not be available. The Markov chain, together with a bio-mechanical model of the main muscle groups, gives the users the flexibility to achieve their workout targets even in crowded gyms. The sequence of exercise predictions for one particular exercise sessions are illustrated on \autoref{fig:model-sequence}.
+
+\fig{model-sequence.png}{model-sequence}{Exercise sequence model with no context}
+
+The numbers in \autoref{fig:model-sequence} represent the count of transitions taken; hence it is possible to calculate the probability of transition from any given state. The state names are the exercise labels, in real application, they are the real exercise names. The mobile application can either receive the chain when the user selects one of the pre-defined exercise programmes, or it can construct the chain from empty if the user choses to start his or her custom workout. This gives the application an intuitive feel; its suggestions are what the users usually do. Finally, the information in the chain allows the system to identify the most popular sequences of exercises, to identify exercises that the users do not like; more interestingly, the system can use the information in the chain to identify sequence of exercises that leads to the best improvement. (There is no definition of \emph{improvement}: in one case, it may be greatest percieved intensity; in other case, it may be greatest mobility range improvement; etc.)
+
+To make the next-exercise prediction more accurate, the mobile application uses fined-grained location services. The location services are implemented using bluetooth beacons. The beacons operate in the iBeacon mode \cite{ibeacon}; each beacon in this mode transmits its identifier, a major, and minor values. The mobile application sets up continuous scanning of a major value which identifies exercise equipment, receiving notifications of beacons and their minor values as they come into range. The mobile application then filters the exercise states keeping only those that are associated with a particular area. (Viz \autoref{fig:model-sequence+location}.)
+
+\fig{model-sequence+location.png}{model-sequence+location}{Exercise sequence model with location context}
+
+With the fine-grained location data available, the application is \emph{expecting} to see a movement that precedes exercises A or C. We call this movement the \emph{setup movement}. This now refines the classification into the \name{setup movement} classifier and the \name{in-exercise} classifier. Both classifiers follow the general \pcode{classify(sensor data) -> result} signature. The setup movement classifier takes \SI{1}{\second} of sensor input and produces probabilities classes that represent the setup movement for groups of exercises. The setup classes are not the exercises themselves, but the movements that happen just before the start of an exercise (think picking up the dumbbells and moving them into place for shoulder press); one setup movement can map to multiple exercises. To provide accurate prediction of the exercise about to be started, the mobile application takes into account the expected exercise (given the user's typical behaviour), and the fine-grained location data. The performance of the exercise prediction for accelerometer on the user's wrist is shown in \autoref{tbl:setup-movement-performance-accelerometer}; the performance of the exercise prediction rises significantly in fully-wired human (viz \autoref{tbl:setup-movement-performance-all}).
+
+\begin{table}[h]
+    \begin{tabular}{lrrrr}
+        \toprule
+                             & Accuracy & Precision & Recall & F1 \\
+        \midrule
+        No context           & !!       & !!        & !!     & !! \\
+        Behaviour            & !!       & !!        & !!     & !! \\ 
+        Behaviour, location  & !!       & !!        & !!     & !! \\
+        \bottomrule
+    \end{tabular}
+    \caption{Exercise prediction performance (accelerometer)}
+    \label{tbl:setup-movement-performance-accelerometer}
+\end{table}
+
+\begin{table}[h]
+    \begin{tabular}{lrrrr}
+        \toprule
+                             & Accuracy & Precision & Recall & F1 \\
+        \midrule
+        No context           & !!       & !!        & !!     & !! \\
+        Behaviour            & !!       & !!        & !!     & !! \\ 
+        Behaviour, location  & !!       & !!        & !!     & !! \\
+        \bottomrule
+    \end{tabular}
+    \caption{Exercise prediction performance (all sensors)}
+    \label{tbl:setup-movement-performance-all}
+\end{table}
 
 \section{The complexity of sensors}
 The system reads values from the sensors; the values are not read continuously, but read at discrete points in time. The range of sensor values can introduce clipping errors, and the sampling rate can introduce aliasing errors. Good choice of sampling rate and sensor types can reduce these errors: both sampling rates and sensor value range must be significantly greater than expected measurements; even in that case, the system must include enough signal processing to eliminate rogue values. For humans in resistance exercise, the sampling rate is sufficient to be \SI{50}{\hertz}, acceleration is expected to be in the range \SI{\pm40}{\meter\second^{-2}}, rotation \SI{\pm4\pi}{\radian\second^{-1}}. The first stab at implementing the sensor reading code may take the form of a loop in \autoref{alg:naive-sensor-sampling}.
@@ -205,7 +247,7 @@ A good way to tackle the noise, alignment, and timing errors is to use the raw s
 \fig{sf-gaps.png}{sf-gaps}{Extrapolating missing values}
 
 \subsection{Low-power sensors}
-Low-powered sensors bring additional complexity of restricted memory and computational resources, as well as restricted transfer mechanisms. A good example of such low-powered sensor is the Pebble smartwatch. The most powerful model contains the Cortex-M7 CPU at \SI{144}{\mega\hertz} with \SI{128}{\kibi\byte} of memory for user programs; it uses BLE for data transfers. The protocol as well as the hardware architecture places restrictions on the sample width and sampling rate. BLE protocol specifies maximum \SI{80}{\byte} per message, and minimum duration of \SI{7.5}{\milli\second} between messages; this gives us theoretical maximum of \SI{10640}{\byte\per\second}. The Pebble 2 implementation dropped the reliable data transfer rate to only \SI{280}{\byte\per\second}. That particular device also lacked significant processing power. This defined the baseline protocol for samples with 3 axes (such as acceleration or rotation), with \SI{20}{\byte} for header and \SI{5}{\byte} per sample. The lack of processing power meant that it wasn't possible to implement any reasonable compression algorithm. To minimise the amount of data being transferred, the system takes into account maximum reasonable acceleration a human can achieve in exercise: \SI{40}{\meter\second^{-2}}, and represents one sample as $3 \times$\SI{13}{\bit} for $x$, $y$, and $z$ axes (with \SI{1}{\bit} for padding). Along with the samples, the wearable sends its timestamp, which is a monotonously-increasing device time in milliseconds. The mobile application remembers the first seen timestamp from each sensor for each exercise session, and uses this value to properly align the samples from the sensors. The sensor data includes quantisation error: at \SI{50}{\hertz} one sample represents \SI{20}{\milli\second} of real-time, but the difference of the timestamps may not be divisible by $20$. It is sufficient to perform ``round-even'' correction of the received samples by evenly removing or duplicating the last sample in case of detected quantisation errors\footnote{Without the quantisation error correction, together with the unreliable sensors, the time error can add up to \SI{10}{\second} per hour of exercise}.
+Low-powered sensors bring additional complexity of restricted memory and computational resources, as well as restricted transfer mechanisms. A good example of such low-powered sensor is the Pebble smartwatch. The first model contains the Cortex-M3 CPU at \SI{64}{\mega\hertz} with \SI{24}{\kibi\byte} of memory (heap and code) for applications. It uses BLE for data transfers. The protocol as well as the hardware architecture places restrictions on the sample width and sampling rate. BLE protocol specifies maximum \SI{80}{\byte} per message, and minimum duration of \SI{7.5}{\milli\second} between messages; this gives a theoretical maximum of \SI{10640}{\byte\per\second}. The Pebble implementation dropped the reliable data transfer rate to only \SI{280}{\byte\per\second}. To minimise the amount of data being transferred, the system takes into account maximum reasonable acceleration a human can achieve in exercise: \SI{\pm40}{\meter\second^{-2}}, and represents that range as \SI{13}{\bit} integer. This means one sample is \SI{5}{\byte}: 3 $\times$ \SI{13}{\bit} for $x$, $y$, and $z$ axes, with \SI{1}{\bit} for padding. Along with the samples, the wearable sends its timestamp, which is a monotonously-increasing device time in milliseconds. The mobile application remembers the first seen timestamp from each sensor for each exercise session, and uses this value to properly align the samples from the sensors. The sensor data includes quantisation error: at \SI{50}{\hertz} one sample represents \SI{20}{\milli\second} of real-time, but the difference of the timestamps may not be divisible by $20$. It is sufficient to perform ``round-even'' correction of the received samples by evenly removing or duplicating the last sample in case of detected quantisation errors\footnote{Without the quantisation error correction, together with the unreliable sensors, the time error can add up to \SI{10}{\second} per hour of exercise}.
 
 \subsection{Security \& Attacks}
 It is possible to attack this system by \cite{Fu:AuI932n8}...
