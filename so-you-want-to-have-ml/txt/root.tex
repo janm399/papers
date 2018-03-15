@@ -57,42 +57,20 @@ The model used to predict sequence of exercise sessions and exercises within a s
 
 The numbers in \autoref{fig:model-sequence} represent the count of transitions taken; hence it is possible to calculate the probability of transition from any given state. The state names are the exercise labels, in real application, they are the real exercise names. The mobile application can either receive the chain when the user selects one of the pre-defined exercise programmes, or it can construct the chain from empty if the user choses to start his or her custom workout. This gives the application an intuitive feel; its suggestions are what the users usually do. Finally, the information in the chain allows the system to identify the most popular sequences of exercises, to identify exercises that the users do not like; more interestingly, the system can use the information in the chain to identify sequence of exercises that leads to the best improvement. (There is no definition of \emph{improvement}: in one case, it may be greatest percieved intensity; in other case, it may be greatest mobility range improvement; etc.)
 
-To make the next-exercise prediction more accurate, the mobile application uses fined-grained location services. The location services are implemented using bluetooth beacons. The beacons operate in the iBeacon mode \cite{ibeacon}; each beacon in this mode transmits its identifier, a major, and minor values. The mobile application sets up continuous scanning of a major value which identifies exercise equipment, receiving notifications of beacons and their minor values as they come into range. The mobile application then filters the exercise states keeping only those that are associated with a particular area. (Viz \autoref{fig:model-sequence+location}.)
+To make the next-exercise prediction more accurate, the mobile application uses fined-grained location services. The location services are implemented using bluetooth beacons. The beacons operate in the iBeacon mode \cite{ibeacon}; each beacon in this mode transmits its identifier, a major, and minor values. The mobile application sets up continuous scanning of a major value which identifies exercise equipment, receiving notifications of beacons and their minor values as they come into range. The mobile application then filters the exercise states keeping only those that are associated with a particular area.
 
-\fig{model-sequence+location.png}{model-sequence+location}{Exercise sequence model with location context}
+With the fine-grained location data available, the application is \emph{expecting} to see a movement that precedes exercises A or C. We call this movement the \emph{setup movement}. This now refines the classification into the \name{setup movement} classifier and the \name{in-exercise} classifier. Both classifiers follow the general \pcode{classify(sensor data) -> result} signature. The setup movement classifier takes \SI{1}{\second} of sensor input and produces probabilities classes that represent the setup movement for groups of exercises. The setup classes are not the exercises themselves, but the movements that happen just before the start of an exercise (think picking up the dumbbells and moving them into place for shoulder press); one setup movement can map to multiple exercises. To provide accurate prediction of the exercise about to be started, the mobile application takes into account the expected exercise (given the user's typical behaviour), and the fine-grained location data. \autoref{fig:pc-chain} illustrates the sequence of predictors and classifiers.
 
-With the fine-grained location data available, the application is \emph{expecting} to see a movement that precedes exercises A or C. We call this movement the \emph{setup movement}. This now refines the classification into the \name{setup movement} classifier and the \name{in-exercise} classifier. Both classifiers follow the general \pcode{classify(sensor data) -> result} signature. The setup movement classifier takes \SI{1}{\second} of sensor input and produces probabilities classes that represent the setup movement for groups of exercises. The setup classes are not the exercises themselves, but the movements that happen just before the start of an exercise (think picking up the dumbbells and moving them into place for shoulder press); one setup movement can map to multiple exercises. To provide accurate prediction of the exercise about to be started, the mobile application takes into account the expected exercise (given the user's typical behaviour), and the fine-grained location data. The performance of the exercise prediction for accelerometer on the user's wrist is shown in \autoref{tbl:setup-movement-performance-accelerometer}; the performance of the exercise prediction rises significantly in fully-wired human (viz \autoref{tbl:setup-movement-performance-all}).
+\fig{pc-chain.png}{pc-chain}{Predictors and classifiers}
 
-\begin{table}[h]
-    \begin{tabular}{lrrrr}
-        \toprule
-                             & Accuracy & Precision & Recall & F1 \\
-        \midrule
-        No context           & !!       & !!        & !!     & !! \\
-        Behaviour            & !!       & !!        & !!     & !! \\ 
-        Behaviour, location  & !!       & !!        & !!     & !! \\
-        \bottomrule
-    \end{tabular}
-    \caption{Exercise prediction performance (accelerometer)}
-    \label{tbl:setup-movement-performance-accelerometer}
-\end{table}
+Note that the predictors' outputs change over time: at time $0$ the probability of \emph{rest} is $0.8$, and the pobability of any exercise is $0$; as time increases towards $1$, the probability of \emph{rest} decreases, and the probability of exercises ${A, B, C}$ increases, especially when taking into account that the fine-grained location sensor reports being in proximity of the weights rack. In the time interval $\interval[open]{1}{2}$, the probability of exercises ${A, B, C}$ steadily decreases, and the probability of \emph{rest} increases. If (particularly at the start) of the time interval $\interval[open]{1}{2}$, the \name{setup classifier} classifies movement that is consistent with the setup movement for muscle groups ${\alpha, \omega}$ (where $\alpha$ contains exercises ${A, C, ...}$ and $\omega$ contains exercises ${B, X, ...}$), the system can deduce that the user is likely to be getting ready to perform exercise $A$ or $C$. The details of the likely exercises are passed to the \name{in-exercise signal processor}, which is responsible for counting repetitions and evaluating the variation in the acceleration that is indicative of effort. The same information (setup movement ${\alpha, \omega}$, expected exercises ${A, C, B}$) is fed to the \name{in-exercise} classifier, which seeks to confirm that the exercise being done is indeed $A$. In gym-speak, the muscle group $\alpha$ can be \name{shoulders} and $\omega$ can be \name{upper back}; the exercise $A$ can be \name{dumbbell shoulder press}, and $C$ \name{barbell shoulder press}. The final task for the application is to associate effort (measured by the \name{in-exercise signal processor}) with weight. It uses a map of \pcode{(exercise, sequence number, effort) -> weight} that it maintains for each user. (It is important to keep track of the \pcode{sequence number}, especially for high-intensity work.)
 
-\begin{table}[h]
-    \begin{tabular}{lrrrr}
-        \toprule
-                             & Accuracy & Precision & Recall & F1 \\
-        \midrule
-        No context           & !!       & !!        & !!     & !! \\
-        Behaviour            & !!       & !!        & !!     & !! \\ 
-        Behaviour, location  & !!       & !!        & !!     & !! \\
-        \bottomrule
-    \end{tabular}
-    \caption{Exercise prediction performance (all sensors)}
-    \label{tbl:setup-movement-performance-all}
-\end{table}
+The performance of the entire prediction and classification flow exercise prediction for accelerometer and gyroscope on the user's wrist and accelerometer and gyroscope in the user's mobile in the left pocket is shown in CHART HERE.
 
-\subsection{Classifiers}
-To provide a useful in-gym workflow, the mobile application uses a sequence of predictors and classifiers.
+\section{Bootstrapping}
+The author knew what he was getting himself into when building this application, and when using it in the gym. It was clear that at the start, there are no transitions from one exercise to another, no maps of \pcode{effort -> weight}, that the classifiers and signal processors' parameters are not tuned or trained. Using the application's labelling interface and the old-school diary, it was possible to collect enough data for all components to perform as well as the tables above show. 
+
+The data used to train the \name{setup movement} and \name{in-exercise} classifiers is re-usable\footnote{The test users' athletic abilities were similar to the author's}, and a lot of training data can be generated by using the raw readings as inputs to a bio-mechanical model, which then generate the actual training and validation data for the classifiers. However, the exercise sequences in the markov chains have proven to be very different between the users. The application required utmost patience during the first several exercise sessions. This was acceptable in the friendly test group, but would turn out to be a significant problem for a commercial application. An acceptable solution--from the user experience as well as accuracy point--is to run the application in \emph{observer} mode for the first 10 sessions. In the observer mode, it does not suggest or classify anything; it submits the recorded data to the server-side for deeper classification. The server-side classifiers reconstruct the exercise sequences and then provide the parameters for the predictors. After the initial observer mode, the users\footnote{Embarassingly, $N=10$.} report that the application ``does the right thing.''
 
 \section{The complexity of sensors}
 The system reads values from the sensors; the values are not read continuously, but read at discrete points in time. The range of sensor values can introduce clipping errors, and the sampling rate can introduce aliasing errors. Good choice of sampling rate and sensor types can reduce these errors: both sampling rates and sensor value range must be significantly greater than expected measurements; even in that case, the system must include enough signal processing to eliminate rogue values. For humans in resistance exercise, the sampling rate is sufficient to be \SI{50}{\hertz}, acceleration is expected to be in the range \SI{\pm40}{\meter\second^{-2}}, rotation \SI{\pm4\pi}{\radian\second^{-1}}. The first stab at implementing the sensor reading code may take the form of a loop in \autoref{alg:naive-sensor-sampling}.
@@ -135,8 +113,8 @@ When implemented in real hardware, this algorithm suffers from \emph{timing erro
   $timerFun \leftarrow$ \Fn{}{
     $A \leftarrow$ $acc$.\bufferedValuesSince{timestamp}\;
     $R \leftarrow$ $gyro$.\bufferedValuesSince{timestamp}\;
-    $S, timestamp \leftarrow$ \fuse{A, R}\;
-    \Emit{S}\;
+    $F, timestamp \leftarrow$ \fuse{A, R}\;
+    \Emit{F}\;
   }
   $timer \leftarrow$ \timer{callback = timerFun}\;
   \BlankLine
@@ -274,6 +252,9 @@ Initially, in \circled{1} and \circled{1$\prime$} the \name{authz} and \name{pro
 It is important to highlight that in good microservice-based architecture the services do not share data stores. Services that share a data store become tightly coupled: it is difficult for the services to have independent life-cycle, it is difficult to reason about consistency of the data across the services, and it becomes difficult to reason about authorization to access the data in the shared store.
 This system avoids the sharing data stores anti-pattern; it is very explicit about how the information flows through the system. Ultimately, each service is fully responsible for its data store; each service's data store is never shared amongst other services and there are no writes that subvert the microservice's code.
 A practical consequence for our system is that it is difficult to associate the session data (which contains the users' biometric data together with their location; very private information indeed) with a particular user's profile\footnote{The system does not add noise to the recorded data to further complicate the association; without the noise, it is easier--though still \emph{extremely} difficult to identify a user based on just the way he or she moves. Nevertheless, it is still impossible to tie this identification with the information held in the profile database.}. Let's zoom in on the points of sharing in our architecture in ARCH IMG.
+
+\section{Further work}
+There is a lot of further areas of research. The author thinks that exercise should firstly bring enjoyment and fun: this encourages further exercise, and only long-term sustainable exercise brings significant health benefits. The system collects all the information about the completed exercises (names, intensities, timings, sequence); it will then be useful to \emph{ask} the users to indicate their enjoyment after each exercise session. This can be as simple as \smiley{}, \neutranie{}, and \frownie{}; and then use the server-side processing to identify the exercises, their sequences, and intensities that the particular user (and other users in the same cluster) find enjoyable. Similarly, the concept of improvement needs further exploration: for some users, improvement means being able to lift more weight; but for users recovering from an injury, improvement means increasing their range of movement.
 
 \printbibliography
 
