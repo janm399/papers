@@ -91,6 +91,9 @@ With the fine-grained location data available, the application is \emph{expectin
     \label{tbl:setup-movement-performance-all}
 \end{table}
 
+\subsection{Classifiers}
+To provide a useful in-gym workflow, the mobile application uses a sequence of predictors and classifiers.
+
 \section{The complexity of sensors}
 The system reads values from the sensors; the values are not read continuously, but read at discrete points in time. The range of sensor values can introduce clipping errors, and the sampling rate can introduce aliasing errors. Good choice of sampling rate and sensor types can reduce these errors: both sampling rates and sensor value range must be significantly greater than expected measurements; even in that case, the system must include enough signal processing to eliminate rogue values. For humans in resistance exercise, the sampling rate is sufficient to be \SI{50}{\hertz}, acceleration is expected to be in the range \SI{\pm40}{\meter\second^{-2}}, rotation \SI{\pm4\pi}{\radian\second^{-1}}. The first stab at implementing the sensor reading code may take the form of a loop in \autoref{alg:naive-sensor-sampling}.
 
