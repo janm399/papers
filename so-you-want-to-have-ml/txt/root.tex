@@ -234,10 +234,138 @@ Low-powered sensors bring additional complexity of restricted memory and computa
 It is possible to attack this system by \cite{Fu:AuI932n8}...
 
 \section{Mobile application}
-Computation on the smart-watch, mobile, and server-side. Impact on liveliness, cost, etc. Signal fusion, followed by vDSP, Metal \& CoreML. Energy impact, transfer size consideration. 
+Even though modern smart-watches are powerful enough to perform most of the computation, their screen sizes are a bit too small to display all the necessary information; most importantly, though, a smart-watch provides only one set of sensors. This means that exercises where the wrist where the user wears the watch does not move would not be possible to recognise. This is where the mobile application comes in: if the user places the mobile in his or her pocket, we have another sensor source. 
+
+Crucially, all models that the mobile application needs are local to the device--the models are downloaded at application start-up (using the details embedded in the authentication JWT). The models are the nodes and transitions for the Markov chain, the neural net parameters for the set-up movement and movement classifiers. The mobile application's core functionality is packed into three components: \pcode{Predictor}, \pcode{Classifier}, and \pcode{SignalProcessor}. Perhaps counter-intuitively, the \pcode{Predictor} is the most important element of the user experience. If it makes the wrong predictions, \emph{the paper diary will be immensely more convenient}. The \pcode{Predictor} is a fairly naïve implementation of the Markov chain with \pcode{Predictor.Node} as its nodes (see \autoref{code:predictor}).
+
+\begin{lstlisting}[caption={Predictor}, label={code:predictor}, language=swift, escapechar=|]
+class Predictor {
+  func predict() -> ScoredSet<Node> { ... }
+  func update(taken: Node) { ... }
+
+  enum Node {
+    case exercise(label: String, 
+                  duration: TimeInterval?, 
+                  weight: Double?, 
+                  intensity: Double?)
+    case rest(duration: TimeInterval?)
+  }
+    
+}
+\end{lstlisting}
+
+If the \pcode{Predictor} predicts exercise (with sufficient probability), it will then use the \pcode{Classifier} initialised with the set-up movement model to try to find movement that is consistent with getting ready for the exercise. Its public interface is shown in \autoref{code:classifier}.
+
+\begin{lstlisting}[caption={Classifier}, label={code:classifier}, language=swift, escapechar=|]
+class Classifier {
+  
+  func classify(fsd: FusedSensorData) -> 
+    ScoredSet<String> {
+    ...
+  }
+    
+}
+\end{lstlisting}
+
+Before Core ML\cite{coreml}, the application included own hand-rolled forward-propagator configured with the appropriate model. It explicitly modelled the activation functions, convolution, and fully-connected layers as runtime structures. (See \autoref{code:nn}.)
+
+\begin{lstlisting}[caption={Runtime structures for NN}, label={code:nn}, language=swift, escapechar=|]
+enum ActivationFunction {
+  case identity
+  case sigmoid
+  case tanh
+  ...
+}
+
+enum LayerConfiguration {
+  case fullyConnected(size: Int, weights: [Float], 
+                      function: ActivationFunction)
+  case convolution(...)
+  ...
+}
+
+class ForwardPropagator {
+  typealias Element = Float
+  private let featureVectorSize: Int
+  private let predictionVectorSize: Int
+  private let layers: [LayerConfiguration]
+  
+  static func load(data: NSData) throws {
+    ...
+  }
+}
+\end{lstlisting}
+
+Using the SIMD functions for the computational steps gave the application good power-efficiency compared a pure CPU-bound implementation, but larger networks brought significant memory impact. With Core ML's availability, the application's code has become even more energy and memory efficient, though at the small expense of pre-compiling the newly downloaded models from the server (viz \autoref{code:simd}).
+
+\begin{lstlisting}[caption={SIMD}, label={code:simd}, language=swift, escapechar=|]
+extension ActivationFunction {
+
+  func apply(inout input: [Float], 
+             ofs: Int, len: Int) {
+    var one: Float = 1.0
+    var minusOne: Float = -1.0
+    var threshold: Float = 0.0
+    let inputPointer = UnsafeMutablePointer(input)
+                        .advancedBy(ofs)
+
+    switch self {
+    case .identity: 
+      |$x$|
+      return
+    case .sigmoid:
+      |$1/(1 + e^{-x})$|
+      vDSP_vneg; vvexpf; vDSP_vsadd; vvpowsf
+    case .softmax:
+      |$e^{x_k} / \sum_{i=1}^{len} e^{x_i}$|
+      vDSP_maxv; vDSP_vsadd; vDSP_sve; vDSP_vsdiv
+    ...
+    }
+    
+}
+\end{lstlisting}
+
+Finally, \autoref{code:signal-processor} shows that the interface for the signal processor--the \pcode{SignalProcessor}--is just as simple; however, the implementation again makes most of the SIMD processing capabilities in iOS.
+
+\begin{lstlisting}[caption={Signal processor}, label={code:signal-processor}, language=swift, escapechar=|]
+class SignalProcessor {
+  
+  func process(fsd: FusedSensorData) -> [Element] { 
+    var conv = fsd.newBuffer(padded: false)
+    var corr = fsd.newBuffer(padded: false)
+
+    |Convolve the different dimensions to a single one by smoothing|
+    |and adding them together|
+    fsd.forEach { (dim, signal, length) in
+      vDSP_vadd(&conv,   vDSP_Stride(1),
+                &signal, vDSP_Stride(1),
+                &conv,   vDSP_Stride(1),
+                vDSP_Length(length))
+    }
+
+    |Compute autocorrelation of the padded signal with itself|
+    var paddedSignal = fsd.newBuffer(padded: true)
+    vDSP_conv(&paddedSignal, ..., &corr, ...)
+
+    |Normalize the correlation values between 1 and -1|
+    vDSP_vsmsa(&corr, vDSP_Stride(1), ...)
+
+    |Count peaks; measure jitter, etc|
+    return []
+  }
+    
+  enum Element {
+    case repetitions(repetitions: Int)
+    case intensity(intensity: Double)
+    ...
+  }
+}
+\end{lstlisting}
+
+Even though this code required significant effort, it meant that all processing could be kept on the device. No sensor--biometric!--data has to be sent for further processing. Even if privacy were not a concern, processing the sensor data on the server would bring unacceptable latency; it would significantly increase the application's energy impact (the radios would have to be kept on); it would also significantly increase the server-side processing bills! 
 
 \section{Server}
-Architecture. Ingestion, storage, clustering, model fitting. Hyper-parameter optimisation. Model management.
+Even though the mobile application can handle all the required computation for a single user, a server-side code is still required to be able to improve the models that the mobile code runs... TODO: Architecture. Ingestion, storage, clustering, model fitting. Hyper-parameter optimisation. Model management.
 
 \section{Privacy}
 Privacy and security of the data is extremely important. The user details that the \name{profile} service holds are ``bad enough'', but when combined with the data held in the \name{cluster} and \name{ingest} services, it must be stored and processed with the highest standards--especially with the upcoming GDPR\cite{gdpr} directive coming into force. Naturally, the system applies encryption-at-rest to the data that the \name{profile} service holds; and the communication between the \name{profile} service and the mobile application uses transport-layer encryption. Additionally, the system does not leak the raw and stable user identity outside its infrastructure; it isolates its services in a way that programming error (\name{A2:2017}: broken authentication, \name{A5:2017}: broken access control, \name{A6:2017}: security misconfiguration, \name{A8:2017}: insecure deserialisation from the OWASP\cite{owasp} list) does not lead to \name{A3:2017}: sensitive data exposure. The system uses JWT\cite{jwt} as the authorization holder. The token holds the \pcode{cluster identifier} in the HMACSHA256-signed, base-64 encoded section, and the \pcode{user identifier} in an PKCS8-encrypted section. When the \name{authz} service issues the token it encrypts the profile-related sub-token using the \name{profile} service's public key, adds the ``public'' cluster identifier, signs the entire token and delivers it to the clients. \autoref{fig:authz} illustrates the entire flow.
