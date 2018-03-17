@@ -296,7 +296,7 @@ class ForwardPropagator {
 }
 \end{lstlisting}
 
-Using the SIMD functions for the computational steps gave the application good power-efficiency compared a pure CPU-bound implementation, but larger networks brought significant memory impact. With Core ML's availability, the application's code has become even more energy and memory efficient, though at the small expense of pre-compiling the newly downloaded models from the server (viz \autoref{code:simd}).
+Using the SIMD functions for the computational steps gave the application good power-efficiency compared a pure CPU-bound implementation, but larger networks brought significant memory impact (viz \autoref{code:simd}).
 
 \begin{lstlisting}[caption={SIMD}, label={code:simd}, language=swift, escapechar=|]
 extension ActivationFunction {
@@ -325,7 +325,7 @@ extension ActivationFunction {
 }
 \end{lstlisting}
 
-Finally, \autoref{code:signal-processor} shows that the interface for the signal processor--the \pcode{SignalProcessor}--is just as simple; however, the implementation again makes most of the SIMD processing capabilities in iOS.
+With Core ML's availability, the application's code has become even more energy and memory efficient, though at the small expense of pre-compiling the newly downloaded models from the server. Finally, \autoref{code:signal-processor} shows that the interface for the signal processor--the \pcode{SignalProcessor}--is just as simple; however, the implementation again makes most of the SIMD processing capabilities in iOS.
 
 \begin{lstlisting}[caption={Signal processor}, label={code:signal-processor}, language=swift, escapechar=|]
 class SignalProcessor {
