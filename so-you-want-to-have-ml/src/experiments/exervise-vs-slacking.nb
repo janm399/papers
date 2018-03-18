@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[     78741,       1369]
-NotebookOptionsPosition[     77551,       1344]
-NotebookOutlinePosition[     77911,       1360]
-CellTagsIndexPosition[     77868,       1357]
+NotebookDataLength[     79913,       1398]
+NotebookOptionsPosition[     78500,       1369]
+NotebookOutlinePosition[     78860,       1385]
+CellTagsIndexPosition[     78817,       1382]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -86,6 +86,8 @@ The file contains a lot of rows, so we want to select just a subset of about \
   3.729608975381102*^9}},ExpressionUUID->"14e28ee1-91df-425e-bb9e-\
 ad5dcdffdb96"],
 
+Cell[CellGroupData[{
+
 Cell[BoxData[{
  RowBox[{
   RowBox[{
@@ -130,8 +132,7 @@ Cell[BoxData[{
     RowBox[{"labelFunction", ",", 
      RowBox[{"rowsSubset", "[", 
       RowBox[{"[", 
-       RowBox[{"All", ",", "4"}], "]"}], "]"}]}], "]"}]}], 
-  ";"}], "\[IndentingNewLine]"}], "Input",
+       RowBox[{"All", ",", "4"}], "]"}], "]"}]}], "]"}]}], ";"}]}], "Input",
  CellChangeTimes->{
   3.697107573086833*^9, {3.6971076976147757`*^9, 3.69710769899923*^9}, {
    3.697108351619213*^9, 3.697108356923497*^9}, {3.697108400772112*^9, 
@@ -177,9 +178,33 @@ Cell[BoxData[{
    3.729751044621216*^9}, {3.730357953920084*^9, 3.7303579877766113`*^9}, {
    3.730358240900345*^9, 3.730358243178935*^9}, 3.730358561321042*^9, {
    3.730358595501062*^9, 3.730358673155591*^9}, {3.730359210874486*^9, 
-   3.730359238319035*^9}},
+   3.730359238319035*^9}, {3.730373136883841*^9, 3.7303731580444517`*^9}, {
+   3.730373237949765*^9, 3.730373248412274*^9}, {3.730373553914267*^9, 
+   3.730373555595763*^9}},ExpressionUUID->"c2c86999-29cc-4d4a-9695-\
+d66d6ed26b6b"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "ListConvolve","kldims",
+   "\"The kernel \\!\\(\\*RowBox[{\\\"{\\\", RowBox[{\\\"1\\\", \\\",\\\", \\\
+\"1\\\"}], \\\"}\\\"}]\\) and list \\!\\(\\*RowBox[{\\\"100\\\"}]\\) are not \
+both non-empty lists with the same tensor rank.\"",2,292,113,
+   33521993269529049458,"Local"},
+  "MessageTemplate"]], "Message", "MSG",
+ CellChangeTimes->{{3.7303732416281652`*^9, 3.730373248836926*^9}},
  CellLabel->
-  "In[259]:=",ExpressionUUID->"c2c86999-29cc-4d4a-9695-d66d6ed26b6b"],
+  "During evaluation of \
+In[284]:=",ExpressionUUID->"b963e5e4-dba4-4efd-a466-326a8fe506c6"],
+
+Cell[BoxData[
+ RowBox[{"ListConvolve", "[", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"1", ",", "1"}], "}"}], ",", "100"}], "]"}]], "Output",
+ CellChangeTimes->{{3.730373241657754*^9, 3.730373248863577*^9}},
+ CellLabel->
+  "Out[292]=",ExpressionUUID->"aaa63685-71d6-44b8-8ce7-30c61c942abd"]
+}, Open  ]],
 
 Cell["Finally, we display the data", "Text",
  CellChangeTimes->{{3.7296089892615757`*^9, 
@@ -1363,14 +1388,18 @@ Cell[558, 20, 462, 7, 73, "Text",ExpressionUUID->"9fcd3ff5-9b08-423d-befb-a724f9
 Cell[1023, 29, 371, 7, 35, "Text",ExpressionUUID->"89f99eb6-a002-4e2d-87f8-7bb6af8accc1"],
 Cell[1397, 38, 2336, 40, 73, "Input",ExpressionUUID->"ece9c0f3-178a-4ff1-b81b-9ef016c4d83f"],
 Cell[3736, 80, 242, 6, 35, "Text",ExpressionUUID->"14e28ee1-91df-425e-bb9e-ad5dcdffdb96"],
-Cell[3981, 88, 4801, 93, 178, "Input",ExpressionUUID->"c2c86999-29cc-4d4a-9695-d66d6ed26b6b"],
-Cell[8785, 183, 172, 3, 35, "Text",ExpressionUUID->"8d800596-4820-448e-904a-e76380ba6379"],
 Cell[CellGroupData[{
-Cell[8982, 190, 3576, 57, 30, "Input",ExpressionUUID->"59f3b5ad-3bf8-433f-9950-70244125d3a9"],
-Cell[12561, 249, 64509, 1078, 639, "Output",ExpressionUUID->"dbf8b6a5-5cca-4489-a78f-f353ef2ab652"]
+Cell[4003, 90, 4897, 93, 157, "Input",ExpressionUUID->"c2c86999-29cc-4d4a-9695-d66d6ed26b6b"],
+Cell[8903, 185, 524, 11, 24, "Message",ExpressionUUID->"b963e5e4-dba4-4efd-a466-326a8fe506c6"],
+Cell[9430, 198, 289, 7, 34, "Output",ExpressionUUID->"aaa63685-71d6-44b8-8ce7-30c61c942abd"]
 }, Open  ]],
-Cell[77085, 1330, 290, 7, 35, "Text",ExpressionUUID->"751c8359-aa12-4c68-82a8-5f95f48a824a"],
-Cell[77378, 1339, 169, 3, 52, "Input",ExpressionUUID->"9871a2bc-7e8b-4e25-a7b1-783288238c0c"]
+Cell[9734, 208, 172, 3, 35, "Text",ExpressionUUID->"8d800596-4820-448e-904a-e76380ba6379"],
+Cell[CellGroupData[{
+Cell[9931, 215, 3576, 57, 30, "Input",ExpressionUUID->"59f3b5ad-3bf8-433f-9950-70244125d3a9"],
+Cell[13510, 274, 64509, 1078, 639, "Output",ExpressionUUID->"dbf8b6a5-5cca-4489-a78f-f353ef2ab652"]
+}, Open  ]],
+Cell[78034, 1355, 290, 7, 35, "Text",ExpressionUUID->"751c8359-aa12-4c68-82a8-5f95f48a824a"],
+Cell[78327, 1364, 169, 3, 52, "Input",ExpressionUUID->"9871a2bc-7e8b-4e25-a7b1-783288238c0c"]
 }
 ]
 *)

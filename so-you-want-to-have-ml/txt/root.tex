@@ -228,10 +228,7 @@ A good way to tackle the noise, alignment, and timing errors is to use the raw s
 \fig{sf-gaps.png}{sf-gaps}{Extrapolating missing values}
 
 \subsection{Low-power sensors}
-Low-powered sensors bring additional complexity of restricted memory and computational resources, as well as restricted transfer mechanisms. A good example of such low-powered sensor is the Pebble smartwatch. The first model contains the Cortex-M3 CPU at \SI{64}{\mega\hertz} with \SI{24}{\kibi\byte} of memory (heap and code) for applications. It uses BLE for data transfers. The protocol as well as the hardware architecture places restrictions on the sample width and sampling rate. BLE protocol specifies maximum \SI{80}{\byte} per message, and minimum duration of \SI{7.5}{\milli\second} between messages; this gives a theoretical maximum of \SI{10640}{\byte\per\second}. The Pebble implementation dropped the reliable data transfer rate to only \SI{280}{\byte\per\second}. To minimise the amount of data being transferred, the system takes into account maximum reasonable acceleration a human can achieve in exercise: \SI{\pm40}{\meter\second^{-2}}, and represents that range as \SI{13}{\bit} integer. This means one sample is \SI{5}{\byte}: 3 $\times$ \SI{13}{\bit} for $x$, $y$, and $z$ axes, with \SI{1}{\bit} for padding. Along with the samples, the wearable sends its timestamp, which is a monotonously-increasing device time in milliseconds. The mobile application remembers the first seen timestamp from each sensor for each exercise session, and uses this value to properly align the samples from the sensors. The sensor data includes quantisation error: at \SI{50}{\hertz} one sample represents \SI{20}{\milli\second} of real-time, but the difference of the timestamps may not be divisible by $20$. It is sufficient to perform ``round-even'' correction of the received samples by evenly removing or duplicating the last sample in case of detected quantisation errors\footnote{Without the quantisation error correction, together with the unreliable sensors, the time error can add up to \SI{10}{\second} per hour of exercise}.
-
-\subsection{Security \& Attacks}
-It is possible to attack this system by \cite{Fu:AuI932n8}...
+Low-powered sensors bring additional complexity of restricted memory and computational resources, as well as restricted transfer mechanisms. A good example of such low-powered sensor is the Pebble smartwatch. The first model contains the Cortex-M3 CPU at \SI{64}{\mega\hertz} with \SI{24}{\kibi\byte} of memory (heap and code) for applications. It uses BLE for data transfers. The protocol as well as the hardware architecture places restrictions on the sample width and sampling rate. BLE protocol specifies maximum \SI{80}{\byte} per message, and minimum duration of \SI{7.5}{\milli\second} between messages; this gives a theoretical maximum of \SI{10640}{\byte\per\second}. The Pebble implementation dropped the reliable data transfer rate to only \SI{280}{\byte\per\second}. To minimise the amount of data being transferred, the system takes into account maximum reasonable acceleration a human can achieve in exercise: \SI{\pm40}{\meter\second^{-2}}, and represents that range as \SI{13}{\bit} integer. This means one sample is \SI{5}{\byte}: 3 $\times$ \SI{13}{\bit} for $x$, $y$, and $z$ axes, with \SI{1}{\bit} for padding. Along with the samples, the wearable sends its timestamp, which is a monotonously-increasing device time in milliseconds. The mobile application remembers the first seen timestamp from each sensor for each exercise session, and uses this value to properly align the samples from the sensors. The sensor data includes quantisation error: at \SI{50}{\hertz} one sample represents \SI{20}{\milli\second} of real-time, but the difference of the timestamps may not be divisible by $20$. It is sufficient to perform ``round-even'' correction of the received samples by evenly removing or duplicating the last sample in case of detected quantisation errors\footnote{Without the quantisation error correction, together with the unreliable sensors, the time error can add up to \SI{10}{\second} per hour of exercise}. 
 
 \section{Mobile application}
 Even though modern smart-watches are powerful enough to perform most of the computation, their screen sizes are a bit too small to display all the necessary information; most importantly, though, a smart-watch provides only one set of sensors. This means that exercises where the wrist where the user wears the watch does not move would not be possible to recognise. This is where the mobile application comes in: if the user places the mobile in his or her pocket, we have another sensor source. 
@@ -303,12 +300,6 @@ extension ActivationFunction {
 
   func apply(inout input: [Float], 
              ofs: Int, len: Int) {
-    var one: Float = 1.0
-    var minusOne: Float = -1.0
-    var threshold: Float = 0.0
-    let inputPointer = UnsafeMutablePointer(input)
-                        .advancedBy(ofs)
-
     switch self {
     case .identity: 
       |$x$|
@@ -365,21 +356,22 @@ class SignalProcessor {
 Even though this code required significant effort, it meant that all processing could be kept on the device. No sensor--biometric!--data has to be sent for further processing. Even if privacy were not a concern, processing the sensor data on the server would bring unacceptable latency; it would significantly increase the application's energy impact (the radios would have to be kept on); it would also significantly increase the server-side processing bills! 
 
 \section{Server}
-Even though the mobile application can handle all the required computation for a single user, a server-side code is still required to be able to create and then improve the models that the mobile code runs. In a machine learning system, the most valuable component is the data. The first consideration is the data size: after compression, \SI{1}{\hour} of sensor data (accelerometer and gyroscope from the wrist; accelerometer and gyroscope from the waist; heart rate) and metadata (coarse and fine location, Markov chains, labels) takes up approximately \SI{2}{\mebi\byte}. This \SI{1}{\hour} represents a typical exercise session; with just 1000 users (with 50 \% training load) the system ingests \SI{1}{\gibi\byte} every day. Even though the mobile application uses lightweight touch to upload the data with the \pcode{URLSession} and \pcode{URLSessionDataTask} with the background priority, but the server still needs to handle bursts of uploads that happen when a large number of users finish their workouts: typically around 0830, and then again around 1800 during workdays, and around 1000 and 1500 during weekends. It is possible to save some of the computation and storage costs: approximately 10 \% of the users consistently mis-label their exercises\footnote{Bad number of repetitions, bad intensity, bad labels; not through malice, but by simply changing their minds. They \emph{intend to} to exercise \name{A}, but end up doing \name{B} using the same equipment or station; sometimes, they even change half-way through the exercise}; if the server side code can detect this, it can remove the \pcode{upload} claim from the JWT issued to the client application. Even without attempting to reduce the load, the good news is that for a low number of users (around 1000), AWS's \name{free usage tier} covers the required \SI{500}{\gibi\byte} storage, including the data transfer charges. The performance requirements for the storage, model compute, and general compute resources for 1000 users form the baseline measurement; \autoref{plot:monthly-costs} shows the estimates for the costs for larger number of users.
+Even though the mobile application can handle all the required computation for a single user, a server-side code is still required to be able to create and then improve the models that the mobile code runs. In a machine learning system, the most valuable component is the data. The first consideration is the data size: after compression, \SI{1}{\hour} of sensor data (accelerometer and gyroscope from the wrist; accelerometer and gyroscope from the waist; heart rate) and metadata (coarse and fine location, Markov chains, labels) takes up approximately \SI{2}{\mebi\byte}. This \SI{1}{\hour} represents a typical exercise session; with just 1000 users (with 50 \% training load) the system ingests \SI{1}{\gibi\byte} every day. Even though the mobile application uses lightweight touch to upload the data with the \pcode{URLSession} and \pcode{URLSessionDataTask} with the background priority, but the server still needs to handle bursts of uploads that happen when a large number of users finish their workouts: typically around 0830, and then again around 1800 during workdays, and around 1000 and 1500 during weekends. It is possible to save some of the computation and storage costs: approximately 10 \% of the users consistently mis-label their exercises\footnote{Bad number of repetitions, bad intensity, bad labels; not through malice, but by simply changing their minds. They \emph{intend to} to exercise \name{A}, but end up doing \name{B} using the same equipment or station; sometimes, they even change half-way through the exercise}; if the server side code can detect this, it can remove the \pcode{upload} claim from the JWT issued to the client application. Even without attempting to reduce the load, the good news is that for a low number of users (around 1000), AWS's \name{free usage tier} covers the required \SI{500}{\gibi\byte} storage, including the data transfer charges; the compute costs come to approximately \$60 per month. The performance requirements for the storage, model compute, and general compute resources for 1000 users form the baseline measurement; \autoref{plot:monthly-costs} shows the estimates for the costs for larger number of users. 
 
 \begin{figure}[h]
   \begin{tikzpicture}
     \begin{axis}[
-      height=5cm, 
+      height=7cm, 
       width=9cm, 
       yminorgrids=true,
+      xmajorgrids=true,
       xmode=log,
       ymode=log,
       xlabel={Number of users}, 
       ylabel={Monthly cost [\$]},
       xmin=1000,xmax=1000000,
-      ymin=1,ymax=16000,
-      legend pos=south east,
+      ymin=10,ymax=16000,
+      legend pos=north west,
       legend cell align={left}
       ]
 
@@ -389,7 +381,15 @@ Even though the mobile application can handle all the required computation for a
         (100000, 1600)
         (1000000, 16000)
       };
-      \addlegendentry{Storage}
+      \addlegendentry{Data \& Model storage}
+
+      \addplot coordinates {
+        (1000, 0)
+        (10000, 10)
+        (100000, 400)
+        (1000000, 3000)
+      };
+      \addlegendentry{Other storage}
 
       \addplot coordinates {
         (1000, 30)
@@ -413,10 +413,18 @@ Even though the mobile application can handle all the required computation for a
   \label{plot:monthly-costs}
 \end{figure}
 
-TODO: Architecture. Ingestion, storage, clustering, model fitting. Hyper-parameter optimisation. Model management.
+The costs for the \numprint{1000000} users are just an illustration: in addition to the transfer, storage, and compute resources, deployment of this scale will need additional infrastructure, monitoring; multi-region deployment for resilience will also need to be considered. Finally, the scaling requirements for the services may require some of the stateful components to be entirely re-architected using CQRS/ES architecture and reactive toolkits such as Akka\cite{akka}. Nevertheless, with a low number of users and low peak loads, the system runs on AWS using as much of the \name{free usage tier} as possible. In addition to the ALB, the server-side code uses S3 for data and model storage, DynamoDB for the profile and authorisation stores, and AWS Lambda (with Golang) for ingestion. \autoref{fig:arch} shows the main components and the relevant technologies.
+
+\fig{arch.png}{arch}{Overall architecture}
+
+\subsection{Ingestion \& storage}
+S3, Go.
+
+\subsection{ML} 
+Hyper-parameter optimisation. Model management.
 
 \section{Privacy}
-Privacy and security of the data is extremely important. The user details that the \name{profile} service holds are ``bad enough'', but when combined with the data held in the \name{cluster} and \name{ingest} services, it must be stored and processed with the highest standards--especially with the upcoming GDPR\cite{gdpr} directive coming into force. Naturally, the system applies encryption-at-rest to the data that the \name{profile} service holds; and the communication between the \name{profile} service and the mobile application uses transport-layer encryption. Additionally, the system does not leak the raw and stable user identity outside its infrastructure; it isolates its services in a way that programming error (\name{A2:2017}: broken authentication, \name{A5:2017}: broken access control, \name{A6:2017}: security misconfiguration, \name{A8:2017}: insecure deserialisation from the OWASP\cite{owasp} list) does not lead to \name{A3:2017}: sensitive data exposure. The system uses JWT\cite{jwt} as the authorization holder. The token holds the \pcode{cluster identifier} in the HMACSHA256-signed, base-64 encoded section, and the \pcode{user identifier} in an PKCS8-encrypted section. When the \name{authz} service issues the token it encrypts the profile-related sub-token using the \name{profile} service's public key, adds the ``public'' cluster identifier, signs the entire token and delivers it to the clients. \autoref{fig:authz} illustrates the entire flow.
+Privacy and security of the data is extremely important. The user details that the \name{profile} service holds are ``bad enough'', but when combined with the data held in the \name{cluster} and \name{ingest} services, it must be stored and processed with the highest standards--especially with the upcoming GDPR\cite{gdpr} directive coming into force. Security and privacy extends all the way to the mobile applications and the sensors. (\cite{Fu:AuI932n8} explores viable attacks on sensors.) Naturally, the system applies encryption-at-rest to the data that the \name{profile} service holds; and the communication between the \name{profile} service and the mobile application uses transport-layer encryption. Additionally, the system does not leak the raw and stable user identity outside its infrastructure; it isolates its services in a way that programming error (\name{A2:2017}: broken authentication, \name{A5:2017}: broken access control, \name{A6:2017}: security misconfiguration, \name{A8:2017}: insecure deserialisation from the OWASP\cite{owasp} list) does not lead to \name{A3:2017}: sensitive data exposure. The system uses JWT\cite{jwt} as the authorization holder. The token holds the \pcode{cluster identifier} in the HMACSHA256-signed, base-64 encoded section, and the \pcode{user identifier} in an PKCS8-encrypted section. When the \name{authz} service issues the token it encrypts the profile-related sub-token using the \name{profile} service's public key, adds the ``public'' cluster identifier, signs the entire token and delivers it to the clients. \autoref{fig:authz} illustrates the entire flow.
 
 \fig{authz.png}{authz}{Authorization and data access}
 
