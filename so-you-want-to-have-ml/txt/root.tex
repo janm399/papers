@@ -290,7 +290,7 @@ class ForwardPropagator {
   private let predictionVectorSize: Int
   private let layers: [LayerConfiguration]
   
-  static func load(data: NSData) throws {
+  init(data: NSData) throws {
     ...
   }
 }
@@ -365,7 +365,55 @@ class SignalProcessor {
 Even though this code required significant effort, it meant that all processing could be kept on the device. No sensor--biometric!--data has to be sent for further processing. Even if privacy were not a concern, processing the sensor data on the server would bring unacceptable latency; it would significantly increase the application's energy impact (the radios would have to be kept on); it would also significantly increase the server-side processing bills! 
 
 \section{Server}
-Even though the mobile application can handle all the required computation for a single user, a server-side code is still required to be able to create and then improve the models that the mobile code runs. TODO: Architecture. Ingestion, storage, clustering, model fitting. Hyper-parameter optimisation. Model management.
+Even though the mobile application can handle all the required computation for a single user, a server-side code is still required to be able to create and then improve the models that the mobile code runs. In a machine learning system, the most valuable component is the data. The first consideration is the data size: after compression, \SI{1}{\hour} of sensor data (accelerometer and gyroscope from the wrist; accelerometer and gyroscope from the waist; heart rate) and metadata (coarse and fine location, Markov chains, labels) takes up approximately \SI{2}{\mebi\byte}. This \SI{1}{\hour} represents a typical exercise session; with just 1000 users (with 50 \% training load) the system ingests \SI{1}{\gibi\byte} every day. Even though the mobile application uses lightweight touch to upload the data with the \pcode{URLSession} and \pcode{URLSessionDataTask} with the background priority, but the server still needs to handle bursts of uploads that happen when a large number of users finish their workouts: typically around 0830, and then again around 1800 during workdays, and around 1000 and 1500 during weekends. It is possible to save some of the computation and storage costs: approximately 10 \% of the users consistently mis-label their exercises\footnote{Bad number of repetitions, bad intensity, bad labels; not through malice, but by simply changing their minds. They \emph{intend to} to exercise \name{A}, but end up doing \name{B} using the same equipment or station; sometimes, they even change half-way through the exercise}; if the server side code can detect this, it can remove the \pcode{upload} claim from the JWT issued to the client application. Even without attempting to reduce the load, the good news is that for a low number of users (around 1000), AWS's \name{free usage tier} covers the required \SI{500}{\gibi\byte} storage, including the data transfer charges. The performance requirements for the storage, model compute, and general compute resources for 1000 users form the baseline measurement; \autoref{plot:monthly-costs} shows the estimates for the costs for larger number of users.
+
+\begin{figure}[h]
+  \begin{tikzpicture}
+    \begin{axis}[
+      height=5cm, 
+      width=9cm, 
+      yminorgrids=true,
+      xmode=log,
+      ymode=log,
+      xlabel={Number of users}, 
+      ylabel={Monthly cost [\$]},
+      xmin=1000,xmax=1000000,
+      ymin=1,ymax=16000,
+      legend pos=south east,
+      legend cell align={left}
+      ]
+
+      \addplot coordinates {
+        (1000, 0)
+        (10000, 70)
+        (100000, 1600)
+        (1000000, 16000)
+      };
+      \addlegendentry{Storage}
+
+      \addplot coordinates {
+        (1000, 30)
+        (10000, 300)
+        (100000, 400)
+        (1000000, 8000)
+      };
+      \addlegendentry{Model compute}
+
+      \addplot coordinates {
+        (1000, 30)
+        (10000, 60)
+        (100000, 150)
+        (1000000, 1500)
+      };
+      \addlegendentry{General compute}
+
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Monthly costs}
+  \label{plot:monthly-costs}
+\end{figure}
+
+TODO: Architecture. Ingestion, storage, clustering, model fitting. Hyper-parameter optimisation. Model management.
 
 \section{Privacy}
 Privacy and security of the data is extremely important. The user details that the \name{profile} service holds are ``bad enough'', but when combined with the data held in the \name{cluster} and \name{ingest} services, it must be stored and processed with the highest standards--especially with the upcoming GDPR\cite{gdpr} directive coming into force. Naturally, the system applies encryption-at-rest to the data that the \name{profile} service holds; and the communication between the \name{profile} service and the mobile application uses transport-layer encryption. Additionally, the system does not leak the raw and stable user identity outside its infrastructure; it isolates its services in a way that programming error (\name{A2:2017}: broken authentication, \name{A5:2017}: broken access control, \name{A6:2017}: security misconfiguration, \name{A8:2017}: insecure deserialisation from the OWASP\cite{owasp} list) does not lead to \name{A3:2017}: sensitive data exposure. The system uses JWT\cite{jwt} as the authorization holder. The token holds the \pcode{cluster identifier} in the HMACSHA256-signed, base-64 encoded section, and the \pcode{user identifier} in an PKCS8-encrypted section. When the \name{authz} service issues the token it encrypts the profile-related sub-token using the \name{profile} service's public key, adds the ``public'' cluster identifier, signs the entire token and delivers it to the clients. \autoref{fig:authz} illustrates the entire flow.
