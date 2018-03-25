@@ -2,7 +2,7 @@ syntax = "proto3";
 package com.acme.protocolchaos;
 
 message Register {
-  User user = 1;
+  LightUser user = 1;
 
   oneof profile_image_source {
     string profile_image_url = 10;
@@ -10,7 +10,7 @@ message Register {
   };
 }
 
-message User {
+message LightUser {
   string id = 1;
   string dob = 2;
   repeated string tags = 4;
