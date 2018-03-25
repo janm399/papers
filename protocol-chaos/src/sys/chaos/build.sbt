@@ -18,6 +18,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   "com.trueaccord.scalapb" %% "scalapb-runtime" % com.trueaccord.scalapb.compiler.Version.scalapbVersion % "protobuf",
   "com.trueaccord.scalapb" %% "scalapb-json4s" % "0.3.3",
+  "org.scalacheck" %% "scalacheck" % "1.13.5",
 
   // Evicted Guava replacement
   "com.google.guava" % "guava" % "23.0",

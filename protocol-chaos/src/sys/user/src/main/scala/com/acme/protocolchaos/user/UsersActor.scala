@@ -32,10 +32,12 @@ class UsersActor(consumerConf: KafkaConsumer.Conf[String, Register])
 
   override def receive: Receive = {
     case extractor(batch) ⇒
-      log.info(s"Will register ${batch.values}")
+      log.info(s"Attempting to register ${batch.values}")
       val sndr = sender()
       import context.dispatcher
-      Future.sequence(batch.values.map(userRegistrator.register)).foreach { users ⇒
+      val validUsers = batch.values.filter(User.Registrar.isValid)
+      log.info(s"Will register $validUsers")
+      Future.sequence(validUsers.map(userRegistrator.register)).foreach { users ⇒
         sndr ! KafkaConsumerActor.Confirm(batch.offsets, commit = true)
         log.info(s"Registered $users")
       }
