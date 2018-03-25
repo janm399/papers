@@ -32,7 +32,9 @@ object MessageGenerator {
   }
 
   lazy val genByteString: Gen[ByteString] = {
-    Gen.containerOf[Array, Byte](Arbitrary.arbByte.arbitrary).map(ByteString.copyFrom)
+    Gen.chooseNum(0, 1000000).flatMap { size ⇒
+      Gen.containerOfN[Array, Byte](size, Arbitrary.arbByte.arbitrary).map(ByteString.copyFrom)
+    }
   }
 
   /**
@@ -76,7 +78,8 @@ object MessageGenerator {
           case Type.SFIXED64 ⇒ Arbitrary.arbDouble.arbitrary
           case Type.SINT32 ⇒ Arbitrary.arbInt.arbitrary
           case Type.SINT64 ⇒ Arbitrary.arbLong.arbitrary
-          case Type.STRING ⇒ Arbitrary.arbString.arbitrary
+          case Type.STRING ⇒
+            Gen.chooseNum(0, 500).flatMap(size ⇒ Arbitrary.arbString.arbitrary.map(_.take(size)))
           case Type.UINT32 ⇒ Arbitrary.arbInt.arbitrary
           case Type.UINT64 ⇒ Arbitrary.arbLong.arbitrary
         })

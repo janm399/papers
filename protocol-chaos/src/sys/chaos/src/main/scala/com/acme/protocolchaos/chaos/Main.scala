@@ -10,13 +10,12 @@ import org.scalacheck.Gen
 import org.scalacheck.rng.Seed
 
 object Main extends App {
-  import EvilSerializer._
   private val config = ConfigFactory.load("application.conf")
   private val producer = KafkaProducer(
     KafkaProducer.Conf(
       config.getConfig("app.kafka.producer-config"),
       new StringSerializer(),
-      KafkaSerializer[GeneratedMessage](_.toByteArray).evil
+      EvilSerializer(KafkaSerializer[GeneratedMessage](_.toByteArray))
     )
   )
 
@@ -24,10 +23,12 @@ object Main extends App {
   def seed = Seed(System.currentTimeMillis())
   while (true) {
     import MessageGenerator.hints.default
+
+    import scala.concurrent.ExecutionContext.Implicits.global
     MessageGenerator.message[Register](Register).apply(parameters, seed).foreach { register ⇒
       val key = register.getUser.id
-      producer.send(KafkaProducerRecord("user-registration-v1", key, register))
-      Thread.sleep(100)
+      producer.send(KafkaProducerRecord("user-registration-v1", key, register)).onComplete(println)
+      Thread.sleep(10)
     }
   }
 

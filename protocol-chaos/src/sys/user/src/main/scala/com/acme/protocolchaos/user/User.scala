@@ -4,9 +4,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import akka.actor.ActorSystem
-import akka.http.impl.model.parser.UriParser
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{DateTime, HttpMethods, HttpRequest, Uri}
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest, Uri}
 import akka.stream.ActorMaterializer
 import com.acme.protocolchaos.{ProfileImage, Register}
 import com.google.protobuf.ByteString
@@ -23,10 +22,11 @@ object User {
     def isValid(register: Register): Boolean = {
       val lu = register.getUser
       Try(new SimpleDateFormat("dd-MM-yyyy").parse(lu.dob)).isSuccess &&
-      Try(register.profileImageSource match {
-        case Register.ProfileImageSource.ProfileImageUrl(url) ⇒ Uri(url)
-        case _ ⇒
-      }).isSuccess
+      (register.profileImageSource match {
+        case Register.ProfileImageSource.ProfileImageUrl(url) ⇒
+          url.nonEmpty && Try(Uri(url)).isSuccess
+        case _ ⇒ true
+      })
     }
 
   }
