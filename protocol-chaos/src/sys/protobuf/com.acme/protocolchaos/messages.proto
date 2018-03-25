@@ -1,0 +1,22 @@
+syntax = "proto3";
+package com.acme.protocolchaos;
+
+message Register {
+  User user = 1;
+
+  oneof profile_image_source {
+    string url = 10;
+    ProfileImage profile_image = 11;
+  };
+}
+
+message User {
+  string id = 1;
+  string dob = 2;
+  repeated string tags = 4;
+}
+
+message ProfileImage {
+  string content_type = 1;
+  bytes  content = 2;
+}

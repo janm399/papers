@@ -1,0 +1,24 @@
+#!/bin/sh
+
+ROOT=$PWD
+
+export CP_VERSION="3.3.1"
+
+function create_topic() {
+  ZK=`docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' zookeeper`
+  NETWORK=`docker network ls -f 'name=kafka' -q | xargs docker inspect -f '{{.Name}}'`
+
+  docker run \
+      --net "$NETWORK" \
+      -e KAFKA_LOG4J_ROOT_LOGLEVEL=ERROR \
+      -e KAFKA_TOOLS_LOG4J_LOGLEVEL=ERROR \
+      --rm \
+      confluentinc/cp-kafka \
+      kafka-topics --create --partitions 10 --replication-factor 1 --if-not-exists --topic $1 --zookeeper $ZK:2181 || { echo "Failed to create topic $1" ; exit 1; }
+}
+
+docker ps -qa | xargs docker rm -fv
+docker-compose up -d
+sleep 20
+
+create_topic "user-registration-v1"
