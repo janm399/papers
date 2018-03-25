@@ -5,7 +5,7 @@ message Register {
   User user = 1;
 
   oneof profile_image_source {
-    string url = 10;
+    string profile_image_url = 10;
     ProfileImage profile_image = 11;
   };
 }
