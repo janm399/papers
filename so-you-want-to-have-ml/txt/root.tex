@@ -344,7 +344,7 @@ class SignalProcessor {
 
 Even though this code required significant effort, it meant that all processing could be kept on the device. No sensor--biometric!--data has to be sent for further processing. Even if privacy were not a concern, processing the sensor data on the server would bring unacceptable latency; it would significantly increase the application's energy impact (the radios would have to be kept on); it would also significantly increase the server-side processing bills! 
 
-\section{Server}
+\section{Server}\label{sec:server}
 Even though the mobile application can handle all the required computation for a single user, a server-side code is still required to be able to create and then improve the models that the mobile code runs. \autoref{fig:arch} shows the main components and the relevant technologies.
 
 \fig{arch.png}{arch}{Overall architecture}
@@ -411,12 +411,58 @@ The costs for the \numprint{1000000} users are just an illustration: in addition
 \subsection{Ingestion \& storage}
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed placerat arcu eget odio suscipit, at mattis turpis cursus. Donec consequat luctus elit, id rutrum quam mollis eget. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vivamus quis felis dui. Ut eros purus, pharetra ac nunc ac, maximus ultrices nulla. Praesent risus massa, gravida a lacinia sed, finibus hendrerit velit. Integer id aliquam felis, a viverra leo. Sed sed augue vitae lectus semper pharetra vel id tortor. Donec nec imperdiet dolor. Cras tristique quam a tortor consectetur fringilla. Phasellus sollicitudin vehicula tellus, accumsan dapibus quam laoreet eu. Nullam vestibulum, libero vel dictum auctor, massa nisi commodo nisi, pulvinar eleifend libero mauris tincidunt lacus. Quisque tincidunt sit amet nisi sit amet eleifend. Aliquam viverra neque id tellus imperdiet, id scelerisque sapien sagittis. Sed quis velit eget ex posuere accumsan. Aliquam pretium mauris et urna accumsan mollis.
 
-\subsection{ML} 
+\subsection{Model evaluation} 
 Hyper-parameter optimisation. Model management. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus ullamcorper tincidunt turpis sit amet faucibus. Cras eget scelerisque magna. Vestibulum aliquet diam sit amet eleifend fringilla. Etiam vitae sagittis felis. Quisque interdum tempor feugiat. Ut in risus velit. Vivamus metus nisl, condimentum sit amet convallis at, molestie a augue. Vivamus ut fermentum nunc. Phasellus a nisi varius, lobortis ipsum vel, posuere diam.
 
-Duis facilisis nunc auctor sem volutpat, et volutpat tellus euismod. Nunc aliquam quam id ligula efficitur, et suscipit velit mollis. Duis gravida metus at nibh varius lacinia. Vivamus blandit at erat et dignissim. Donec vestibulum semper quam in fringilla. Praesent odio risus, maximus sit amet fermentum ut, tristique non nulla. Aenean sed leo erat.
+\section{Machine learning}
+The \autoref{sec:server} describes \emph{running machine learning code}; notes that the ML code is computationally intensive, but does not explain what it actually is. The first iteration of the ML code used manual feature-extraction. Consider \autoref{fig:exercise-ap}.
 
-Aliquam eu suscipit odio. Etiam ut mauris arcu. Aliquam consectetur arcu ac nisi tempor volutpat. Nunc ornare faucibus tempor. Vivamus dapibus urna sed nisi convallis, vitae facilisis odio laoreet. Phasellus a enim a nulla tristique placerat. Aenean blandit hendrerit velit et pulvinar. Ut pretium nisi sit amet magna porttitor, eu pulvinar dolor posuere. Duis eu porttitor libero. Phasellus lacus dui, lobortis vitae nunc quis, ullamcorper ornare lacus. Etiam cursus elit ut faucibus sagittis. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
+\fig{exercise-ap.png}{exercise-ap}{Manual features}
+
+The features $f_{1,2}$, $f_{3,4}$, and $f_{5,6}$ are the extrema of the acceleration over some window of time; $f_{7,8,9}$ are the most powerful harmonic component of $x, y, z$ of the sample window. A multi-class SVM was trained using the extracted features; \autoref{tbl:manual-features-svm-noboost} shows the classifier's performance after training, but without taking into account the \emph{expected} next exercise from the behavioural model.
+
+\begin{table}[h]
+    \begin{tabular}{lrrr}
+        \toprule
+        Predicted         & \multicolumn{3}{c}{Actual} \\
+        \cmidrule(r){2-4} & biceps curl & triceps ext. & lateral raise \\
+        \midrule
+        biceps curl       & 452         & 112          & 87 \\ 
+        triceps ext.      & 37          & 358          & 54 \\
+        lateral raise     & 46          & 131          & 387 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Manual features and SVM (no boost)}
+    \label{tbl:manual-features-svm-noboost}
+\end{table}
+
+With the behavioural model, the classifier's performance improves significantly, with only roughly 20 misclassifications in each class. 
+
+Another approach is to not attempt to extract the features manually, but to use a neural network with the smoothed vector of sensor readings. The simplest set-up movement model uses only single sensor reading: for example, the \name{accelerometer on the left wrist} yields $\vec{I} = [\vec{x}, \vec{y}, \vec{z}]$, \SI{1}{\second} window ($|\vec{I}| = 150$) is passed as the input to the model.
+
+Each new sensor adds dimensions to the input vector; the sensor reading vectors are always appended in a well-known order (acceleration then rotation; wrist then arm then waist; then single heart rate). An acceptable simplification is to assume that the sensor on the arm or near waist (think a pocket) is a mobile, and so it produces acceleration and rotation. This leaves us with the combinations of left or right wrist sensor (which can record acceleration only, or acceleration and rotation) \emph{and} left or right arm sensor \emph{or} left or right waist sensor; a total of $2\times(4\times2)$ set-up models, and the same number of in-exercise models. The mobile application selects the right model when it knows the precise sensor setup that the user decided to wear. The simplest model's parameters (and hyper-parameters) need only \SI{1.3}{\mebi\byte} (compression reduces this by another \SI{200}{\kibi\byte}); the most complex model's (acceleration + rotation; acceleration + rotation; heart rate) parameters take up \SI{18}{\mebi\byte}. In the worst-case scenario, the mobile application needs to download roughly \SI{100}{\mebi\byte} of model parameters\footnote{I only complain about \SI{100}{\mebi\byte} when the mobile application used up a lot of my roaming data allowance while I was on a business trip in the US.}
+
+\autoref{tbl:manual-features-mlp-noboost} shows the trained model's performance: as you can see, it is significanly better than the manual-features-with-SVM approach. (With behavioural model, the number of misclassifications drops to 1 in each class.)
+
+\begin{table}[h]
+    \begin{tabular}{lrrr}
+        \toprule
+        Predicted         & \multicolumn{3}{c}{Actual} \\
+        \cmidrule(r){2-4} & biceps curl & triceps ext. & lateral raise \\
+        \midrule
+        biceps curl       & 529         & 6            & 3 \\ 
+        triceps ext.      & 3           & 591          & 3 \\
+        lateral raise     & 3           & 4            & 522 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Neural network}
+    \label{tbl:manual-features-mlp-noboost}
+\end{table}
+
+In addition to the neural network's better performance, it significantly cuts the development time: beyond low-pass filtering on the raw sensor readings, the sensor data does not need any processing. The neural network's output are the classes of exercise. (Or, if trained so, classes of set-up movements.)
+
+% This approach was susceptible to unexpected acceleration values (the user shakes his hand to rest, for example, which provides completely distorted maxima). This is a typical beginner ML problem: eyeballing a few recorded exercises one constructs a hypothesis of what would make good features, but fails when more exercises are added. (And this is before attempting to use the extracted features to train a model like random forest or support vector machine.) So one adds more parameters, introduces more signal processing, ad infinitum: the hand-crafted model does not generalise well.
+
 
 \section{Privacy}
 Privacy and security of the data is extremely important. The user details that the \name{profile} service holds are ``bad enough'', but when combined with the data held in the \name{cluster} and \name{ingest} services, it must be stored and processed with the highest standards--especially with the upcoming GDPR\cite{gdpr} directive coming into force. Security and privacy extends all the way to the mobile applications and the sensors. (\cite{Fu:AuI932n8} explores viable attacks on sensors.) Naturally, the system applies encryption-at-rest to the data that the \name{profile} service holds; and the communication between the \name{profile} service and the mobile application uses transport-layer encryption. Additionally, the system does not leak the raw and stable user identity outside its infrastructure; it isolates its services in a way that programming error (\name{A2:2017}: broken authentication, \name{A5:2017}: broken access control, \name{A6:2017}: security misconfiguration, \name{A8:2017}: insecure deserialisation from the OWASP\cite{owasp} list) does not lead to \name{A3:2017}: sensitive data exposure. The system uses JWT\cite{jwt} as the authorization holder. The token holds the \pcode{cluster identifier} in the HMACSHA256-signed, base-64 encoded section, and the \pcode{user identifier} in an PKCS8-encrypted section. When the \name{authz} service issues the token it encrypts the profile-related sub-token using the \name{profile} service's public key, adds the ``public'' cluster identifier, signs the entire token and delivers it to the clients. \autoref{fig:authz} illustrates the entire flow.
