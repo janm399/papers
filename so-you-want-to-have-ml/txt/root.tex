@@ -230,6 +230,9 @@ A good way to tackle the noise, alignment, and timing errors is to use the raw s
 \subsection{Low-power sensors}
 Low-powered sensors bring additional complexity of restricted memory and computational resources, as well as restricted transfer mechanisms. A good example of such low-powered sensor is the Pebble smartwatch. The first model contains the Cortex-M3 CPU at \SI{64}{\mega\hertz} with \SI{24}{\kibi\byte} of memory (heap and code) for applications. It uses BLE for data transfers. The protocol as well as the hardware architecture places restrictions on the sample width and sampling rate. BLE protocol specifies maximum \SI{80}{\byte} per message, and minimum duration of \SI{7.5}{\milli\second} between messages; this gives a theoretical maximum of \SI{10640}{\byte\per\second}. The Pebble implementation dropped the reliable data transfer rate to only \SI{280}{\byte\per\second}. To minimise the amount of data being transferred, the system takes into account maximum reasonable acceleration a human can achieve in exercise: \SI{\pm40}{\meter\second^{-2}}, and represents that range as \SI{13}{\bit} integer. This means one sample is \SI{5}{\byte}: 3 $\times$ \SI{13}{\bit} for $x$, $y$, and $z$ axes, with \SI{1}{\bit} for padding. Along with the samples, the wearable sends its timestamp, which is a monotonously-increasing device time in milliseconds. The mobile application remembers the first seen timestamp from each sensor for each exercise session, and uses this value to properly align the samples from the sensors. The sensor data includes quantisation error: at \SI{50}{\hertz} one sample represents \SI{20}{\milli\second} of real-time, but the difference of the timestamps may not be divisible by $20$. It is sufficient to perform ``round-even'' correction of the received samples by evenly removing or duplicating the last sample in case of detected quantisation errors\footnote{Without the quantisation error correction, together with the unreliable sensors, the time error can add up to \SI{10}{\second} per hour of exercise}. 
 
+\subsection{Smart clothing}
+The range of sensors that was [easily] available during the development of the system\footnote{We had to \emph{bribe} our test users with the smartwatches to get them to label the data for us} was restrictive. Accelerometers and gyroscopes, regardless of their numbers, cannot paint a complete picture of the exercises. They particularly rely on the users being ``honest''. It is easy to trick this system into measuring high intensity, recording very few repetitions at close to maximum weight when the user just moves slowly. The possibility of strain gauges built into fabrics near main muscle groups would bring much more accurate measurement of the effectiveness of the exercise. However, the cost of designing and ordering low volumes of smart sports clothes turned out to be prohibitive for a hobby project.
+
 \section{Mobile application}
 Even though modern smart-watches are powerful enough to perform most of the computation, their screen sizes are a bit too small to display all the necessary information; most importantly, though, a smart-watch provides only one set of sensors. This means that exercises where the wrist where the user wears the watch does not move would not be possible to recognise. This is where the mobile application comes in: if the user places the mobile in his or her pocket, we have another sensor source. 
 
@@ -298,7 +301,6 @@ extension ActivationFunction {
     switch self {
     case .identity: 
       |$x$|
-      return
     case .sigmoid:
       |$1/(1 + e^{-x})$|
       vDSP_vneg; vvexpf; vDSP_vsadd; vvpowsf
@@ -409,10 +411,10 @@ In any machine learning system, the most valuable component is the data. The fir
 The costs for the \numprint{1000000} users are just an illustration: in addition to the transfer, storage, and compute resources, deployment of this scale will need additional infrastructure, monitoring; multi-region deployment for resilience will also need to be considered. Finally, the scaling requirements for the services may require some of the stateful components to be entirely re-architected using CQRS/ES architecture and reactive toolkits such as Akka\cite{akka}. Nevertheless, with a low number of users and low peak loads, the system's services are sufficient to be simple stateless services that rely on the underlying infrastructure to maintain their state\footnote{In practice, this means that the services are essentially CRUD-style.}. In addition to the ALB, the server-side code uses S3 for data and model storage, DynamoDB for the profile and authorisation stores, and AWS Lambda (with Golang) for ingestion. 
 
 \subsection{Ingestion \& storage}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed placerat arcu eget odio suscipit, at mattis turpis cursus. Donec consequat luctus elit, id rutrum quam mollis eget. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vivamus quis felis dui. Ut eros purus, pharetra ac nunc ac, maximus ultrices nulla. Praesent risus massa, gravida a lacinia sed, finibus hendrerit velit. Integer id aliquam felis, a viverra leo. Sed sed augue vitae lectus semper pharetra vel id tortor. Donec nec imperdiet dolor. Cras tristique quam a tortor consectetur fringilla. Phasellus sollicitudin vehicula tellus, accumsan dapibus quam laoreet eu. Nullam vestibulum, libero vel dictum auctor, massa nisi commodo nisi, pulvinar eleifend libero mauris tincidunt lacus. Quisque tincidunt sit amet nisi sit amet eleifend. Aliquam viverra neque id tellus imperdiet, id scelerisque sapien sagittis. Sed quis velit eget ex posuere accumsan. Aliquam pretium mauris et urna accumsan mollis.
+TODO: Mobile -> server. How hard can this be?
 
 \subsection{Model evaluation} 
-Hyper-parameter optimisation. Model management. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus ullamcorper tincidunt turpis sit amet faucibus. Cras eget scelerisque magna. Vestibulum aliquet diam sit amet eleifend fringilla. Etiam vitae sagittis felis. Quisque interdum tempor feugiat. Ut in risus velit. Vivamus metus nisl, condimentum sit amet convallis at, molestie a augue. Vivamus ut fermentum nunc. Phasellus a nisi varius, lobortis ipsum vel, posuere diam.
+TODO: Hyper-parameter optimisation. Model management. 
 
 \section{Machine learning}
 The \autoref{sec:server} describes \emph{running machine learning code}; notes that the ML code is computationally intensive, but does not explain what it actually is. The first iteration of the ML code used manual feature-extraction. Consider \autoref{fig:exercise-ap}.
@@ -442,7 +444,7 @@ Another approach is to not attempt to extract the features manually, but to use 
 
 Each new sensor adds dimensions to the input vector; the sensor reading vectors are always appended in a well-known order (acceleration then rotation; wrist then arm then waist; then single heart rate). An acceptable simplification is to assume that the sensor on the arm or near waist (think a pocket) is a mobile, and so it produces acceleration and rotation. This leaves us with the combinations of left or right wrist sensor (which can record acceleration only, or acceleration and rotation) \emph{and} left or right arm sensor \emph{or} left or right waist sensor; a total of $2\times(4\times2)$ set-up models, and the same number of in-exercise models. The mobile application selects the right model when it knows the precise sensor setup that the user decided to wear. The simplest model's parameters (and hyper-parameters) need only \SI{1.3}{\mebi\byte} (compression reduces this by another \SI{200}{\kibi\byte}); the most complex model's (acceleration + rotation; acceleration + rotation; heart rate) parameters take up \SI{18}{\mebi\byte}. In the worst-case scenario, the mobile application needs to download roughly \SI{100}{\mebi\byte} of model parameters\footnote{I only complain about \SI{100}{\mebi\byte} when the mobile application used up a lot of my roaming data allowance while I was on a business trip in the US.}
 
-\autoref{tbl:manual-features-mlp-noboost} shows the trained model's performance: as you can see, it is significanly better than the manual-features-with-SVM approach. (With behavioural model, the number of misclassifications drops to 1 in each class.)
+\autoref{tbl:manual-features-mlp-noboost} shows the trained model's performance: it is significanly better than the manual-features-with-SVM approach. (With behavioural model, the number of misclassifications drops to 1 in each class.)
 
 \begin{table}[h]
     \begin{tabular}{lrrr}
@@ -459,10 +461,30 @@ Each new sensor adds dimensions to the input vector; the sensor reading vectors 
     \label{tbl:manual-features-mlp-noboost}
 \end{table}
 
-In addition to the neural network's better performance, it significantly cuts the development time: beyond low-pass filtering on the raw sensor readings, the sensor data does not need any processing. The neural network's output are the classes of exercise. (Or, if trained so, classes of set-up movements.)
+The trained network performs just as well with larger number of exercises targetting the same muscle group (arms); even with exercises that are very similar. This network relies on fused sensors from the wrist and waist: otherwise, it would struggle to clearly identify \name{triceps dips}, where the wrists are fairly stationary, but the body moves up and down. \autoref{tbl:manual-features-mlp-arms} shows the network's performance.
 
-% This approach was susceptible to unexpected acceleration values (the user shakes his hand to rest, for example, which provides completely distorted maxima). This is a typical beginner ML problem: eyeballing a few recorded exercises one constructs a hypothesis of what would make good features, but fails when more exercises are added. (And this is before attempting to use the extracted features to train a model like random forest or support vector machine.) So one adds more parameters, introduces more signal processing, ad infinitum: the hand-crafted model does not generalise well.
+\begin{table}[h]
+    \begin{tabular}{p{1.8cm}rrrrrrr}
+        \toprule
+        Predicted         & \multicolumn{7}{c}{Actual} \\
+        \cmidrule(r){2-8} & \rot{triceps dips} & \rot{alt DB biceps curl} & \rot{BB biceps curl} &
+        \rot{bar biceps curl} & \rot{rope biceps curl} & \rot{rope triceps ext} & \rot{bar triceps ext} \\
+        \midrule
+        triceps dips        & 2153 & 1    & 3    & 1    & 0     & 0    & 1   \\ 
+        alt DB biceps curl  & 21   & 5687 & 7    & 3    & 2     & 11   & 0   \\
+        BB biceps curl      & 1    & 0    & 1515 & 3    & 0     & 2    & 0   \\
+        bar biceps curl     & 2    & 3    & 1    & 2742 & 4     & 12   & 0   \\
+        rope biceps curl    & 1    & 0    & 0    & 0    & 4     & 0    & 0   \\
+        rope triceps ext    & 3    & 3    & 4    & 8    & 2544  & 3371 & 0   \\
+        bar triceps ext     & 1    & 0    & 1    & 0    & 75    & 55   & 812 \\
+        \bottomrule
+    \end{tabular}
+    Where \emph{DB} is dumbbell and \emph{BB} is barbell.
+    \caption{Neural network (arms)}
+    \label{tbl:manual-features-mlp-arms}
+\end{table}
 
+In addition to the neural network's better performance, it significantly cuts the development time: beyond low-pass filtering on the raw sensor readings, the sensor data does not need any processing. The neural network's output are the classes of exercise. (Or, if trained so, classes of set-up movements.) The networks have been trained on data gathered from a small number of users exercising over nearly 12 months; this dataset was then used to generate further training and test using a bio-mechanical model.
 
 \section{Privacy}
 Privacy and security of the data is extremely important. The user details that the \name{profile} service holds are ``bad enough'', but when combined with the data held in the \name{cluster} and \name{ingest} services, it must be stored and processed with the highest standards--especially with the upcoming GDPR\cite{gdpr} directive coming into force. Security and privacy extends all the way to the mobile applications and the sensors. (\cite{Fu:AuI932n8} explores viable attacks on sensors.) Naturally, the system applies encryption-at-rest to the data that the \name{profile} service holds; and the communication between the \name{profile} service and the mobile application uses transport-layer encryption. Additionally, the system does not leak the raw and stable user identity outside its infrastructure; it isolates its services in a way that programming error (\name{A2:2017}: broken authentication, \name{A5:2017}: broken access control, \name{A6:2017}: security misconfiguration, \name{A8:2017}: insecure deserialisation from the OWASP\cite{owasp} list) does not lead to \name{A3:2017}: sensitive data exposure. The system uses JWT\cite{jwt} as the authorization holder. The token holds the \pcode{cluster identifier} in the HMACSHA256-signed, base-64 encoded section, and the \pcode{user identifier} in an PKCS8-encrypted section. When the \name{authz} service issues the token it encrypts the profile-related sub-token using the \name{profile} service's public key, adds the ``public'' cluster identifier, signs the entire token and delivers it to the clients. \autoref{fig:authz} illustrates the entire flow.
