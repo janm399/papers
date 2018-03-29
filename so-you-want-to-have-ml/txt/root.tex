@@ -456,7 +456,7 @@ Typical ingested \pcode{Sessions} object contains a single session of \SI{45}{\m
 
 The ingestion service is a plain REST API that accepts POST requests whose bodies conform to the \pcode{Sessions} protocol. The ingestion service verifies the structure of the payload, then persists the entire payload in an Amazon S3 bucket. The \autoref{sec:model-computation} take the saved \pcode{Sessions}, decompress them and then operate on the elements they need. There are no intermediate forms for the data--once the Protocol Buffers is known not to contain malicious data, its memory layout makes it easy to load the entire message into memory without additional transformation steps.
 
-\subsection{Model computation\label{sec:model-computation}}
+\subsection{Model computation}\label{sec:model-computation}
 Hyper-parameter optimisation. Model management. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus ullamcorper tincidunt turpis sit amet faucibus. Cras eget scelerisque magna. Vestibulum aliquet diam sit amet eleifend fringilla. Etiam vitae sagittis felis. Quisque interdum tempor feugiat. Ut in risus velit. Vivamus metus nisl, condimentum sit amet convallis at, molestie a augue. Vivamus ut fermentum nunc. Phasellus a nisi varius, lobortis ipsum vel, posuere diam.
 
 \section{Machine learning}
