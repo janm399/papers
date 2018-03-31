@@ -10,6 +10,7 @@
 \usepackage{hyperref}
 \usepackage{siunitx}
 \usepackage{algorithm2e}
+\usepackage{enumerate}
 \usepackage{rotating}
 \usepackage{numprint}
 \usepackage{adjustbox}
@@ -44,7 +45,7 @@
 }
 
 \lstdefinelanguage{Protobuf}{
-  keywords={message, string, uint32, int32},
+  keywords={message, enum, repeated, double, string, uint32, int32, map},
   morecomment=[l]{//},
   morecomment=[s]{/*}{*/},
   morestring=[b]',
@@ -55,11 +56,14 @@
 \lstset{
     language=C,
     keywordstyle={\bfseries},
-    basicstyle=\footnotesize,
-    literate={->}{$\rightarrow{}$}{1} {<-}{$\leftarrow{}$}{1},
+    basicstyle={\small},
+    escapebegin=\color{darkgray}\scriptsize,
+    literate={->}{$\rightarrow{}$}{1} {<-}{$\leftarrow{}$}{1} {'''}{$^{\prime}$}{1},
     stringstyle=\color{purple},
     keepspaces=true,
     captionpos=b,
+    columns=fullflexible,
+    breaklines=true,
     inputencoding=utf8,
     escapeinside={\%*}{*)}
 }
@@ -72,7 +76,7 @@
 \captionsetup[table]{labelformat=nospace,labelfont=rm,name=Table,labelsep=period}
 
 \newcommand{\pcode}[1]{
-    \lstinline[basicstyle=\itshape,keywordstyle={}]{#1}
+    \lstinline[basicstyle=\itshape]{#1}
 }
 
 \newcommand*{\lstnumberautorefname}{line}
