@@ -6,6 +6,8 @@
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{interval}
+\usepackage{dsfont}
+\usepackage{textcomp}
 \usepackage{listingsutf8}
 \usepackage{hyperref}
 \usepackage{siunitx}
@@ -58,15 +60,37 @@
     keywordstyle={\bfseries},
     basicstyle={\small},
     escapebegin=\color{darkgray}\scriptsize,
-    literate={->}{$\rightarrow{}$}{1} {<-}{$\leftarrow{}$}{1} {'''}{$^{\prime}$}{1},
+    literate=
+      {->}{$\rightarrow{}$}{1} 
+      {=>}{$\Rightarrow{}$}{1} 
+      {<-}{$\leftarrow{}$}{1} 
+      {[[}{\textlbrackdbl}{1} 
+      {]]}{\textrbrackdbl}{1} 
+      {'''}{$^{\prime}$}{1},
     stringstyle=\color{purple},
     keepspaces=true,
     captionpos=b,
-    columns=fullflexible,
+    columns=fixed,
     breaklines=true,
     inputencoding=utf8,
     escapeinside={\%*}{*)}
 }
+
+\lstdefinelanguage{scala}{
+  morekeywords={%
+          abstract,case,catch,class,def,do,else,extends,%
+          false,final,finally,for,forSome,if,implicit,import,lazy,%
+          match,new,null,object,override,package,private,protected,%
+          return,sealed,super,this,throw,trait,true,try,type,%
+          val,var,while,with,yield},
+  %otherkeywords={=>,<-,<\%,<:,>:,\#,@},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[n]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]',
+  morestring=[b]"""
+}[keywords,comments,strings]
 
 \renewcommand\AlCapSty{\text}
 \SetAlCapNameFnt{\footnotesize}
@@ -76,7 +100,7 @@
 \captionsetup[table]{labelformat=nospace,labelfont=rm,name=Table,labelsep=period}
 
 \newcommand{\pcode}[1]{
-    \lstinline[basicstyle=\itshape]{#1}
+    \lstinline[basicstyle=\itshape, language=Pascal]{#1}
 }
 
 \newcommand*{\lstnumberautorefname}{line}
@@ -173,6 +197,20 @@
     subscript,prefix,operator,infix,postfix,precedence,associativity,left,right,none,convenience,dynamic,
     final,lazy,mutating,nonmutating,optional,override,required,static,unowned,safe,weak,internal,
     private,public,is,as,self,unsafe,dynamicType,true,false,nil,Type,Protocol,
+  },
+  morecomment=[l]{//}, % l is for line comment
+  morecomment=[s]{/*}{*/}, % s is for start and end delimiter
+  morestring=[b]" % defines that strings are enclosed in double quotes
+}
+
+\lstdefinelanguage{Pseudo}
+{
+  morekeywords={
+    fun,if,then,else,for,in,while,do,switch,case,default,where,break,continue,fallthrough,return,interface,
+    typealias,struct,class,throws,enum,protocol,var,func,let,get,set,willSet,didSet,inout,init,deinit,extension,
+    subscript,prefix,operator,infix,postfix,precedence,associativity,left,right,none,convenience,dynamic,
+    final,lazy,mutating,nonmutating,optional,override,required,static,unowned,safe,weak,internal,
+    private,public,is,as,self,unsafe,dynamicType,true,false,nil,Type,Protocol,module
   },
   morecomment=[l]{//}, % l is for line comment
   morecomment=[s]{/*}{*/}, % s is for start and end delimiter

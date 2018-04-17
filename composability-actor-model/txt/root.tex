@@ -1,0 +1,154 @@
+\input{../../common.tex}
+
+\addbibresource{root.bib}
+
+\title{Composability and the actor model}
+
+\author{Jan Mach{\'a}\v{c}ek%$^{1}$% <-this % stops a space
+\thanks{Supported by Cake Solutions Limited}% <-this % stops a space
+\thanks{$^{1}$J. Machacek is the CTO at Cake Solutions, Houldsworth Mill, Houldsworth Street, Reddish, SK5 6DA, UK {\tt\small janm at cakesolutions.net}}%
+}
+
+\begin{document}
+
+\twocolumn[
+  \begin{@twocolumnfalse}
+    \maketitle
+    \begin{abstract}
+      
+    \end{abstract}
+  \end{@twocolumnfalse}
+]
+
+\section{Actors}
+There are many actor frameworks and toolkits\cite{akka,scalaz8,transient,thespian}. Some toolkits make it very difficult to compose the behaviour of the actors\cite{akka,thespian}, other toolkits make it much easier\cite{scalaz8,transient}. I consider the actor model as a way to \emph{decompose} a system into self-contained units of functionality and state. I consider these units of functionality and state to be the smallest deployable entities; consequently, the communication between two actors must take form of messages travelling over a boundary that introduces latency and the risk of message loss. Given this definition, it does not make sense to require convenient general composition mechanism for general actors. Such composition mechanism is an abstraction that must attempt to hide the underlying latency and the risk of message loss\footnote{Consider the \emph{Network File System}, which abstracts over unreliable networks to provide the illusion that a filesystem on a remote machine is the same as the filesystem on the local machine. The abstraction \emph{leaks} when the network is slow or lossy, when a lot of small files are being accessed over the network, when a different application generates a lot of traffic on the NIC that also handles the NFS mount, etc.}. 
+
+An order processing system that fulfils the order contained within a request by decoding the order data from the request, calculates discounts and books the best delivery method, before finalising the order and encoding it into a response can compute the discount and delivery method at the same time (to use a loose term for now), though the other operations must be sequential; see \autoref{alg:order-fulfilment}.
+
+\begin{algorithm}
+  \caption{Order fulfilment}
+  \label{alg:order-fulfilment}
+  \DontPrintSemicolon
+  
+  \[ 
+    decode \rightarrow
+    \left \{\begin{array}{l}
+      delivery \\ discount
+      \end{array}
+    \right \} \rightarrow finalise \rightarrow encode
+  \]
+\end{algorithm} 
+
+This type of processing is a typical result of decomposing the \emph{order fulfilment} into its steps. The decomposition and the algorithm assume that the entire fulfilment operation is atomic and that its effects on the world are completely isolated until the \pcode{encode} operation successfully completes. (Imperative pseudo-code is shown in \autoref{code:fulfilment-impl-1}.)
+
+\begin{lstlisting}[caption={Fulfilment implementation I}, label={code:fulfilment-impl-1}, language=Pseudo, escapechar=|]
+order = decode(request)
+delivery = delivery(order)
+discount = discount(order)
+fulfiled = finalise(order, delivery, discount)
+response = encode(fulfiled)
+\end{lstlisting}
+
+This imperative style works when the \pcode{decode}, \pcode{delivery}, \pcode{discount}, \pcode{finalise}, and \pcode{encode} functions are ``bare'': that is, their types are \pcode{I => O} for the appropriate types \pcode{I} and \pcode{O}. Changing the type \pcode{O} to higher-kinded type $\mathds{F}$ provides a way to express that the returned value is not the raw value of type \pcode{O}, but that it is wrapped in some container $\mathds{F}$. For $\mathds{F} = Future$, \pcode{decode(Request): Order} becomes \pcode{decode(Request): Future[[Order]]}, which expresses the fact that the result of applying these functions to the input does not yield the result immediately; it \emph{starts} the computation and returns the conainer $\mathds{F} = Future$ which will hold the computed value. Viz \autoref{code:fulfilment-impl-2}.
+
+\begin{lstlisting}[caption={Fulfilment implementation II}, label={code:fulfilment-impl-2}, language=Pseudo, escapechar=|, escapeinside={(*}{*)}]
+order <- decode(request)
+(delivery, discount) <- delivery(order) 
+                     (*$\land$*) discount(order)
+fulfiled <- finalise(order, delivery, discount)
+response <- encode(fulfiled)
+\end{lstlisting}
+
+The only difference between the two listings is the changing of assignment \pcode{=} operator to the sequence / shove operator \pcode{<-}; and the usage of the $\land$ operator to mean zip the two computations together. The type of \pcode{response} is \pcode{Future[[Response]]}. This enables parallelism, but does not deal with failures.
+
+% decode(request).flatMap { order =>
+%   delivery(order).zip(discount(order))
+%     .flatMap { (delivery, discount) =>
+%       finalise(order, delivery, discount)
+%     }
+%     .flatMap { fulfiled => 
+%       encode(fulfiled) 
+%     }
+% }
+
+The \pcode{Future} can succeed or fail, making the code in \autoref{code:fulfilment-impl-2} feel right. The code does not handle any failures
+
+The fulfilment operation isn't instant, and the world does not stop while it is processing. If the entire fulfilment operation could be done in the same memory and by only affecting that memory, it would be possible to use software transactional memory\cite{stm}. If the decomposed steps in the fulfilment process change the world (by initiating network communication, by printing labels, etc.) they cannot be simply retried: is it OK to make a delivery booking twice?; is it acceptable to print the packaging label multiple times? Deduplicating non-idempotent requests encounters storage limits: any deduplicating code can only deduplicate on a fixed number of requests. Locking reduces the throughput of a system as the number of locks grows: locking code has to be able to old locks. 
+
+Even if isolation and atomicity were achievable in the context of this system, the \pcode{delivery} booking system might not be able to participate in any form of transaction. Worse still, the \pcode{delivery} booking step might have returned a successful booking, but by the time the \pcode{finalise} step executes, the delivery booking becomes invalid.
+
+encode can fail.
+
+DeliveryEstimate: Order => Days
+
+Discount: Order => Days
+
+Fulfilment(deliveryEstimate, discount): Order => Fulfilment =
+  order =>
+    deliveryEstimate(order) and discount(order)
+
+\emph{Pure} actors do not compose. 
+
+
+\section{Ramblings \& notes}
+Asynchrony and concurrency is difficult; it is tempting to dismiss it as \emph{too complicated} for applications that ``simply'' take a request and produce a response, where the work to produce the response involves simple data transformations and straight-forward logic.
+
+\begin{lstlisting}[caption={Delivery estimate}, label={code:delivery-estimate}, language=Pseudo, escapechar=|]
+|The actual business logic that computes the delivery estimate for|
+|the given item|
+deliveryEstimate(item: Item): Days
+
+|Mechanics for transforming between the request and response and|
+|the application's data model|
+fromRequest(request: Request): Order
+toResponse(estimate: Days): Response
+
+|The main handling code that computes the delivery estimate for|
+|the order in the request, producing the estimate in the response|
+handle(request: Request): Response = 
+  items    <- parseItems(request)
+  estimate <- 0
+  for (item in items) {
+    e <- deliveryEstimate(item)
+    if (e > estimate) estimate = e
+  }
+  return toResponse(estimate)
+}
+\end{lstlisting}
+
+If the \pcode{deliveryEstimate} function is \emph{pure} (its result depends only on the given parameter and nothing else) making the \pcode{handle} function also pure, then it would appear that this code is a perfect candidate to use a thread-per-request model and not worry about any concurrency at all. The answer depends on how the application gets the \pcode{Request} and where the \pcode{Response} ends up\footnote{I am not going to follow the rabbit hole of layering in more and more pure functions: programs run to interact with the world by the means of impure I/O. However, I do not dismiss purity or the ability to track the spread of arbitrary effects such as I/O.}, how many requests the application handles concurrently, what response time guarantees the application makes, and on the underlying implementation of the thread of execution.
+
+Given $N_{t}$ number of threads and $N_{r}$, there are the following scenarios:
+
+* $N_{r} \ll N_{t}$ and low response time critical
+
+* $N_{r} \le N_{t}$ 
+
+* $N_{r} > N_{t}$
+
+* $N_{r} \gg N_{t}$
+
+Thread-per-request model works if the delivery estimate module is used by another module that is also pure (see \autoref{code:delivery-estimate-and-discount})
+
+\begin{lstlisting}[caption={Delivery and discount}, label={code:delivery-estimate-and-discount}, language=Pseudo, escapechar=|]
+|The delivery estimate module with its specific handle function|
+module DeliveryEstimate =
+  handle(request: Request): Response
+
+|The discount module with its specific handle function|
+module Discount =
+  handle(request: Request): Response
+
+toResponse(r1: DeliveryEstimate.Response,
+           r2: Discount.Response): Response
+handle(request: Request): Response = 
+  r1 <- DeliveryEstimate.handle(request)
+  r2 <- Discount.handle(request)
+  return toResponse(r1, r2)
+
+\end{lstlisting}
+
+
+\printbibliography
+
+\end{document}
