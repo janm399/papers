@@ -20,24 +20,22 @@
   \end{@twocolumnfalse}
 ]
 
-\section{Actors}
-There are many actor frameworks and toolkits\cite{akka,scalaz8,transient,thespian}. Some toolkits make it very difficult to compose the behaviour of the actors\cite{akka,thespian}, other toolkits make it much easier\cite{scalaz8,transient}. I consider the actor model as a way to \emph{decompose} a system into self-contained units of functionality and state. I consider these units of functionality and state to be the smallest deployable entities; consequently, the communication between two actors must take form of messages travelling over a boundary that introduces latency and the risk of message loss. Given this definition, it does not make sense to require convenient general composition mechanism for general actors. Such composition mechanism is an abstraction that must attempt to hide the underlying latency and the risk of message loss\footnote{Consider the \emph{Network File System}, which abstracts over unreliable networks to provide the illusion that a filesystem on a remote machine is the same as the filesystem on the local machine. The abstraction \emph{leaks} when the network is slow or lossy, when a lot of small files are being accessed over the network, when a different application generates a lot of traffic on the NIC that also handles the NFS mount, etc.}. 
+\section{Composition}
+An order processing system that fulfils the order contained within a request by decoding the order data from the request, calculates discounts and books the best delivery method, before finalising the order and encoding it into a response can compute the discount and delivery method at the same time (to use a loose term for now), though the other operations must be sequential; see \autoref{fig:order-fulfilment}.
 
-An order processing system that fulfils the order contained within a request by decoding the order data from the request, calculates discounts and books the best delivery method, before finalising the order and encoding it into a response can compute the discount and delivery method at the same time (to use a loose term for now), though the other operations must be sequential; see \autoref{alg:order-fulfilment}.
-
-\begin{algorithm}
-  \caption{Order fulfilment}
-  \label{alg:order-fulfilment}
+\begin{figure}[h]
   \DontPrintSemicolon
   
   \[ 
-    decode \rightarrow
+    decode \rightwavearrow
     \left \{\begin{array}{l}
       delivery \\ discount
       \end{array}
-    \right \} \rightarrow finalise \rightarrow encode
+    \right \} \rightwavearrow finalise \rightwavearrow encode
   \]
-\end{algorithm} 
+  \caption{Order fulfilment}
+  \label{fig:order-fulfilment}
+\end{figure} 
 
 This type of processing is a typical result of decomposing the \emph{order fulfilment} into its steps. The decomposition and the algorithm assume that the entire fulfilment operation is atomic and that its effects on the world are completely isolated until the \pcode{encode} operation successfully completes. (Imperative pseudo-code is shown in \autoref{code:fulfilment-impl-1}.)
 
@@ -49,17 +47,135 @@ fulfiled = finalise(order, delivery, discount)
 response = encode(fulfiled)
 \end{lstlisting}
 
-This imperative style works when the \pcode{decode}, \pcode{delivery}, \pcode{discount}, \pcode{finalise}, and \pcode{encode} functions are ``bare'': that is, their types are \pcode{I => O} for the appropriate types \pcode{I} and \pcode{O}. Changing the type \pcode{O} to higher-kinded type $\mathds{F}$ provides a way to express that the returned value is not the raw value of type \pcode{O}, but that it is wrapped in some container $\mathds{F}$. For $\mathds{F} = Future$, \pcode{decode(Request): Order} becomes \pcode{decode(Request): Future[[Order]]}, which expresses the fact that the result of applying these functions to the input does not yield the result immediately; it \emph{starts} the computation and returns the conainer $\mathds{F} = Future$ which will hold the computed value. Viz \autoref{code:fulfilment-impl-2}.
+This imperative code is an accurate representation of the process when the \pcode{decode}, \pcode{delivery}, \pcode{discount}, \pcode{finalise}, and \pcode{encode} functions are pure: the functions' results depend only on the values given as parameters; their types are \pcode{I => O} for the appropriate types \pcode{I} and \pcode{O}. (The type of the \pcode{decode} function, for example, is \pcode{Request => Order}). In this order fulfilment system, the ``business'' functions need to interact with the world to arrive at their result. 
 
-\begin{lstlisting}[caption={Fulfilment implementation II}, label={code:fulfilment-impl-2}, language=Pseudo, escapechar=|, escapeinside={(*}{*)}]
-order <- decode(request)
-(delivery, discount) <- delivery(order) 
-                     (*$\land$*) discount(order)
-fulfiled <- finalise(order, delivery, discount)
-response <- encode(fulfiled)
+In some very popular languages (cite: Java, C\#) it is not possible to define plain functions: every function needs to be part of a class\footnote{\pcode{class} means template for instances.}. Even though it is possible to define \pcode{static} method in these languages, where the method can be invoked without creating an instance of the class--and thus treating the class containing the static method as a namespace--it is usual to define and use interfaces that define the beaviour\cite{prospring}. This yields code in \autoref{code:fulfilment-impl-oo}.
+
+\begin{lstlisting}[caption={Fulfilment OO implementation I}, label={code:fulfilment-impl-oo}, language=Java, escapechar=|]
+interface OrderCodec {
+  Order decode(Request r);
+  Response encode(Order o);
+}
+interface DeliveryBookingService {
+  Delivery book(Order o);
+}
+interface DiscountCalculatorService {
+  Discount calculate(Order o);
+}
+interface OrderFinalisationService {
+  Fulfiled finalise(Order o, 
+                    Delivery del, 
+                    Discount dis);
+}
 \end{lstlisting}
 
-The only difference between the two listings is the changing of assignment \pcode{=} operator to the sequence / shove operator \pcode{<-}; and the usage of the $\land$ operator to mean zip the two computations together. The type of \pcode{response} is \pcode{Future[[Response]]}. This enables parallelism, but does not deal with failures.
+This is almost mechanical wrapping of the naked functions into interfaces; the implementations of these interfaces contain the code that the naked functions contained. The code from \autoref{code:fulfilment-impl-1} then becomes part of another class in \autoref{code:fulfilment-impl-oo2}.
+
+\begin{lstlisting}[caption={Fulfilment OO implementation II}, label={code:fulfilment-impl-oo2}, language=Java, escapechar=|]
+interface Fulfilment {
+  Response fulfil(Request request);
+}
+class FulfilmentImpl implements Fulfilment {
+  OrderCodec oc;
+  DeliveryBookingService dbs;
+  DiscountCalculatorService dcs;
+  OrderFinalisationService ofs;
+
+  Response fulfil(Request request) {
+    var order = oc.decode(request);
+    var delivery = dbs.book(order);
+    var discount = dcs.calculate(order);
+    var fulfiled = ofs.finalise(
+      order, delivery, discount);
+    return oc.encode(fulfiled);
+  }
+}
+\end{lstlisting}
+
+The \pcode{Fulfilment} \emph{composes} the sub-components (\pcode{OrderCodec}, \pcode{DeliveryBookingService} and others) into a larger unit. The interface \pcode{Fulfilment} hides all the complexity of the processing; the implementation \pcode{FulfilmentImpl} delegates the work to its sub-components. The code in \autoref{code:fulfilment-impl-oo2} omits the construction of these components. The usual approach is to avoid having the \pcode{OrderHandlerImpl} be responsible for creating its dependencies to keep to the single-responsibility principle; so the \pcode{OrderHandlerImpl} must be given these dependencies at the point of its construction. It becomes 
+
+\begin{lstlisting}[caption={Fulfilment OO implementation II}, label={code:fulfilment-impl-oo3}, language=Java, escapechar=|]
+interface Fulfilment {
+  Response fulfil(Request request);
+}
+class FulfilmentImpl implements Fulfilment {
+  private final OrderCodec oc;
+  private final DeliveryBookingService dbs;
+  private final DiscountCalculatorService dcs;
+  private final OrderFinalisationService ofs;
+
+  FulfilmentImpl(
+    OrderCodec oc, 
+    DeliveryBookingService dbs,
+    DiscountCalculatorService dcs,
+    OrderFinalisationService ofs) {
+    this.oc = oc;
+    this.dbs = dbs;
+    this.dcs = dcs;
+    this.ofs = ofs;
+  }
+
+  Response fulfil(Request request) { ... }
+}
+\end{lstlisting}
+
+In large systems, the construction of all components--each with its own chain of dependencies--becomes tedious. The tedious work of manual construction of all components might even slow down any refactoring that affects the construction graph. An alternative approach is to use dependency injection pattern: a DI framework maintains an environment of all constructed / constructible components. When a new component needs to be added into this environment, the framework satisfies its dependencies (expressed through constructor parameters, setters, or using some other mechanism), registeres the newly created component in the environment, and returns the registered instance. This way, the code that makes up the components looks like plain Java, but the components are implicitly tied to this environment maintained by the DI framework. This low-level composition is comfortable; it is also accurate representation of our initial decomposition if the methods in the components are still pure. The \pcode{FulfilmentImpl.fulfil} remains pure if the components injected at the point of construction do not change throughout the life of the system and if their methods are pure. 
+
+Unfortunately, useful systems exist only for their side-effects.
+
+The \pcode{delivery} function (or the \pcode{DeliveryBookingService.book} method) needs to call various couriers' APIs to select \& book the best one; the \pcode{discount} function needs to query an affiliate database for possible price reduction; the \pcode{finalise} function needs to make further external API calls and database operations. The only functions that remain as pure are \pcode{decode} and \pcode{decode}. If the implementation uses a DI framework, the database connection or the API clients are injected into the components; the injected dependencies do not change, but their methods are not pure. Many programming languages \& runtimes use exceptions as a way to keep the functions' types intact, but to provide a mechanism to indicate that the purity abstraction has leaked. In Java, one might implement the \pcode{delivery} function as \pcode{Delivery book(Request r) throws DeliveryException}, where the \pcode{DeliveryException} is a root of an inheritance hierarchy of more detailed exceptions. The callers are then responsible for handling any raised exceptions. The usual code is in \autoref{code:fulfilment-impl-exc}.
+
+\begin{lstlisting}[caption={Exceptions}, label={code:fulfilment-impl-exc}, language=Java, escapechar=|]
+DeliveryBookingService dbs = ...;
+Order o = ...;
+try {
+  dbs.book();
+} catch (DeliveryException ex) {
+  |oops, not booked; maybe we retry?|
+}
+\end{lstlisting}
+
+The devil is in the detail: the code in \autoref{code:fulfilment-impl-exc} assumes that the \pcode{DeliveryBookingService.book} is isolated and atomic; an exception arising from the call means that everything that the \pcode{DeliveryBookingService.book} has done has been undone. Abandoning inheritance hierarchy of exceptions provides partial solution. Remove the \pcode{DeliveryException} superclass and have the method throw--for example--\pcode{DeliveryAPIUnavailable}, \pcode{DeliveryRejected}, and \pcode{DeliveryBookingTimeout}. The \pcode{catch} block becomes longer, but has the opportunity to handle specific error cases. Unfortunately, in Java and C\#, all exceptions must implement the \pcode{Throwable} interface. This, combined with the fact that writing long \pcode{catch} blocks is tedious, leads to shortcuts. Instead of exhaustive error handling in \autoref{code:fulfilment-impl-exc2}...
+
+\begin{lstlisting}[caption={Exceptions}, label={code:fulfilment-impl-exc2}, language=Java, escapechar=|]
+DeliveryBookingService dbs = ...;
+Order o = ...;
+try {
+  dbs.book();
+} catch (DeliveryAPIUnavailable ex) { 
+  |Retryable, nothing to undo|
+} catch (DeliveryRejected ex) {
+  |Not retryable, but nothing to undo|
+} catch (DeliveryBookingTimeout ex) {
+  |Has the other system received the request and|
+  |failed to respond, or has the request not reached|
+  |the other system at all?|
+}
+\end{lstlisting}
+
+...the code [ab]uses the root exception hierarchy imposed by the language and ends up as \autoref{code:fulfilment-impl-exc3}
+
+\begin{lstlisting}[caption={Exceptions}, label={code:fulfilment-impl-exc3}, language=Java, escapechar=|]
+DeliveryBookingService dbs = ...;
+Order o = ...;
+try {
+  dbs.book();
+} catch (Exception ex) { 
+  |An unexpected error has occurred. Do you feel lucky?|
+}
+\end{lstlisting}
+
+Changing the type \pcode{O} to higher-kinded type $\mathds{F}$ provides a way to express that the returned value is not the raw value of type \pcode{O}, but that it is wrapped in some container $\mathds{F}$. For $\mathds{F} = Future$, \pcode{decode(Request): Order} becomes \pcode{decode(Request): Future[[Order]]}, which expresses the fact that the result of applying these functions to the input does not yield the result immediately; it \emph{starts} the computation and returns the conainer $\mathds{F} = Future$ which will hold the computed value. Viz \autoref{code:fulfilment-impl-2}.
+
+\begin{lstlisting}[caption={Fulfilment implementation II}, label={code:fulfilment-impl-2}, language=Pseudo, escapechar=|, escapeinside={(*}{*)}]
+order = decode(request)
+(delivery, discount) <- delivery(order) 
+                     (*$\curlywedge$*) discount(order)
+fulfiled <- finalise(order, delivery, discount)
+response = encode(fulfiled)
+\end{lstlisting}
+
+The only difference between the two listings is the changing of assignment operator \pcode{=} to the sequence / shove operator \pcode{<-}; and the usage of the $\curlywedge$ operator to ``zip'' two $\mathds{F}$s together: $\mathds{F}\lBrack{}A\rBrack \curlywedge \mathds{F}\lBrack{}B\rBrack \Rightarrow \mathds{F}\lBrack(A, B)\rBrack$. This changes the type of \pcode{order} to \pcode{Future[[Order]]}, the type of \pcode{delivery} to \pcode{Future[[Delivery]]}, \ldots, the type of \pcode{response} to \pcode{Future[[Response]]}. It is possible to \emph{compose} the components that deal with decoding, booking delivery, computing a discount, finalising, and encoding to a larger component of type \pcode{Request => Future[[Response]]}.
 
 % decode(request).flatMap { order =>
 %   delivery(order).zip(discount(order))
@@ -147,6 +263,9 @@ handle(request: Request): Response =
   return toResponse(r1, r2)
 
 \end{lstlisting}
+
+\section{Actors}
+There are many actor frameworks and toolkits\cite{akka,scalaz8,transient,thespian}. Some toolkits make it very difficult to compose the behaviour of the actors\cite{akka,thespian}, other toolkits make it much easier\cite{scalaz8,transient}. I consider the actor model as a way to \emph{decompose} a system into self-contained units of functionality and state. I consider these units of functionality and state to be the smallest deployable entities; consequently, the communication between two actors must take form of messages travelling over a boundary that introduces latency and the risk of message loss. Given this definition, it does not make sense to require convenient general composition mechanism for general actors. Such composition mechanism is an abstraction that must attempt to hide the underlying latency and the risk of message loss\footnote{Consider the \emph{Network File System}, which abstracts over unreliable networks to provide the illusion that a filesystem on a remote machine is the same as the filesystem on the local machine. The abstraction \emph{leaks} when the network is slow or lossy, when a lot of small files are being accessed over the network, when a different application generates a lot of traffic on the NIC that also handles the NFS mount, etc.}. 
 
 
 \printbibliography
