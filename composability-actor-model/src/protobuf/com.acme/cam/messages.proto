@@ -1,0 +1,36 @@
+syntax = "proto3";
+package com.acme.cam;
+
+/*
+message XX {
+  string host_id = 1;
+  string command_address = 2;
+  int32 count = 3;
+}
+*/
+
+message XX {
+  string host_id = 3;
+  string command_uri = 2;
+  int32 count = 1;
+}
+
+message X {
+    int32 count = 1;
+    string greeting = 2;
+}
+
+
+message Rating {
+    string id = 1;
+    string date = 2;
+    string text = 3;
+    User user = 4;
+    uint32 stars = 5;
+}
+
+message User {
+    string id = 1;
+    string date = 2;
+    string name = 3;
+}

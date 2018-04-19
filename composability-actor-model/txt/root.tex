@@ -21,7 +21,9 @@
 ]
 
 \section{Composition}
-An order processing system that fulfils the order contained within a request by decoding the order data from the request, calculates discounts and books the best delivery method, before finalising the order and encoding it into a response can compute the discount and delivery method at the same time (to use a loose term for now), though the other operations must be sequential; see \autoref{fig:order-fulfilment}.
+Composition is a way of combining several smaller units of functionality to build larger ones. It does not prescribe any particular programming style: calling other functions from a functions is compisition, so is dependency injection in traditional OO world.
+
+To demonstrate, consider an order processing system that fulfils the order contained within a request by decoding the order data from the request, calculates discounts and books the best delivery method, before finalising the order and encoding it into a response can compute the discount and delivery method at the same time (to use a loose term for now), though the other operations must be sequential; see \autoref{fig:order-fulfilment}.
 
 \begin{figure}[h]
   \DontPrintSemicolon
@@ -37,7 +39,10 @@ An order processing system that fulfils the order contained within a request by 
   \label{fig:order-fulfilment}
 \end{figure} 
 
-This type of processing is a typical result of decomposing the \emph{order fulfilment} into its steps. The decomposition and the algorithm assume that the entire fulfilment operation is atomic and that its effects on the world are completely isolated until the \pcode{encode} operation successfully completes. (Imperative pseudo-code is shown in \autoref{code:fulfilment-impl-1}.)
+This type of processing is a typical result of decomposing the \emph{order fulfilment} into its steps. The decomposition and the algorithm assume that the entire fulfilment operation is atomic and that its effects on the world are completely isolated until the \pcode{encode} operation successfully completes. 
+
+\subsection{Serial and pure implementation}
+It is easiest to start exploring the problem using an imperative pseudo-code in \autoref{code:fulfilment-impl-1}.
 
 \begin{lstlisting}[caption={Fulfilment implementation I}, label={code:fulfilment-impl-1}, language=Pseudo, escapechar=|]
 order = decode(request)
@@ -47,7 +52,7 @@ fulfiled = finalise(order, delivery, discount)
 response = encode(fulfiled)
 \end{lstlisting}
 
-This imperative code is an accurate representation of the process when the \pcode{decode}, \pcode{delivery}, \pcode{discount}, \pcode{finalise}, and \pcode{encode} functions are pure: the functions' results depend only on the values given as parameters; their types are \pcode{I => O} for the appropriate types \pcode{I} and \pcode{O}. (The type of the \pcode{decode} function, for example, is \pcode{Request => Order}). In this order fulfilment system, the ``business'' functions need to interact with the world to arrive at their result. 
+This code is an accurate representation of the process when the \pcode{decode}, \pcode{delivery}, \pcode{discount}, \pcode{finalise}, and \pcode{encode} functions are pure: the functions' results depend only on the values given as parameters; their types are \pcode{I => O} for the appropriate types \pcode{I} and \pcode{O}. (The type of the \pcode{decode} function, for example, is \pcode{Request => Order}). In this order fulfilment system, the ``business'' functions need to interact with the world to arrive at their result. 
 
 In some very popular languages (cite: Java, C\#) it is not possible to define plain functions: every function needs to be part of a class\footnote{\pcode{class} means template for instances.}. Even though it is possible to define \pcode{static} method in these languages, where the method can be invoked without creating an instance of the class--and thus treating the class containing the static method as a namespace--it is usual to define and use interfaces that define the beaviour\cite{prospring}. This yields code in \autoref{code:fulfilment-impl-oo}.
 
@@ -121,7 +126,8 @@ class FulfilmentImpl implements Fulfilment {
 
 In large systems, the construction of all components--each with its own chain of dependencies--becomes tedious. The tedious work of manual construction of all components might even slow down any refactoring that affects the construction graph. An alternative approach is to use dependency injection pattern: a DI framework maintains an environment of all constructed / constructible components. When a new component needs to be added into this environment, the framework satisfies its dependencies (expressed through constructor parameters, setters, or using some other mechanism), registeres the newly created component in the environment, and returns the registered instance. This way, the code that makes up the components looks like plain Java, but the components are implicitly tied to this environment maintained by the DI framework. This low-level composition is comfortable; it is also accurate representation of our initial decomposition if the methods in the components are still pure. The \pcode{FulfilmentImpl.fulfil} remains pure if the components injected at the point of construction do not change throughout the life of the system and if their methods are pure. 
 
-Unfortunately, useful systems exist only for their side-effects.
+\subsection{Effects}
+\emph{Useful systems exist only for their side-effects.}
 
 The \pcode{delivery} function (or the \pcode{DeliveryBookingService.book} method) needs to call various couriers' APIs to select \& book the best one; the \pcode{discount} function needs to query an affiliate database for possible price reduction; the \pcode{finalise} function needs to make further external API calls and database operations. The only functions that remain as pure are \pcode{decode} and \pcode{decode}. If the implementation uses a DI framework, the database connection or the API clients are injected into the components; the injected dependencies do not change, but their methods are not pure. Many programming languages \& runtimes use exceptions as a way to keep the functions' types intact, but to provide a mechanism to indicate that the purity abstraction has leaked. In Java, one might implement the \pcode{delivery} function as \pcode{Delivery book(Request r) throws DeliveryException}, where the \pcode{DeliveryException} is a root of an inheritance hierarchy of more detailed exceptions. The callers are then responsible for handling any raised exceptions. The usual code is in \autoref{code:fulfilment-impl-exc}.
 
@@ -153,7 +159,7 @@ try {
 }
 \end{lstlisting}
 
-...the code [ab]uses the root exception hierarchy imposed by the language and ends up as \autoref{code:fulfilment-impl-exc3}
+...the code [ab]uses the root exception hierarchy imposed by the language and ends up as \autoref{code:fulfilment-impl-exc3}.
 
 \begin{lstlisting}[caption={Exceptions}, label={code:fulfilment-impl-exc3}, language=Java, escapechar=|]
 DeliveryBookingService dbs = ...;
@@ -164,6 +170,57 @@ try {
   |An unexpected error has occurred. Do you feel lucky?|
 }
 \end{lstlisting}
+
+Unfortunately, exceptions are not sufficient to express the richness of the possible failures that can happen with code that relies on side-effects, and the abstraction of purity in the world of side-effects leaks. The immediate and hard errors can be expressed with exceptions: the \pcode{connection denied} or \pcode{illegal argument exception} are expressive enough and can be raised without any delays. Detecting and raising a \pcode{request timeout} exception takes more time; during this time, the thread of execution must be blocked. 
+
+\subsection{Concurrency and parallelism}
+The world is concurrent, and parts of the world can be parallel. Concurrency means many different things happening at the same time: think different users making requests to the order fulfilment system. Parallellism means splitting larger unit of work into smaller independent units of work and then combining their result: think vector dot product running on a GPU, where each multiplication is independent of the other and runs on a different GPU core. 
+
+% A useful and almost leak-less abstraction is imagine that a serial process is self-contained unit which proceeds one instruction at a time and has immediate and consistent view of its memory. A concurrent process proceeds ``many instructions at the same time'', making consistent view of its memory difficult. Because concurrent process proceeds ``many instructions at the same time'' it needs to synchronise access to its memory in order for all its instructions to see the ``same'' values. 
+
+When two concurrent processes do not need to communicate with each other they proceed in parallel; when two concurrent processes have to communicate, it is necessary to understand the mechanism of the communication to be able to build error-free programs. A typical error in concurrent programs is unsynchronised access to a shared state: the processes \pcode{oneStepForward} and \pcode{oneStepBack} both access the same shared \pcode{state} in \autoref{code:concurrent-1}.
+
+\begin{lstlisting}[caption={Shared mutable state}, label={code:concurrent-1}, language=Pseudo, escapechar=|]
+|The shared mutable state|
+state = 0
+
+|The processes that mutate the state|
+oneStepForward = state += 1
+oneStepBack = state -= 1
+
+|Threads provide mechanism to run the two processes concurrently|
+startThread(oneStepForward)
+startThread(oneStepBack)
+
+|The parent process collects the result|
+if state != 0 then output(state)
+\end{lstlisting}
+
+The value passed to the \pcode{output} call is not deterministic; and it can even be zero, because the \pcode{state != 0} condition evaluates to \pcode{true}, but then one of the threads mutates the \pcode{state}, but the code is already following the ``then'' branch. The concurrent processes need to synchronise access and mutation to the shared state. (Viz \autoref{code:concurrent-2})
+
+\begin{lstlisting}[caption={Locked shared mutable state}, label={code:concurrent-2}, language=Pseudo, escapechar=|]
+|The shared mutable state|
+state = 0
+|The lock that only allows one process to enter|
+lock = makeLock
+
+|The processes acquire and release the lock|
+oneStepForward = with(lock) { state += 1 }
+oneStepBack = with(lock) { state -= 1 }
+
+...
+
+|The parent also locks on the state|
+with(lock) {
+  if state != 0 then output(state)
+}
+\end{lstlisting}
+
+The value of \pcode{state} in program in \autoref{code:concurrent-2} isn't deterministic because the order order in which the concurrent processes \pcode{oneStepForward} and \pcode{oneStepBack} are selected to run isn't determined, but the locks ensure that the state doesn't change while one particular process is using it. The size of the program is small enough to be able to reason about the concurrent processes; just as importantly, the program is running on a single machine and state is in memory on the same machine. A single machine provides almost leak-free abstraction of reliable computation and immediate memory access.
+
+This still isn't a problem until two processes need to communicate to reach agreement on some state, or to cooperate in computation. 
+
+
 
 Changing the type \pcode{O} to higher-kinded type $\mathds{F}$ provides a way to express that the returned value is not the raw value of type \pcode{O}, but that it is wrapped in some container $\mathds{F}$. For $\mathds{F} = Future$, \pcode{decode(Request): Order} becomes \pcode{decode(Request): Future[[Order]]}, which expresses the fact that the result of applying these functions to the input does not yield the result immediately; it \emph{starts} the computation and returns the conainer $\mathds{F} = Future$ which will hold the computed value. Viz \autoref{code:fulfilment-impl-2}.
 
