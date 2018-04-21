@@ -1,0 +1,3 @@
+#!/bin/sh
+
+siege -c200 -t20s 'http://localhost:3000/schedule POST foo' -H "Content-Type: application/octet-stream"
