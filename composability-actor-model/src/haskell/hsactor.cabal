@@ -1,0 +1,73 @@
+-- This file has been generated from package.yaml by hpack version 0.20.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 3d5caad981eb082be838dc40a0da8aa2d0af3fb7e9fe4d4e7be4922f3ea378fb
+
+name:           hsactor
+version:        0.0.0
+build-type:     Simple
+cabal-version:  >= 1.10
+
+library
+  hs-source-dirs:
+      src
+  ghc-options: -O2
+  build-depends:
+      aeson
+    , base
+    , bytestring
+    , servant
+    , servant-server
+    , text
+    , transformers
+    , wai
+    , warp
+  exposed-modules:
+      App
+  other-modules:
+      Paths_hsactor
+  default-language: Haskell2010
+
+executable hsactor
+  main-is: exe/Main.hs
+  ghc-options: -Wall -O2 -threaded -rtsopts -with-rtsopts=-N30
+  build-depends:
+      aeson
+    , base
+    , bytestring
+    , hsactor
+    , servant
+    , servant-server
+    , text
+    , transformers
+    , wai
+    , warp
+  other-modules:
+      Paths_hsactor
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs:
+      test
+  build-depends:
+      aeson
+    , base
+    , bytestring
+    , example-servant-minimal
+    , hspec
+    , http-client
+    , http-types
+    , servant
+    , servant-client
+    , servant-server
+    , text
+    , transformers
+    , wai
+    , warp >=3.2.4
+  other-modules:
+      AppSpec
+      Paths_hsactor
+  default-language: Haskell2010

@@ -226,3 +226,5 @@ target
 build
 cmake-build-debug
 
+node_modules
+package-lock.json
