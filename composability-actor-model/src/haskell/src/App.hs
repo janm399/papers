@@ -67,7 +67,7 @@ scheduleServer :: Server ScheduleApi
 scheduleServer = listSchedules :<|> createSchedule
 
 listSchedules:: Handler String
-listSchedules = return "foo"
+listSchedules = return "foo\n"
 
 createSchedule :: B.ByteString -> Handler B.ByteString
 createSchedule x = do
