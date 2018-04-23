@@ -6,7 +6,7 @@ import Network.Wai
 import System.IO
 
 mkApp :: IO Application
-mkApp = return $ app
+mkApp = return app
  
 main :: IO ()
 main = do

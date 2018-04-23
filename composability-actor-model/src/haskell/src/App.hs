@@ -24,7 +24,7 @@ type ItemApi =
 
 type ScheduleApi =
   "schedule" :> Get '[PlainText] String :<|>
-  "schedule" :> ReqBody '[OctetStream] B.ByteString :> Post '[PlainText] B.ByteString
+  "schedule" :> ReqBody '[OctetStream, PlainText] B.ByteString :> Post '[PlainText] B.ByteString 
 
 type Api = ItemApi :<|> ScheduleApi
 
@@ -71,12 +71,15 @@ listSchedules = return "foo"
 
 createSchedule :: B.ByteString -> Handler B.ByteString
 createSchedule x = do
-  -- liftIO (Data.ByteString.Lazy.putStrLn x)
+  liftIO (B.putStrLn x)
   return $ "done "-- ++ (show $ B.length x)
   -- (Data.ByteString.Lazy.putStrLn x) >>= (const $ return "done")
 
 instance MimeRender PlainText B.ByteString where
   mimeRender _ val = val
+
+instance MimeUnrender PlainText B.ByteString where
+  mimeUnrender _ = Right 
 
 -- * item
 

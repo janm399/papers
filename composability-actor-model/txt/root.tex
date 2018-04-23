@@ -321,6 +321,10 @@ handle(request: Request): Response =
 
 \end{lstlisting}
 
+
+State machine model of computation has to have bounded non-determinism; the configuraiton model of computation (i.e. actors; with local state and communication) does not have a bound on non-determinism, because it incorporates communication; we have indeterminism.
+
+
 \section{Actors}
 There are many actor frameworks and toolkits\cite{akka,scalaz8,transient,thespian}. Some toolkits make it very difficult to compose the behaviour of the actors\cite{akka,thespian}, other toolkits make it much easier\cite{scalaz8,transient}. I consider the actor model as a way to \emph{decompose} a system into self-contained units of functionality and state. I consider these units of functionality and state to be the smallest deployable entities; consequently, the communication between two actors must take form of messages travelling over a boundary that introduces latency and the risk of message loss. Given this definition, it does not make sense to require convenient general composition mechanism for general actors. Such composition mechanism is an abstraction that must attempt to hide the underlying latency and the risk of message loss\footnote{Consider the \emph{Network File System}, which abstracts over unreliable networks to provide the illusion that a filesystem on a remote machine is the same as the filesystem on the local machine. The abstraction \emph{leaks} when the network is slow or lossy, when a lot of small files are being accessed over the network, when a different application generates a lot of traffic on the NIC that also handles the NFS mount, etc.}. 
 
