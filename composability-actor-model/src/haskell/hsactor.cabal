@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3d5caad981eb082be838dc40a0da8aa2d0af3fb7e9fe4d4e7be4922f3ea378fb
+-- hash: d8b4de2cda0f072adb2c437fb379ec85ecadb3b59941d610f04553a837fcaa84
 
 name:           hsactor
 version:        0.0.0
@@ -24,7 +24,8 @@ library
     , wai
     , warp
   exposed-modules:
-      App
+      Item
+      Schedule
   other-modules:
       Paths_hsactor
   default-language: Haskell2010
