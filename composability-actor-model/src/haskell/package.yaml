@@ -7,7 +7,9 @@ tests:
       - test
     dependencies:
       - hspec
-      - example-servant-minimal
+      - hsactor
+      - hspec-wai
+      - hspec-wai-json
       - servant-client
       - warp >= 3.2.4
       - http-client
