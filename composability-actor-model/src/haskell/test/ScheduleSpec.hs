@@ -3,24 +3,27 @@
 module ScheduleSpec where
 
 import qualified Data.ByteString.Lazy as B
-import qualified Data.ByteString.Lazy.Char8 as BC
 import Servant
 import Test.Hspec
 import Schedule
 import Test.Hspec.Wai
+import Test.Hspec.Wai.Matcher
 
 instance Ctx where
     findAll = return "all"
     save x = B.putStrLn x
 
-spec :: Ctx => Spec
-spec = with (return app) $ 
+spec :: Spec
+spec = with (return app) $ do
   describe "GET /schedule" $ do
-      it "responds with 'Simple'" $ do
-        all <- findAll
-        get "/item" `shouldRespondWith` all
+    it "responds with its state" $ do
+      all <- liftIO findAll
+      get "/schedule" `shouldRespondWith` 200 { matchBody = bodyEquals all } 
+
+  describe "POST /schedule" $ do
+    it "xxx" $ do
+      post "/schedule" "some body" `shouldRespondWith` 200
+      all <- liftIO findAll
+      get "/schedule" `shouldRespondWith` 200 { matchBody = bodyEquals all } 
   where
     app = serve api server
-
-instance IsString MatchBody where
-   fromString = bodyEquals . encodeUtf8   
