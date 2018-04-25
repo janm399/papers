@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2c7c00137324ce081d73df42c44fac722df27890ac5a602045074facfa20392c
+-- hash: c6b4d7f3975c8f4d6f43f8994d55c25b5ebd6fba840e4d12cd1ad9e39cee011a
 
 name:           hsactor
 version:        0.0.0
@@ -26,6 +26,7 @@ library
       aeson
     , base
     , bytestring
+    , http-media
     , lens-labels
     , microlens
     , proto-lens
@@ -37,10 +38,12 @@ library
     , wai
     , warp
   exposed-modules:
+      Proto.Cam.Messages
       Item
       Schedule
+      Protobuf
   other-modules:
-      Proto.Cam.Messages
+      Paths_hsactor
   default-language: Haskell2010
 
 executable hsactor

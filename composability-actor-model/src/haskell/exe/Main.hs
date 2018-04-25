@@ -13,8 +13,8 @@ import System.IO
 import Servant
 
 instance S.Ctx where
-  findAll = return "all"
-  save x = B.putStrLn x
+  findAll = return []
+  save x = B.putStrLn "saving"
 
 mkApp :: IO Application
 mkApp = return app

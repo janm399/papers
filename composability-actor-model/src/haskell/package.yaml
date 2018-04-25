@@ -23,14 +23,21 @@ tests:
       - warp >= 3.2.4
       - http-client
       - http-types
+    skip-modules:
+      - Proto.Cam.Messages
 
 library:
   ghc-options: 
     - -O2
+  dependencies:
+    - http-media
   source-dirs:
     - src
-  other-modules:
+  exposed-modules: 
     - Proto.Cam.Messages
+    - Item
+    - Schedule
+    - Protobuf
 
 executables:  
   hsactor:
