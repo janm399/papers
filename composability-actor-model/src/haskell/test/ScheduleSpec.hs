@@ -22,7 +22,7 @@ spec = with (return app) $ do
       get "/schedule" `shouldRespondWith` 200 { matchBody = bodyEquals all } 
 
   describe "POST /schedule" $ 
-    it "xxx" $ do
+    it "saves the scheduled item" $ do
       post "/schedule" "some body" `shouldRespondWith` 200 { matchBody = bodyEquals B.empty }
       all <- liftIO findAll
       get "/schedule" `shouldRespondWith` 200 { matchBody = bodyEquals all } 
