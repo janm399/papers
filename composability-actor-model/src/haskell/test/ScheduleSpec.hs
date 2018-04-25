@@ -15,12 +15,12 @@ instance Ctx where
 
 spec :: Spec
 spec = with (return app) $ do
-  describe "GET /schedule" $ do
+  describe "GET /schedule" $ 
     it "responds with its state" $ do
       all <- liftIO findAll
       get "/schedule" `shouldRespondWith` 200 { matchBody = bodyEquals all } 
 
-  describe "POST /schedule" $ do
+  describe "POST /schedule" $ 
     it "xxx" $ do
       post "/schedule" "some body" `shouldRespondWith` 200
       all <- liftIO findAll
