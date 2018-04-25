@@ -23,7 +23,7 @@ tests:
       - warp >= 3.2.4
       - http-client
       - http-types
-    skip-modules:
+    excluded-modules:
       - Proto.Cam.Messages
 
 library:
