@@ -1,5 +1,14 @@
 name: hsactor
 
+extra-source-files:
+- ../protobuf/**/*.proto
+
+custom-setup:
+  dependencies:
+    - base
+    - Cabal
+    - proto-lens-protoc
+
 tests:
   spec:
     main: Spec.hs
@@ -17,18 +26,20 @@ tests:
 
 library:
   ghc-options: 
-  - -O2
+    - -O2
   source-dirs:
     - src
+  other-modules:
+    - Proto.Cam.Messages
 
 executables:  
   hsactor:
     ghc-options: 
-    - -Wall
-    - -O2
-    - -threaded 
-    - -rtsopts
-    - -with-rtsopts=-N30 
+      - -Wall
+      - -O2
+      - -threaded 
+      - -rtsopts
+      - -with-rtsopts=-N30 
     main: exe/Main.hs
     dependencies:
       - hsactor
@@ -43,3 +54,7 @@ dependencies:
   - warp
   - text
   - bytestring
+  - microlens
+  - proto-lens
+  - proto-lens-protoc
+  - lens-labels

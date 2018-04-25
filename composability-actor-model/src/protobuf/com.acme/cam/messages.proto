@@ -1,5 +1,5 @@
 syntax = "proto3";
-package com.acme.cam;
+// package com.acme.cam;
 
 /*
 message XX {
