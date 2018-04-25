@@ -8,6 +8,7 @@ import Test.Hspec
 import Schedule
 import Test.Hspec.Wai
 import Test.Hspec.Wai.Matcher
+import Test.Hspec.Wai.JSON
 
 instance Ctx where
     findAll = return "all"
@@ -22,7 +23,7 @@ spec = with (return app) $ do
 
   describe "POST /schedule" $ 
     it "xxx" $ do
-      post "/schedule" "some body" `shouldRespondWith` 200
+      post "/schedule" "some body" `shouldRespondWith` 200 { matchBody = bodyEquals B.empty }
       all <- liftIO findAll
       get "/schedule" `shouldRespondWith` 200 { matchBody = bodyEquals all } 
   where
