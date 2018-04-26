@@ -4,11 +4,9 @@
 
 module Schedule(Api, Ctx(..), api, server) where
 
-import qualified Data.ByteString.Lazy as B
 import Control.Monad.IO.Class
 import Servant
 import qualified Proto.Cam.Messages as P
-import Data.ProtoLens.Encoding
 import Protobuf
 
 class Ctx where
