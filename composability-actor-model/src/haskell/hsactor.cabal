@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bcde188739494f3c01b7246dc9d1a0c2fcece5b7c438805eb72bebf030a1bd80
+-- hash: 7d5f3b666e35fa2d2181c79bfab335122d1d6dc268f7f75d19ec068c927b67de
 
 name:           hsactor
 version:        0.0.0
@@ -15,7 +15,7 @@ extra-source-files:
 library
   hs-source-dirs:
       src
-      src/.protobuf
+      protobuf
   ghc-options: -O2
   build-depends:
       aeson

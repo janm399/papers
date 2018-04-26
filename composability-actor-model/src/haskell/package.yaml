@@ -24,15 +24,15 @@ tests:
       - http-client
       - http-types
 
-library:
-  ghc-options: 
-    - -O2
-  dependencies:
-    - http-media
-  source-dirs:
-    - protobuf
-  exposed-modules: 
-    - Proto.Cam.Messages
+# library:
+#   ghc-options: 
+#     - -O2
+#   dependencies:
+#     - http-media
+#   source-dirs:
+#     - protobuf
+#   exposed-modules: 
+#     - Proto.Cam.Messages
 
 library:
   ghc-options: 
@@ -49,7 +49,7 @@ library:
     - text
   source-dirs:
     - src
-    - src/.protobuf
+    - protobuf
   exposed-modules: 
     - Proto.Cam.Messages
     - Item
