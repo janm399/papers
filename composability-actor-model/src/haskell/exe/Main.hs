@@ -11,7 +11,6 @@ import Network.Wai.Handler.Warp
 import Network.Wai
 import System.IO
 import Servant
-import Proto.Cam.Messages
 
 instance S.Ctx where
   findAll = return []

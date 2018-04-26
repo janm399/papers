@@ -18,8 +18,8 @@ class Ctx where
   save :: P.ScheduleEntry -> IO ()
 
 type Api =
-  "schedule" :> Get '[JSON] [P.ScheduleEntry] :<|>
-  "schedule" :> ReqBody '[Protobuf] P.ScheduleEntry :> Post '[JSON] P.ScheduleEntry
+  "schedule" :> Get '[Protobuf JSON] [P.ScheduleEntry] :<|>
+  "schedule" :> ReqBody '[Protobuf OctetStream] P.ScheduleEntry :> Post '[Protobuf JSON] P.ScheduleEntry
 
 api :: Proxy Api
 api = Proxy

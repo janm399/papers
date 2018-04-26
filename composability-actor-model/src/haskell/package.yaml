@@ -12,6 +12,8 @@ extra-source-files:
 tests:
   spec:
     main: Spec.hs
+    ghc-options:
+      - -fprint-potential-instances
     source-dirs:
       - test
     dependencies:
@@ -46,6 +48,7 @@ library:
     - data-default-class
     - lens-family
     - proto-lens
+    - word8
     - text
   source-dirs:
     - src
@@ -64,6 +67,7 @@ executables:
       - -threaded 
       - -rtsopts
       - -with-rtsopts=-N30 
+      - -fprint-potential-instances
     main: exe/Main.hs
     dependencies:
       - hsactor

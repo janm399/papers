@@ -13,5 +13,6 @@ spec = with (return app) $
       get "/item" `shouldRespondWith` 200
     it "responds with 'Simple'" $ 
       get "/item" `shouldRespondWith` [json|[{itemId: 0, itemText: "example item"}]|]
+      
   where
     app = serve api server

@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7d5f3b666e35fa2d2181c79bfab335122d1d6dc268f7f75d19ec068c927b67de
+-- hash: a42b9d80c9cf55b7f068ee3b757bccf1295731ab607540dad3025d0a4b3068e9
 
 name:           hsactor
 version:        0.0.0
@@ -36,6 +36,7 @@ library
     , transformers
     , wai
     , warp
+    , word8
   exposed-modules:
       Proto.Cam.Messages
       Item
@@ -48,7 +49,7 @@ library
 
 executable hsactor
   main-is: exe/Main.hs
-  ghc-options: -Wall -O2 -threaded -rtsopts -with-rtsopts=-N30
+  ghc-options: -Wall -O2 -threaded -rtsopts -with-rtsopts=-N30 -fprint-potential-instances
   build-depends:
       aeson
     , base
@@ -73,6 +74,7 @@ test-suite spec
   main-is: Spec.hs
   hs-source-dirs:
       test
+  ghc-options: -fprint-potential-instances
   build-depends:
       aeson
     , base
