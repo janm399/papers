@@ -2,31 +2,30 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c6b4d7f3975c8f4d6f43f8994d55c25b5ebd6fba840e4d12cd1ad9e39cee011a
+-- hash: bcde188739494f3c01b7246dc9d1a0c2fcece5b7c438805eb72bebf030a1bd80
 
 name:           hsactor
 version:        0.0.0
-build-type:     Custom
+build-type:     Simple
 cabal-version:  >= 1.10
 
 extra-source-files:
     ../protobuf/com.acme/cam/messages.proto
 
-custom-setup
-  setup-depends:
-      Cabal
-    , base
-    , proto-lens-protoc
-
 library
   hs-source-dirs:
       src
+      src/.protobuf
   ghc-options: -O2
   build-depends:
       aeson
     , base
+    , base64-bytestring
     , bytestring
+    , containers
+    , data-default-class
     , http-media
+    , lens-family
     , lens-labels
     , microlens
     , proto-lens
@@ -43,6 +42,7 @@ library
       Schedule
       Protobuf
   other-modules:
+      Data.ProtoLens.JSON
       Paths_hsactor
   default-language: Haskell2010
 

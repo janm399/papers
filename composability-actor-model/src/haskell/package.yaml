@@ -3,11 +3,11 @@ name: hsactor
 extra-source-files:
 - ../protobuf/**/*.proto
 
-custom-setup:
-  dependencies:
-    - base
-    - Cabal
-    - proto-lens-protoc
+# custom-setup:
+#   dependencies:
+#     - base
+#     - Cabal
+#     - proto-lens-protoc
 
 tests:
   spec:
@@ -23,8 +23,6 @@ tests:
       - warp >= 3.2.4
       - http-client
       - http-types
-    excluded-modules:
-      - Proto.Cam.Messages
 
 library:
   ghc-options: 
@@ -32,13 +30,32 @@ library:
   dependencies:
     - http-media
   source-dirs:
+    - protobuf
+  exposed-modules: 
+    - Proto.Cam.Messages
+
+library:
+  ghc-options: 
+    - -O2
+  dependencies:
+    - http-media
+    - base64-bytestring
+    - aeson
+    - bytestring
+    - containers
+    - data-default-class
+    - lens-family
+    - proto-lens
+    - text
+  source-dirs:
     - src
+    - src/.protobuf
   exposed-modules: 
     - Proto.Cam.Messages
     - Item
     - Schedule
     - Protobuf
-
+    
 executables:  
   hsactor:
     ghc-options: 
