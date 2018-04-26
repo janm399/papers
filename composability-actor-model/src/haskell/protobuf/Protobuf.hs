@@ -33,7 +33,7 @@ instance {-# OVERLAPS #-} (Message a) => MimeRender (Protobuf JSON) [a] where
         B.cons W8._bracketleft $ B.snoc encodedJsonMsgs W8._bracketright where
             encodedJsonMsgs = B.intercalate "," jsonMsgs
             jsonMsgs = Prelude.map PBJ.encodeMessageJSON msgs
-            
+
 instance (Message a) => MimeUnrender (Protobuf OctetStream) a where
     mimeUnrender _ body = decodeMessage $ toStrict body
   
