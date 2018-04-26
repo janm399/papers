@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a42b9d80c9cf55b7f068ee3b757bccf1295731ab607540dad3025d0a4b3068e9
+-- hash: 87764d431c8e1be2b175e0d30366f8139d68e058502c8506c82d64bcec8010f3
 
 name:           hsactor
 version:        0.0.0
@@ -98,6 +98,7 @@ test-suite spec
     , warp >=3.2.4
   other-modules:
       ItemSpec
+      ProtobufSpec
       ScheduleSpec
       Paths_hsactor
   default-language: Haskell2010
