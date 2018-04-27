@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 87764d431c8e1be2b175e0d30366f8139d68e058502c8506c82d64bcec8010f3
+-- hash: c5c3ffdbf0401e8968aea84d33e4846175202203d74e363ea6bc7e18792deb70
 
 name:           hsactor
 version:        0.0.0
@@ -42,6 +42,7 @@ library
       Item
       Schedule
       Protobuf
+      CRUD
   other-modules:
       Data.ProtoLens.JSON
       Paths_hsactor

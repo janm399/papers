@@ -2,18 +2,15 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Schedule(Api, Ctx(..), api, server) where
+module Schedule(Api, api, server) where
 
 import Control.Monad.IO.Class
 import Servant
 import qualified Proto.Cam.Messages as P
 import Protobuf
+import CRUD
 
-class Ctx where
-  -- |Finds all scheduled items in some kind of repository
-  findAll :: IO [P.ScheduleEntry]
-  -- |Adds a new scheduled item to
-  save :: P.ScheduleEntry -> IO ()
+type Service = CRUDService P.ScheduleEntry
 
 type Api =
   "schedule" :> Get '[Protobuf JSON] [P.ScheduleEntry] :<|>
@@ -22,13 +19,13 @@ type Api =
 api :: Proxy Api
 api = Proxy
 
-server :: Ctx => Server Api
-server = listSchedules :<|> createSchedule
+server :: Service -> Server Api
+server svc = listSchedules svc :<|> createSchedule svc
 
-listSchedules :: Ctx => Handler [P.ScheduleEntry]
-listSchedules = liftIO findAll
+listSchedules :: Service -> Handler [P.ScheduleEntry]
+listSchedules svc = liftIO $ findAll svc
 
-createSchedule :: Ctx => P.ScheduleEntry -> Handler P.ScheduleEntry
-createSchedule schedule = do
-  liftIO $ save schedule
+createSchedule :: Service -> P.ScheduleEntry -> Handler P.ScheduleEntry
+createSchedule svc schedule = do
+  liftIO $ save svc schedule
   return schedule

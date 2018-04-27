@@ -6,28 +6,22 @@ module Main where
 
 import qualified Item as I
 import qualified Schedule as S
-import qualified Data.ByteString.Lazy as B
 import Network.Wai.Handler.Warp
 import Network.Wai
 import System.IO
 import Servant
-
-instance S.Ctx where
-  findAll = return []
-  save x = B.putStrLn "saving"
-
-mkApp :: IO Application
-mkApp = return app
+import CRUD
+import qualified Proto.Cam.Messages as P
 
 type Api = I.Api :<|> S.Api
-server :: Server Api
-server = I.server :<|> S.server
+server :: CRUDService P.ScheduleEntry -> Server Api
+server scheduleSvc = I.server :<|> S.server scheduleSvc
 
 api :: Proxy Api
 api = Proxy
 
-app :: Application 
-app = serve api server
+app :: IO Application 
+app = serve api . server <$> newInMemoryService
 
 main :: IO ()
 main = do
@@ -36,4 +30,4 @@ main = do
         setPort port $
         setBeforeMainLoop (hPutStrLn stderr ("listening on port " ++ show port)) $
         defaultSettings
-  runSettings settings =<< mkApp
+  runSettings settings =<< app
