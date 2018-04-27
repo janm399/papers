@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c5c3ffdbf0401e8968aea84d33e4846175202203d74e363ea6bc7e18792deb70
+-- hash: b73beea5ef1d302c1673f100b23eaee0c9c958af2c3020cf066fe63ced76bbd6
 
 name:           hsactor
 version:        0.0.0
@@ -32,6 +32,7 @@ library
     , proto-lens-protoc
     , servant
     , servant-server
+    , stm
     , text
     , transformers
     , wai
@@ -62,6 +63,7 @@ executable hsactor
     , proto-lens-protoc
     , servant
     , servant-server
+    , stm
     , text
     , transformers
     , wai
@@ -93,6 +95,7 @@ test-suite spec
     , servant
     , servant-client
     , servant-server
+    , stm
     , text
     , transformers
     , wai

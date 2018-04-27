@@ -80,6 +80,7 @@ dependencies:
   - transformers
   - aeson
   - wai
+  - stm
   - warp
   - text
   - bytestring

@@ -30,4 +30,4 @@ spec = with app $ do
     app = serve api . server <$> newInMemoryService
     -- do
     --   service <- newInMemoryService
-    --   return $ serve api $ server service
+    --   return (serve api (server service))
