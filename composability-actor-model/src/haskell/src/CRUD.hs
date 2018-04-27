@@ -2,12 +2,12 @@ module CRUD where
 
 import Data.IORef
     
-data CRUDService a = CRUDService {
-    -- |Finds all scheduled items in some kind of repository
-    findAll :: IO [a]
-    -- |Adds a new scheduled item to
-    , save :: a -> IO ()
-    }
+data CRUDService a = 
+    CRUDService { -- |Finds all scheduled items in some kind of repository
+                  findAll :: IO [a]
+                  -- |Adds a new scheduled item to
+                , save :: a -> IO ()
+                }
 
 newInMemoryService :: IO (CRUDService a) 
 newInMemoryService = do
