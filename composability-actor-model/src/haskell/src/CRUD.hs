@@ -6,13 +6,13 @@ module CRUD where
 
 -- Instead, it's better to use software transactional memory
 import Control.Concurrent.STM
-    
-data CRUDService a = 
-    CRUDService { -- |Finds all scheduled items in some kind of repository
-                  findAll :: IO [a]
-                  -- |Adds a new scheduled item to
-                , save :: a -> IO ()
-                }
+
+data CRUDService a = CRUDService { 
+      -- |Finds all scheduled items in some kind of repository
+      findAll :: IO [a]
+      -- |Adds a new scheduled item to
+    , save :: a -> IO ()
+    }
 
 newInMemoryService :: IO (CRUDService a) 
 newInMemoryService = do
