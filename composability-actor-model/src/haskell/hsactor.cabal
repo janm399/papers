@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9c25022ac30015209310c30d5b95b5f49f68d0bcabadcdd765bd3e9c0980bfbb
+-- hash: 065000b86c09c67987dd7670d7ece0daa1141343ad3e968768bbaa8a3bda656e
 
 name:           hsactor
 version:        0.0.0
@@ -34,6 +34,7 @@ library
     , servant-server
     , stm
     , text
+    , time
     , transformers
     , wai
     , warp
@@ -65,6 +66,7 @@ executable hsactor
     , servant-server
     , stm
     , text
+    , time
     , transformers
     , wai
     , warp
@@ -97,6 +99,7 @@ test-suite spec
     , servant-server
     , stm
     , text
+    , time
     , transformers
     , wai
     , warp >=3.2.4
