@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuasiQuotes #-}
-module ScheduleSpec where
+module Schedule.ServiceSpec where
 
 import qualified Data.ByteString.Lazy as B
 import Servant
 import Test.Hspec
-import Schedule
+import Schedule.Service
 import Test.Hspec.Wai
 import Test.Hspec.Wai.Matcher
 import Test.Hspec.Wai.JSON

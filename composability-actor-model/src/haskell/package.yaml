@@ -55,8 +55,8 @@ library:
     - protobuf
   exposed-modules: 
     - Proto.Cam.Messages
-    - Item
-    - Schedule
+    - Schedule.Service
+    - Schedule.Core
     - Protobuf
     - CRUD
     

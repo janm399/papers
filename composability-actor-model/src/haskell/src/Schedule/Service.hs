@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Schedule(Api, api, server) where
+module Schedule.Service(Api, api, server) where
 
 import Control.Monad.IO.Class
 import Servant
