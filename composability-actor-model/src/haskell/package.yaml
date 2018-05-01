@@ -85,6 +85,7 @@ dependencies:
   - text
   - time
   - bytestring
+  - async
   - microlens
   - proto-lens
   - proto-lens-protoc

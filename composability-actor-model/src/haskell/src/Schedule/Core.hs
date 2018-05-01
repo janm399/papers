@@ -13,6 +13,9 @@ class Entry a where
     entryId :: a -> EntryId
     fireAt :: a -> UTCTime
 
+class Executor a where
+    execute :: a -> IO ()
+
 data ScheduledEntry a = ScheduledEntry ThreadId a 
 
 type Schedule a = [ScheduledEntry a]
@@ -20,8 +23,8 @@ type Scheduler a = MVar (Schedule a)
 
 -- Public API
 newScheduler :: Entry a => IO (Scheduler a)
-addEntry :: Entry a => Scheduler a -> a -> IO ()
-removeEntry :: Entry a => Scheduler a -> EntryId -> IO ()
+addEntry :: (Executor a, Entry a) => a -> Scheduler a -> IO ()
+removeEntry :: Entry a => EntryId -> Scheduler a -> IO ()
 activeEntries :: Entry a => Scheduler a -> IO [a]
 
 -- Private 
@@ -30,7 +33,7 @@ findEntry :: Entry a => EntryId -> Schedule a -> Maybe (ScheduledEntry a)
 
 newScheduler = newMVar []
 
-addEntry scheduler entry = do
+addEntry entry scheduler = do
     entries <- takeMVar scheduler
     newEntries <- case findEntry (entryId entry) entries of
                       Just existing -> return entries
@@ -43,10 +46,10 @@ addEntry scheduler entry = do
             threadDelay 10000000
                     --    ^s ^ ms  
             let id = (entryId entry)
-            putStrLn $ "Running " ++ id
+            execute entry
             modifyMVar_ scheduler (\entries -> return $ removeEntryId id entries)
 
-removeEntry scheduler id = do
+removeEntry id scheduler = do
     entries <- takeMVar scheduler
     newEntries <- case findEntry id entries of
                       Just (ScheduledEntry threadId entry) -> do
