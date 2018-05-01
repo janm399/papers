@@ -5,7 +5,6 @@ import Control.Concurrent
 import Control.Concurrent.MVar
 import Data.List
 import Data.Time
-import qualified Proto.Cam.Messages as P
 
 type EntryId = String
 
@@ -25,7 +24,7 @@ type Scheduler a = MVar (Schedule a)
 newScheduler :: Entry a => IO (Scheduler a)
 addEntry :: (Executor a, Entry a) => a -> Scheduler a -> IO ()
 removeEntry :: Entry a => EntryId -> Scheduler a -> IO ()
-activeEntries :: Entry a => Scheduler a -> IO [a]
+activeEntries :: Scheduler a -> IO [a]
 
 -- Private 
 removeEntryId :: Entry a => EntryId -> Schedule a -> Schedule a
