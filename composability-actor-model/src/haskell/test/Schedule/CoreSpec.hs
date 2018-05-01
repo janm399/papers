@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE QuasiQuotes #-}
 module Schedule.CoreSpec where
 
 import qualified Data.ByteString.Lazy as B
@@ -35,7 +34,7 @@ instance Executor E where
 
 spec :: Spec
 spec = 
-    describe "The scheduler" $ do
+    describe "The scheduler" $ 
         it "schedules items" $ do
             scheduler <- newScheduler
             forConcurrently_ (replicate 300 10.0) (scheduleAfter scheduler)
