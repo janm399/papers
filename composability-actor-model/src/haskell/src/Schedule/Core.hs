@@ -5,6 +5,8 @@ import Control.Concurrent
 import Control.Concurrent.MVar
 import Data.List
 import Data.Time
+import Data.Time.Clock
+import Data.Fixed
 
 type EntryId = String
 
@@ -42,8 +44,9 @@ addEntry entry scheduler = do
     putMVar scheduler newEntries
     where
         run entry = do
-            threadDelay 10000000
-                    --    ^s ^ ms  
+            now <- getCurrentTime
+            let diff = diffUTCTime (fireAt entry) now * 1000000
+            threadDelay $ round diff
             let id = (entryId entry)
             execute entry
             modifyMVar_ scheduler (\entries -> return $ removeEntryId id entries)
@@ -58,11 +61,14 @@ removeEntry id scheduler = do
                           return entries
     putMVar scheduler newEntries
 
-activeEntries scheduler = do
-    entries <- readMVar scheduler
-    return $ map (\(ScheduledEntry _ entry) -> entry) entries
+activeEntries scheduler = 
+    map (\ (ScheduledEntry _ entry) -> entry) <$> readMVar scheduler
+    {- do
+            entries <- readMVar scheduler
+            return $ map (\(ScheduledEntry _ entry) -> entry) entries
+    -}
 
-findEntry id schedule = find (\(ScheduledEntry _ entry) -> (entryId entry) == id) schedule
+findEntry id = find (\(ScheduledEntry _ entry) -> (entryId entry) == id) 
 
 removeEntryId id = filter (\(ScheduledEntry _ entry) -> (entryId entry) /= id) 
     

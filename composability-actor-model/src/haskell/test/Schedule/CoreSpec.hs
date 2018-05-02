@@ -15,7 +15,9 @@ import Data.ProtoLens
 import Data.Time.Clock
 import Data.Fixed
 import Control.Concurrent.Async
-import CRUD
+import Statistics.Sample
+import qualified Data.Vector as V
+import System.Random
 
 data E = E (MVar UTCTime) UTCTime
 
@@ -37,9 +39,31 @@ spec =
     describe "The scheduler" $ 
         it "schedules items" $ do
             scheduler <- newScheduler
-            forConcurrently_ (replicate 300 10.0) (scheduleAfter scheduler)
+            assertDistribution scheduler 1.0 1000
+            assertDistribution scheduler 2.0 1000
+            assertDistribution scheduler 5.0 1000
     where
-        scheduleAfter :: Scheduler E -> Double -> IO ()
+        assertDistribution :: Scheduler E -> Double -> Int -> IO ()
+        assertDistribution scheduler seconds count = do
+            offsets <- randomList count seconds
+            firingOffsetsL <- forConcurrently offsets (scheduleAfter scheduler)
+            let firingOffsets = V.fromList firingOffsetsL
+            let m = mean firingOffsets  
+            let k = kurtosis firingOffsets
+            let d = stdDev firingOffsets
+            putStrLn $ "   > Mean = " ++ (show m) ++ ", kurtosis = " ++ (show k) ++ ", stddev = " ++ (show d)
+            m `shouldSatisfy` (<0.5)
+            (abs k) `shouldSatisfy` (<20)
+            d `shouldSatisfy` (<1)
+
+        randomList :: Int -> Double -> IO [Double]
+        randomList 0 _ = return []
+        randomList n max = do
+            r  <- randomRIO (max, 2 * max)
+            rs <- randomList (n - 1) max
+            return (r:rs)
+
+        scheduleAfter :: Scheduler E -> Double -> IO Double
         scheduleAfter scheduler seconds  = do
             now <- getCurrentTime
             let fireAt = addUTCTime (realToFrac seconds::NominalDiffTime) now
@@ -47,5 +71,4 @@ spec =
             addEntry (E waitFor fireAt) scheduler
             firedAt <- takeMVar waitFor
             let diff = fromRational $ toRational $ diffUTCTime firedAt fireAt
-            -- putStrLn $ "    >> fireAt - firedAt = " ++ (show diff)
-            diff `shouldSatisfy` (< 0.5)
+            return diff

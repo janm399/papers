@@ -24,6 +24,9 @@ tests:
       - servant-client
       - warp >= 3.2.4
       - http-client
+      - statistics
+      - vector
+      - random
       - http-types
 
 # library:

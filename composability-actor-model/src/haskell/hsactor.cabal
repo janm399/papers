@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 617a374338a68af87e0cb91a9468754cd96f35f1041e0ed6debaa9170007639d
+-- hash: 207d6d8465d6f1e12ff5b38e5708a1e2ff146dce6685346362c27a117caf8354
 
 name:           hsactor
 version:        0.0.0
@@ -97,13 +97,16 @@ test-suite spec
     , microlens
     , proto-lens
     , proto-lens-protoc
+    , random
     , servant
     , servant-client
     , servant-server
+    , statistics
     , stm
     , text
     , time
     , transformers
+    , vector
     , wai
     , warp >=3.2.4
   other-modules:
