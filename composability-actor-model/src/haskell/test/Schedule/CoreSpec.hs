@@ -3,68 +3,74 @@
 module Schedule.CoreSpec where
 
 import qualified Data.ByteString.Lazy as B
-import Servant
 import Test.Hspec
 import Schedule.Core
 import Control.Concurrent.MVar
-import Data.ProtoLens
+import Control.Monad (replicateM)
 import Data.Time.Clock
 import Data.Fixed
 import Control.Concurrent.Async
 import Statistics.Sample
 import qualified Data.Vector as V
+import qualified Data.UUID.V4 as UUID
 import System.Random
 
-data E = E (MVar UTCTime) UTCTime
+-- | E is the entry in the test schedule; it contains the id, firing time and the fired time
+data E = E String UTCTime (MVar UTCTime)
 
-instance Show E where
-    show (E _ t) = "E fire at " ++ (show t)
-
+-- | The Entry instance for E simply pulls out the relevant elements from the data `E`.
 instance Entry E where
-    entryId = show
-    fireAt (E _ t) = t
+    entryId (E id _ _) = id
+    fireAt (E _ t _) = t
 
+-- | Executing our `E` means to put current time to its fired time MVar.
 instance Executor E where
-    execute (E et t) = do
+    execute (E _ t et) = do
       now <- getCurrentTime
-      -- putStrLn $ "    > Scheduled for " ++ (show t) ++ ", executed at " ++ (show now)
       putMVar et now
 
 spec :: Spec
-spec = 
-    describe "The scheduler" $ 
-        it "schedules items" $ do
+spec =
+    describe "The scheduler" $
+        it "execute scheduled items accurately" $ do
             scheduler <- newScheduler
-            assertDistribution scheduler 1.0 1000
-            assertDistribution scheduler 2.0 1000
-            assertDistribution scheduler 5.0 1000
+            assertSchedulingAccuracy scheduler 1.0 1000
+            assertSchedulingAccuracy scheduler 2.0 1000
+            assertSchedulingAccuracy scheduler 5.0 1000
     where
-        assertDistribution :: Scheduler E -> Double -> Int -> IO ()
-        assertDistribution scheduler seconds count = do
-            offsets <- randomList count seconds
-            firingOffsetsL <- forConcurrently offsets (scheduleAfter scheduler)
-            let firingOffsets = V.fromList firingOffsetsL
-            let m = mean firingOffsets  
+        -- | Asserts sheduling accuracy for `count` items scheduled in the given
+        --   scheduler for _around_ `seconds`s from now.
+        --
+        --   We measure the accuracy by looking at the mean & standard deviation of the
+        --   firing time differences; we also expect the sharpness of the distribution to
+        --   be high, which measures the number of outliers.
+        assertSchedulingAccuracy :: Scheduler E -> Double -> Int -> IO ()
+        assertSchedulingAccuracy scheduler seconds count = do
+            offsets <- replicateM count (randomRIO (seconds, 2 * seconds))
+            firingOffsets <- V.fromList `fmap` forConcurrently offsets (scheduleAndExecuteItemIn scheduler)
+            let m = mean firingOffsets
             let k = kurtosis firingOffsets
             let d = stdDev firingOffsets
             putStrLn $ "   > Mean = " ++ (show m) ++ ", kurtosis = " ++ (show k) ++ ", stddev = " ++ (show d)
-            m `shouldSatisfy` (<0.5)
-            (abs k) `shouldSatisfy` (<20)
-            d `shouldSatisfy` (<1)
 
-        randomList :: Int -> Double -> IO [Double]
-        randomList 0 _ = return []
-        randomList n max = do
-            r  <- randomRIO (max, 2 * max)
-            rs <- randomList (n - 1) max
-            return (r:rs)
+            -- we want the "steepness" of distribution of values to be as high as possible:
+            -- * >= 2: hyperbolic secant distribution
+            -- * >= 3: Laplace distribution, also known as the double exponential distribution
+            k `shouldSatisfy` (>=2)
 
-        scheduleAfter :: Scheduler E -> Double -> IO Double
-        scheduleAfter scheduler seconds  = do
+            -- the standard deviation and mean must also be [very] low
+            d `shouldSatisfy` (<0.01)
+            m `shouldSatisfy` (<0.01)
+
+        -- | Schedules an item to be executed in `seconds`s in the given scheduler
+        --   returns the IO of the difference between expected firing time and the
+        --   actual firing time in seconds
+        scheduleAndExecuteItemIn :: Scheduler E -> Double -> IO Double
+        scheduleAndExecuteItemIn scheduler seconds  = do
             now <- getCurrentTime
+            id <- UUID.nextRandom
             let fireAt = addUTCTime (realToFrac seconds::NominalDiffTime) now
             waitFor <- newEmptyMVar :: IO (MVar UTCTime)
-            addEntry (E waitFor fireAt) scheduler
+            addEntry (E (show id) fireAt waitFor) scheduler
             firedAt <- takeMVar waitFor
-            let diff = fromRational $ toRational $ diffUTCTime firedAt fireAt
-            return diff
+            return (fromRational $ toRational $ diffUTCTime firedAt fireAt)

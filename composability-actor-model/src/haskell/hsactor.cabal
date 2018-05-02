@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 207d6d8465d6f1e12ff5b38e5708a1e2ff146dce6685346362c27a117caf8354
+-- hash: dc765eb8a3724d3fd3121404571e6b9819041ee39b36912d9e416daf13efedd1
 
 name:           hsactor
 version:        0.0.0
@@ -106,6 +106,7 @@ test-suite spec
     , text
     , time
     , transformers
+    , uuid
     , vector
     , wai
     , warp >=3.2.4

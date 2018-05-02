@@ -27,6 +27,7 @@ tests:
       - statistics
       - vector
       - random
+      - uuid
       - http-types
 
 # library:
