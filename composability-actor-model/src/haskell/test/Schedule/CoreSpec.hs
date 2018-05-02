@@ -7,10 +7,6 @@ import Servant
 import Test.Hspec
 import Schedule.Core
 import Control.Concurrent.MVar
-import Test.Hspec.Wai
-import Test.Hspec.Wai.Matcher
-import Test.Hspec.Wai.JSON
-import qualified Proto.Cam.Messages as P
 import Data.ProtoLens
 import Data.Time.Clock
 import Data.Fixed
