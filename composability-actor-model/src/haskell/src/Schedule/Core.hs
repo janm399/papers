@@ -32,14 +32,15 @@ type Scheduler a = MVar (Schedule a)
 -- | Creates a new `Scheduler a`
 newScheduler :: IO (Scheduler a)
 
--- | Adds a new entry `a` to the `Scheduler a`; the entry must lie in the 
---   `Executor` and `Entry` typeclass.
+-- | Adds a new entry `a` to the `Scheduler a`
 --   If the entry is already in the schedule, the schedule is left unmodified
 scheduleOnce :: (Executor a, Eq a) => UTCTime     -- ^ The firing time
                                    -> a           -- ^ The thing to execute using Executor
                                    -> Scheduler a -- ^ The scheduler to add the entry to
                                    -> IO ()
 
+-- | Adds a new entry `a` to the `Scheduler a`
+--   If the entry is already in the schedule, the schedule is left unmodified
 scheduleRepeated :: (Executor a, Eq a) => Double      -- ^ The period in seconds
                                        -> a           -- ^ The thing to execute using Executor
                                        -> Scheduler a -- ^ The scheduler to add the entry to 
