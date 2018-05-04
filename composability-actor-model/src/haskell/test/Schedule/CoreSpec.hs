@@ -16,16 +16,17 @@ import qualified Data.UUID.V4 as UUID
 import System.Random
 
 -- | E is the entry in the test schedule; it contains the id, firing time and the fired time
-data E = E String UTCTime (MVar UTCTime)
+data E = E String (MVar UTCTime)
 
--- | The Entry instance for E simply pulls out the relevant elements from the data `E`.
-instance Entry E where
-    entryId (E id _ _) = id
-    fireAt (E _ t _) = t
+instance Eq E where
+    (E id _) == (E id' _) = id == id'
+
+instance Show E where
+    show (E id _) = "Entry " ++ id
 
 -- | Executing our `E` means to put current time to its fired time MVar.
 instance Executor E where
-    execute (E _ t et) = do
+    execute (E _ et) = do
       now <- getCurrentTime
       putMVar et now
 
@@ -37,6 +38,8 @@ spec =
             assertSchedulingAccuracy scheduler 1.0 1000
             assertSchedulingAccuracy scheduler 2.0 1000
             assertSchedulingAccuracy scheduler 5.0 1000
+            e <- activeEntries scheduler 
+            e `shouldSatisfy` null
     where
         -- | Asserts sheduling accuracy for `count` items scheduled in the given
         --   scheduler for _around_ `seconds`s from now.
@@ -71,6 +74,6 @@ spec =
             id <- UUID.nextRandom
             let fireAt = addUTCTime (realToFrac seconds::NominalDiffTime) now
             waitFor <- newEmptyMVar :: IO (MVar UTCTime)
-            addEntry (E (show id) fireAt waitFor) scheduler
+            scheduleOnce fireAt (E (show id) waitFor) scheduler
             firedAt <- takeMVar waitFor
             return (fromRational $ toRational $ diffUTCTime firedAt fireAt)
