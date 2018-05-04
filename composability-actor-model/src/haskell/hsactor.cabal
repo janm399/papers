@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dc765eb8a3724d3fd3121404571e6b9819041ee39b36912d9e416daf13efedd1
+-- hash: 4249c8d577d90fcdccdfaa46754dbddaa3265e53c318cad55a961ed4d1fb3822
 
 name:           hsactor
 version:        0.0.0
@@ -47,6 +47,7 @@ library
       Protobuf
       CRUD
   other-modules:
+      Device.Generic
       Data.ProtoLens.JSON
       Paths_hsactor
   default-language: Haskell2010
