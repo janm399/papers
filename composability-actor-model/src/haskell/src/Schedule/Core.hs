@@ -1,9 +1,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Schedule.Core
-    ( Executor(..)
-    , Scheduler
+    ( Scheduler
     , newScheduler
+    , stopScheduler
     , scheduleOnce
+    , scheduleRepeated
     , removeEntry
     , activeEntries
     ) where
@@ -15,11 +16,6 @@ import Data.List
 import Data.Time
 import Data.Time.Clock
 import Data.Fixed
-
--- | Implements the action to execute the entry `a` when its time is up
-class Executor a where
-    -- | Called when it is time to execute the action in `a`
-    execute :: a -> IO ()
 
 -- | The scheduled entry associates a thread id with the entry `a`
 data ScheduledEntry a = ScheduledEntry ThreadId a
@@ -34,43 +30,52 @@ newScheduler :: IO (Scheduler a)
 
 -- | Adds a new entry `a` to the `Scheduler a`
 --   If the entry is already in the schedule, the schedule is left unmodified
-scheduleOnce :: (Executor a, Eq a) => UTCTime     -- ^ The firing time
-                                   -> a           -- ^ The thing to execute using Executor
-                                   -> Scheduler a -- ^ The scheduler to add the entry to
-                                   -> IO ()
+scheduleOnce :: (Eq a) => UTCTime      -- ^ The firing time
+                       -> a            -- ^ The thing to execute using
+                       -> (a -> IO ()) -- ^ The execution operation
+                       -> Scheduler a  -- ^ The scheduler to add the entry to
+                       -> IO ()
 
 -- | Adds a new entry `a` to the `Scheduler a`
 --   If the entry is already in the schedule, the schedule is left unmodified
-scheduleRepeated :: (Executor a, Eq a) => Double      -- ^ The period in seconds
-                                       -> a           -- ^ The thing to execute using Executor
-                                       -> Scheduler a -- ^ The scheduler to add the entry to 
-                                       -> IO ()
+scheduleRepeated :: (Eq a) => Double       -- ^ The period in seconds
+                           -> a            -- ^ The thing to execute
+                           -> (a -> IO ()) -- ^ The execution operation
+                           -> Scheduler a  -- ^ The scheduler to add the entry to 
+                           -> IO ()
 
 -- | Returns the list of active entries in the schedule
 activeEntries :: Scheduler a -> IO [a]
 
+-- | Stops all scheduled items in the scheduler
+stopScheduler :: Scheduler a -> IO ()
+
 -- Private 
-schedule :: (Executor a, Eq a) => Scheduler a -> a -> (a -> IO ()) -> IO ()
+schedule :: Eq a => Scheduler a -> a -> (a -> IO ()) -> IO ()
 removeEntry :: Eq a => a -> Schedule a -> Schedule a
 findEntry :: Eq a => a -> Schedule a -> Maybe (ScheduledEntry a)
 
 newScheduler = newMVar []
 
-scheduleOnce fireAt entry scheduler = 
-    schedule scheduler entry run
+stopScheduler scheduler = do
+    entries <- takeMVar scheduler
+    mapM_ (\(ScheduledEntry t _) -> killThread t) entries
+
+scheduleOnce fireAt entry run scheduler = 
+    schedule scheduler entry (run' run)
     where
-        run entry = do
+        run' run entry = do
             now <- getCurrentTime
             let diff = diffUTCTime fireAt now * 1000000
             threadDelay $ round diff
-            execute entry
+            run entry
 
-scheduleRepeated period entry scheduler =
-    schedule scheduler entry run
+scheduleRepeated period entry run scheduler =
+    schedule scheduler entry (run' run)
     where
-        run entry = forever $ do
+        run' run entry = forever $ do
             threadDelay $ round period * 1000000
-            execute entry
+            run entry
 
 -- removeEntry id scheduler = do
 --     entries <- takeMVar scheduler

@@ -24,12 +24,6 @@ instance Eq E where
 instance Show E where
     show (E id _) = "Entry " ++ id
 
--- | Executing our `E` means to put current time to its fired time MVar.
-instance Executor E where
-    execute (E _ et) = do
-      now <- getCurrentTime
-      putMVar et now
-
 spec :: Spec
 spec =
     describe "The scheduler" $
@@ -71,9 +65,14 @@ spec =
         scheduleAndExecuteItemIn :: Scheduler E -> Double -> IO Double
         scheduleAndExecuteItemIn scheduler seconds  = do
             now <- getCurrentTime
-            id <- UUID.nextRandom
+            id <- show <$> UUID.nextRandom
             let fireAt = addUTCTime (realToFrac seconds::NominalDiffTime) now
             waitFor <- newEmptyMVar :: IO (MVar UTCTime)
-            scheduleOnce fireAt (E (show id) waitFor) scheduler
+            scheduleOnce fireAt (E id waitFor) execute scheduler
             firedAt <- takeMVar waitFor
             return (fromRational $ toRational $ diffUTCTime firedAt fireAt)
+
+        execute (E _ et) = do
+            now <- getCurrentTime
+            putMVar et now
+          

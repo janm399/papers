@@ -61,6 +61,7 @@ library:
     - Proto.Cam.Messages
     - Schedule.Service
     - Schedule.Core
+    - Device.Concrete
     - Protobuf
     - CRUD
     
