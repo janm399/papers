@@ -74,15 +74,16 @@ object MessageGenerator {
 
 }
 
-|To use it, we prepare the parameters and seed for the application of the generators|
+|Prepare the parameters and seed for the application of the generators|
 val parameters = Gen.Parameters
-                  .default
-                  .withSize(1999)
+                    .default
+                    .withSize(1999)
 def seed = Seed(System.currentTimeMillis())
 import MessageGenerator._
 import hints._
 
-|Generate one ``chaotic'' instance of message $X$, using the in-scope $Hints[X]$|
+|Generate one ``chaotic'' instance of message $X$, using the|
+|in-scope $Hints[X]$|
 val x = msg[X](parameters, seed)
 println(x)
 \end{lstlisting}
@@ -196,9 +197,10 @@ A system can be attacked by sending it malicious input, aiming to either make it
 The denial-of-service style attacks aim to completely crash the nodes running the services; for example by causing out-of-memory or stack-overflow errors that the system should not catch, or causing high CPU usage, or by making the system under attack read too much data from an I/O device. An example of a message that causes stack-overflow exception in Protocol Buffers using \pcode{"com.google.protobuf" \% "protobuf-java" \% "3.4.0"} and \pcode{"com.trueaccord.scalapb" \%\% "compilerplugin" \% "0.6.6"}\cite{scalapb} is shown in \autoref{code:malicious-message-pb}.
 
 \begin{lstlisting}[caption={Malicious message}, label={code:malicious-message-pb}, language=Scala, escapechar=|]
-|Construct a malicious message that starts with the valid serialized bytes $b$ and adds 6000 bytes with the value 99.|
+|Construct a malicious message that starts with the valid serialized bytes $b$|
+|and adds 20000 bytes with the value 99.|
 val b  = Array[Byte](8, 1, 18, 3)
-val mb = Array.fill(6000)(99.toByte)
+val mb = Array.fill(20000)(99.toByte)
 Array.copy(b, 0, mb, 0, b.length)
 
 |Decode an instance of $X$ the input $mb$|
@@ -233,7 +235,9 @@ JsonFormat.fromJsonString[X](mj)
 The thread that throws the \pcode{StackOverflowError} arising from \pcode{JsonFormat.fromJsonString[X](mj)} and \pcode{X.validate(mb)} without handling it in a \pcode{try / catch} block terminates. This attack can be mitigated and the impact of the too-deep recursion causing the \pcode{StackOverflowError}s on other parts of the system contained by moving the decoding to a thread from a \emph{dedicated} pool\footnote{A side benefit of moving the decoding to a dedicated thread pool provides bulk-heading of the decoding code from the rest of the application code}. A suitable language \& framework makes this a fairly easy task. An example of safe, though very inelegant (because of the use of $Await.result$) code in Scala is shown in \autoref{code:so-mitigation}. The $decode$ function can be used as a direct replacement in your code (though production implementation should pay extra attention to properly configure the $ExecutionContext$ with sufficient number of threads and pinning behavior). Non-blocking toolkits (such as Akka\cite{akka} and Play\cite{play} in Scala) use non-blocking style throughout, which means that there is no need to block for the result of the asynchronous operation; the code in \autoref{code:so-mitigation} and the performance measurements represent the worst-case scenarios.
 
 \begin{lstlisting}[caption={Stack Overflow Mitigation}, label={code:so-mitigation}, language=Scala, escapechar=|]
-|The decoding function takes the bytes $b$ to decode and schedules the decoding in the $ec$. It returns the result of the decoding, but will survive a $StackOverflowError$.|
+|The decoding function takes the bytes $b$ to decode and schedules the|
+|decoding in the $ec$. It returns the result of the decoding, but will|
+|survive and bulk-head a $StackOverflowError$.|
 def decode(b: Array[Byte])
   (implicit ex: ExecutionContext): Try[X] = {
   import scala.concurrent.duration._
@@ -247,10 +251,13 @@ val b  = Array[Byte](8, 1, 12, 3, 65, 66, 67)
 val mb = Array[Byte](8, 1, 12, 3, 65, 66, 67, 
                      99, ..., 99)
 
-|With an implicit $ExecutionContext$ in scope, applying $decode$ to the good payload $b$ returns $Success(X(...))$ in roughly \SI{17}{\milli \second}.|
+|With an implicit $ExecutionContext$ in scope, applying $decode$ to the|
+|good payload $b$ returns $Success(X(...))$ in roughly \SI{17}{\milli \second}.|
 decode(b)
 
-|With an implicit $ExecutionContext$ in scope, applying $decode$ to the good payload $b$ returns $Failure(TimeoutException)$ after the timeout of \SI{100}{\milli \second} elapses.|
+|With an implicit $ExecutionContext$ in scope, applying $decode$ to the|
+|good payload $b$ returns $Failure(TimeoutException)$ after the timeout|
+|of \SI{100}{\milli \second} elapses.|
 decode(mb)
 \end{lstlisting}
 
@@ -302,12 +309,15 @@ While the code to implement the mitigation against this type of attack is straig
 Another attack is one that sends messages to the system that are just under the \pcode{maximum-size} limit. With sufficient, though still fairly low number of messages, this will cause the system to fail with out-of-memory error; and this cannot be contained in a separate thread pool; a proof-of-concept code is shown in \autoref{code:malicious-message-pb-oom}.
 
 \begin{lstlisting}[caption={Malicious message}, label={code:malicious-message-pb-oom}, language=Scala, escapechar=|]
-|Construct a malicious message that specifies the $greeting$ property to be a string of $10485759$ characters. The eager parser makes a copy of the entire buffer, the streaming parser reads \& allocates the memory by chunks.|
+|Construct a malicious message that specifies the $greeting$ property to be|
+|a string of $10485759$ characters. The eager parser makes a copy of the|
+|entire buffer, the streaming parser reads \& allocates the memory by chunks.|
 val b  = Array[Byte](8, 1, 18, -1, -1, -1, 4)
 val mb = Array.fill(b.length + 10485759)(65.toByte)
 Array.copy(b, 0, mb, 0, b.length)
 
-|Simulate in flight processing, even though we count to 200 the OOM happens around 165|
+|Simulate in flight processing, even though we count to 200,|
+|the OOM happens around 165.|
 val inFlight: ArrayBuffer[X] = ArrayBuffer()
 for (_ <- 0 to 200) {
   val x = X.parseFrom(mb)
@@ -328,7 +338,7 @@ It is particularly dangerous if the system is designed to read messages from a j
 object MessageGenerator {
   |Constructs a \emph{malicious} generator for a type of type $A$,|
   |with optionally provided hints for the fields|
-  def msgM[A <: GeneratedMessage with Message[A]]
+  def msgM[A <: GeneratedMessage with Message[A]||]
       (implicit cmp: GeneratedMessageCompanion[A], 
        hint: Hint[A] = noHint): Gen[A] = ...
 }
