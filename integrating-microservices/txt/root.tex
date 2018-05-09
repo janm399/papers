@@ -31,8 +31,21 @@ This inefficiency, the complexity of building reliable and easy-to-use endpoints
 Using a database as an integration layer does not make the difficult choices of a distributed system go away, yet it keeps all the disadvantages of the anti-pattern. It forces shared data model, which may couple two (multiple!) systems together in the same release cycle; it is also a recipe for slowly-growing monolith, where one of the systems gains more and more functionality (the one with the largest number of developers); the other systems become lighter--after all, they are just views on the same shared state. The shared data model also means that two (multiple!) systems have to agree on usable data models for each.
 
 \subsection{Messaging to the rescue}
+If the systems that are to be integrated are event-driven--each system publishes messages as it proceeds with its operation, and if each system accepts messages at any time without previously initiating a request--then the integration can take advantage of this transfer of information. Relying entirely on [persistent] messaging can be burdensome; it is reasonable to rely on snapshots to remove the need to replay the messages from the beginning of time at start-up. 
 
-\subsection{Anecdote}
+It might seem reasonable to rely on an endpoint that can deliver the entire snapshot in one response at start-up. Ignoring the potential problems with the size of the response, this will make the two systems to be integrated more coupled together. Specifically, it will remove the decoupling in time that the persistent messaging mechanism brings. 
+
+
+\section{Implementation details}
+To integrate...
+
+\subsection{Custom code}
+System 1 <=> (Dynamo, Kafka) -> Output? => Input -> Kafka -> MySQL <=> System 2
+
+\subsection{AWS tooling}
+System 1 <=> Dynamo -> Lambda? -> Kinesis => Lambda -> MySQL <=> System 2
+
+\section{Practical applicaiton}
 X requested a feature in the Y system to implement a REST API endpoint that can be queried for the current state of a particular media assignment; but this request should also create a subscription for any changes to be delivered to the X system over a Kafka topic. The motivation for the feature was X’s need to know Y’s state, but to avoid doing periodic polling. (Polling, the team X reasoned, is just not cool, and might still miss an important change that happens between the two polls.)
 \begin{itemize}
   \item Y should not implement state that is only useful for X. The state Y would hold is not needed for its operation, it only serves one particular client;
