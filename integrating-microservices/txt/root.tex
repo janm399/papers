@@ -37,7 +37,9 @@ It might seem reasonable to rely on an endpoint that can deliver the entire snap
 
 
 \section{Implementation details}
-To integrate...
+Consider two systems \circled{A} and \circled{B} that need to share parts of their state. Because the systems need to share [part of] their state, it is  \autoref{fig:2s-es} shows both systems as event-driven: 
+
+\fig{2s-es.png}{2s-es}{Integrating two systems}
 
 \subsection{Custom code}
 System 1 <=> (Dynamo, Kafka) -> Output? => Input -> Kafka -> MySQL <=> System 2
