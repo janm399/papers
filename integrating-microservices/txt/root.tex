@@ -37,9 +37,17 @@ It might seem reasonable to rely on an endpoint that can deliver the entire snap
 
 
 \section{Implementation details}
-Consider two systems \circled{A} and \circled{B} that need to share parts of their state. Because the systems need to share [part of] their state, it is  \autoref{fig:2s-es} shows both systems as event-driven: 
+Consider two systems that need to share parts of their state. If both systems are event-driven, the task is simpler: all that needs to be done is to deliver the messages from the first system to the second system. Even though it is possible for the second system to accept the ``internal'' messages from the first system, it is safer to add a component that implements translation between the two systems. (This translation component can be \pcode{identity}, but it should be there.) \autoref{fig:2s-es} illustrates the event-driven scenario.
 
 \fig{2s-es.png}{2s-es}{Integrating two systems}
+
+Both systems \circled{A} and \circled{B} have their private journal and snapshot stores. The sharing of state begins by initial query that pulls in the appropriate snapshot of state from system \circled{A} into \circled{B} in \circled{1}; then the system \circled{B} follows the state changes in \circled{A} by acting on the [translated] messages it receives from \circled{A}. The system \circled{A} is not aware of any connection; it is not even aware of the translation component; all that the system \circled{A} is concerned about is delivery of messages to its messaging boundary. The flow is illustrated in \circled{2}, \circled{3}, and \circled{4}.
+
+\autoref{fig:2s-es} does not explain how the messages cross the boundary between the systems; it is clear that there needs to be some kind of connector that sits either on the \circled{A} or the \circled{B} side. It is better for the connector to be on the \circled{B} side. \circled{B} wants to received messages from \circled{A}, so it should be responsible for making the arrangements: it should verify that it is indeed connecting to the \emph{right} \circled{A} (checking certificates, for example); even more importantly, the connector needs to \emph{consume} messages from \circled{A}, and then \emph{publish} the same messages to \circled{B}. Publishing is potentially much more complex procedure (what is the acceptable confirmation / acknowledgement, what are the maximum batch sizes, time-outs, etc.), and should be in full control of \circled{B}\cite{mirrormaker}.  
+
+If the two systems are not event-driven, but rather simpler CRUD-based services, it may be possible to pull the state update messages from the data stores that the systems use. Ideally, the only change to the integration flow will be the source and destination of the messages: the source becomes the state database in \circled{A}; the destination becomes \circled{B}'s APIs (see \autoref{fig:2s-crud}).
+
+\fig{2s-crud.png}{2s-crud}{Integrating CRUD systems}
 
 \subsection{Custom code}
 System 1 <=> (Dynamo, Kafka) -> Output? => Input -> Kafka -> MySQL <=> System 2
