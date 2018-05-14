@@ -25,18 +25,15 @@
 \section{State in distributed system}
 Imagine two systems that need to share information; a good starting point may be an endpoint where one system can request the state of the other system. If the first system needs to keep ``in sync'' with the second system, it needs to periodically query the endpoint to obtain the state from the second system. This keeps the two systems independent and decoupled, but it means that the systems might miss important state changes that happen between the two polls, and it makes both systems do needless work by querying the endpoints, even if the state remains the same.
 
-\subsection{Database as integration layer}
 This inefficiency, the complexity of building reliable and easy-to-use endpoints, the reasoning that both systems are views on the same underlying data, the possible time-pressures to deliver working integration, leads to the \emph{database as integration layer} anti-pattern\cite{eip}. Never mind the \emph{anti} in anti-pattern: what would happen if the systems actually decided to use a shared database? As the database spreads over multiple networked nodes, which introduces unreliability and delay, and means that the database administrators now need to choose the two of the C$\cdot$A$\cdot$P (C stands for consistency, A for availability, and P for partition-tolerance)--as long as one of the choices is P. This leaves the DBAs with a decision between A and C. A database that keeps its state on multiple nodes may keep them ``in sync'' by sending the nodes messages that describe the state transitions to be applied to the state. The state that the database (in the sense of all its nodes) keeps is then simply a reliable playback of all the messages. The state is a snapshot of the stream of messages at a given point in time. However, the decision between C and A still remains. If the choice is C, then all nodes have to agree that they have indeed received and applied all messages up to some point in time; in case the messages aren't received, or if there is no agreement, the database must become unavailable. If the choice is A, then there is the risk that a node that is being queried has not yet received all update messages; querying another node may yield different result; repeating the same query on the original node later may yield different result.
 
 Using a database as an integration layer does not make the difficult choices of a distributed system go away, yet it keeps all the disadvantages of the anti-pattern. It forces shared data model, which may couple two (multiple!) systems together in the same release cycle; it is also a recipe for slowly-growing monolith, where one of the systems gains more and more functionality (the one with the largest number of developers); the other systems become lighter--after all, they are just views on the same shared state. The shared data model also means that two (multiple!) systems have to agree on usable data models for each.
 
-\subsection{Messaging to the rescue}
+\section{Message-driven systems}
 If the systems that are to be integrated are event-driven--each system publishes messages as it proceeds with its operation, and if each system accepts messages at any time without previously initiating a request--then the integration can take advantage of this transfer of information. Relying entirely on [persistent] messaging can be burdensome; it is reasonable to rely on snapshots to remove the need to replay the messages from the beginning of time at start-up. 
 
 It might seem reasonable to rely on an endpoint that can deliver the entire snapshot in one response at start-up. Ignoring the potential problems with the size of the response, this will make the two systems to be integrated more coupled together. Specifically, it will remove the decoupling in time that the persistent messaging mechanism brings. 
 
-
-\section{Implementation details}
 Consider two systems that need to share parts of their state. If both systems are event-driven, the task is simpler: all that needs to be done is to deliver the messages from the first system to the second system. Even though it is possible for the second system to accept the ``internal'' messages from the first system, it is safer to add a component that implements translation between the two systems. (This translation component can be \pcode{identity}, but it should be there.) \autoref{fig:2s-es} illustrates the event-driven scenario.
 
 \fig{2s-es.png}{2s-es}{Integrating two systems}
@@ -45,16 +42,11 @@ Both systems \circled{A} and \circled{B} have their private journal and snapshot
 
 \autoref{fig:2s-es} does not explain how the messages cross the boundary between the systems; it is clear that there needs to be some kind of connector that sits either on the \circled{A} or the \circled{B} side. It is better for the connector to be on the \circled{B} side. \circled{B} wants to receive messages from \circled{A}, so it should be responsible for making the arrangements: it should verify that it is indeed connecting to the \emph{right} \circled{A} (checking certificates, for example); even more importantly, the connector needs to \emph{consume} messages from \circled{A}, and then \emph{publish} the same messages to \circled{B}. Publishing is potentially much more complex procedure (what is the acceptable confirmation / acknowledgement, what are the maximum batch sizes, time-outs, etc.), and should be in full control of \circled{B}\cite{mirrormaker}.  
 
-If the two systems are not event-driven, but rather simpler CRUD-based services, it may be possible to pull the state update messages from the data stores that the systems use; either using the datastore's native functionality or by implementing a custom service. Ideally, the only change to the integration flow will be the source and destination of the messages: the source becomes the state database in \circled{A}; the destination becomes \circled{B}'s APIs (see \autoref{fig:2s-crud}). 
+% If the two systems are not event-driven, but rather simpler CRUD-based services, it may be possible to pull the state update messages from the data stores that the systems use; either using the datastore's native functionality or by implementing a custom service. Ideally, the only change to the integration flow will be the source and destination of the messages: the source becomes the state database in \circled{A}; the destination becomes \circled{B}'s APIs (see \autoref{fig:2s-crud}). 
 
-\fig{2s-crud.png}{2s-crud}{Integrating CRUD systems}
+% \fig{2s-crud.png}{2s-crud}{Integrating CRUD systems}
 
 All other approaches are recpies for problems (now or in the very near future). By far the worst-case scenario is database-to-database integration; particularly where \circled{A} writes directly to the database of \circled{B}. This is the most brittle and most dangerous approach; only slightly less dangerous and brittle solution is for \circled{B} to pull data from \circled{A}'s database. If the system \circled{B} is not event-driven, the only approach is to poll data from \circled{A}\footnote{To avoid the inefficiency of frequent polls with no changes, or too infrequent polls missing changes, add a component that can act as fancy circuit-breaker}. 
-
-\subsection{Custom code}
-If the system cannot take advantage of any built-in functionality to the underlying infrastructure, it will be necessary to build the connectors and transformers ourselves. 
-
-...
 
 If the two systems are connected ``from the beginning of time'' (that is \circled{B} receives all messages from \circled{A} from the first message), or if the two systems only need to synchronise a fixed number of messages, there will be no need to worry about the initial snapshot poll from \circled{A}. In other cases, \circled{B} requests the initial state from \circled{A} and then subscribes to the updates. Unfortunately, \circled{A} keeps updating its state, even as it serves the response to the initial poll to \circled{B}. A simple algorithm that \circled{A} can follow--\pcode{state <- poll(B); subscribe(B);}--runs the risk of missing messages that happened just after the initial poll. A systematic way of solving this is to include an offset in the initial poll response specifying the position at which the snapshot was taken. \circled{B} is responsible for subscribing to updates from \circled{A} from that offset. This way, there is no risk in missing updates from \circled{A}. An alternative is to measure the risk of missing an update vs. doing too much work and subscribing from the end of the topic less some arbitrary offset.
 
@@ -62,14 +54,14 @@ A typical event-driven system with persistent messaging implemented in Kafka typ
 
 \fig{2s-es-msgs.png}{2s-es-msgs}{Messages}
 
-The first message is the response to the request for initial state. It contains the state (in the \pcode{body} field) and the topic partition offsets used to construct the state\footnote{The \pcode{tps} field has nothing to do Initech's T.P.S. reports.}. After processing the initial state \circled{B} subscribes to the topics indicated by \circled{A} to receive updates. This gurarantees that no messages will be lost, though it does not guarantee a \emph{total ordering} of the update messages on the topic; \circled{B} has to be able to deal with out-of-order delivery of the update messages. (Distributed messaging systems such as Kafka\cite{kafka} or AWS Kinesis\cite{kinesis} only have total order in a specific partition of a topic.) \autoref{code:2s-es-msg-flow} shows a typical code in \circled{B}.
+The first message is the response to the request for initial state. It contains the state (in the \pcode{body} field) and the topic partition offsets used to construct the state. After processing the initial state \circled{B} subscribes to the topics indicated by \circled{A} to receive updates. This gurarantees that no messages will be lost, though it does not guarantee a \emph{total ordering} of the update messages on the topic; \circled{B} has to be able to deal with out-of-order delivery of the update messages\footnote{Distributed messaging systems such as Kafka\cite{kafka} or AWS Kinesis\cite{kinesis} only have total order in a specific partition of a topic.}. \autoref{code:2s-es-msg-flow} shows a typical code in \circled{B}.
 
 
 \begin{lstlisting}[caption={Message flow}, label={code:2s-es-msg-flow}, language=Pseudo, escapechar=|]
-if emptyState then 
+if not initialised then 
     (tps, state) <- poll(A)
     insert(state)
-    subscribe(mode = SemiAutomatic, tps = tps, 
+    subscribe(mode = SemiAutomatic, tpos = tpos, 
               onMessage = /\m -> update(m))
 else
     subscribe(mode = FullyAutomatic,
@@ -77,10 +69,21 @@ else
 end if
 \end{lstlisting}
 
-The \pcode{emptyState} indicates that \circled{B} has never been synchronised with A; the \pcode{mode = SemiAutomatic} instructs the messaging infrastructure to handle offset management, but allow initial offset specification; the \pcode{mode = FullyAutomatic} indicates that the messaging infrastructure should start the subscription from the last consumed offset.
+The \pcode{not initialised} indicates that \circled{B} has never been synchronised with A; the \pcode{mode = SemiAutomatic} instructs the messaging infrastructure to handle offset management, but allow initial offset specification; the \pcode{mode = FullyAutomatic} indicates that the messaging infrastructure should start the subscription from the last consumed offset.
 
-\subsection{AWS tooling}
-System 1 <=> Dynamo -> Lambda? -> Kinesis => Lambda -> MySQL <=> System 2
+\section{Implementation}
+This paper will offer two implementation approaches: one that relies on Apache Kafka and one that uses the AWS tooling. Other implementations will find many common principles between the two.
+
+\subsection{Kafka-based}
+If the system cannot take advantage of any built-in functionality to the underlying infrastructure, it will be necessary to build the connectors and transformers ourselves. 
+
+System 1 <=> MySQL
+          -> Kafka => Mirror Maker -> Kafka Connector -> Kafka -> Kafka Connector -> MySQL <=> System 2
+
+\subsection{AWS-based}
+
+System 1 <=> Dynamo 
+          -> Kinesis => Kinesis Replicator -> Lambda -> Kinesis -> Lambda -> MySQL <=> System 2
 
 \section{Practical applicaiton}
 X requested a feature in the Y system to implement a REST API endpoint that can be queried for the current state of a particular media assignment; but this request should also create a subscription for any changes to be delivered to the X system over a Kafka topic. The motivation for the feature was X’s need to know Y’s state, but to avoid doing periodic polling. (Polling, the team X reasoned, is just not cool, and might still miss an important change that happens between the two polls.)
