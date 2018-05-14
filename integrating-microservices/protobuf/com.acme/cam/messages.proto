@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message ScheduleEntry {
+  string entry_id = 1;
+  string datetime = 2;
+  string to_fire = 10;
+}

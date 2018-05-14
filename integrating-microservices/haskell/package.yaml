@@ -1,0 +1,98 @@
+name: system-alpha
+
+extra-source-files:
+- ../protobuf/**/*.proto
+
+# custom-setup:
+#   dependencies:
+#     - base
+#     - Cabal
+#     - proto-lens-protoc
+
+tests:
+  spec:
+    main: Spec.hs
+    ghc-options:
+      - -fprint-potential-instances
+    source-dirs:
+      - test
+    dependencies:
+      - hspec
+      - system-alpha
+      - hspec-wai
+      - hspec-wai-json
+      - servant-client
+      - warp >= 3.2.4
+      - http-client
+      - statistics
+      - vector
+      - random
+      - uuid
+      - http-types
+
+# library:
+#   ghc-options: 
+#     - -O2
+#   dependencies:
+#     - http-media
+#   source-dirs:
+#     - protobuf
+#   exposed-modules: 
+#     - Proto.Cam.Messages
+
+library:
+  ghc-options: 
+    - -O2
+  dependencies:
+    - http-media
+    - base64-bytestring
+    - aeson
+    - bytestring
+    - containers
+    - data-default-class
+    - lens-family
+    - proto-lens
+    - word8
+    - text
+    - hw-kafka-client
+  source-dirs:
+    - src
+    - protobuf
+  # exposed-modules: 
+  #   - Proto.Cam.Messages
+  #   - Schedule.Service
+  #   - Schedule.Core
+  #   - Device.Concrete
+  #   - Protobuf
+  #   - CRUD
+    
+executables:  
+  system-alpha:
+    ghc-options: 
+      - -Wall
+      - -O2
+      - -threaded 
+      - -rtsopts
+      - -with-rtsopts=-N30 
+      - -fprint-potential-instances
+    main: exe/Main.hs
+    dependencies:
+      - system-alpha
+
+dependencies:
+  - base
+  - servant
+  - servant-server
+  - transformers
+  - aeson
+  - wai
+  - stm
+  - warp
+  - text
+  - time
+  - bytestring
+  - async
+  - microlens
+  - proto-lens
+  - proto-lens-protoc
+  - lens-labels

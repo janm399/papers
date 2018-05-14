@@ -1,0 +1,113 @@
+-- This file has been generated from package.yaml by hpack version 0.20.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: fb6d389c508e017203be06228436f22fdb7a67ee5b0afedf179d07ac76605e82
+
+name:           system-alpha
+version:        0.0.0
+build-type:     Simple
+cabal-version:  >= 1.10
+
+extra-source-files:
+    ../protobuf/com.acme/cam/messages.proto
+
+library
+  hs-source-dirs:
+      src
+      protobuf
+  ghc-options: -O2
+  build-depends:
+      aeson
+    , async
+    , base
+    , base64-bytestring
+    , bytestring
+    , containers
+    , data-default-class
+    , http-media
+    , hw-kafka-client
+    , lens-family
+    , lens-labels
+    , microlens
+    , proto-lens
+    , proto-lens-protoc
+    , servant
+    , servant-server
+    , stm
+    , text
+    , time
+    , transformers
+    , wai
+    , warp
+    , word8
+  exposed-modules:
+      Data.ProtoLens.JSON
+      Proto.Cam.Messages
+      Protobuf
+  other-modules:
+      Paths_system_alpha
+  default-language: Haskell2010
+
+executable system-alpha
+  main-is: exe/Main.hs
+  ghc-options: -Wall -O2 -threaded -rtsopts -with-rtsopts=-N30 -fprint-potential-instances
+  build-depends:
+      aeson
+    , async
+    , base
+    , bytestring
+    , lens-labels
+    , microlens
+    , proto-lens
+    , proto-lens-protoc
+    , servant
+    , servant-server
+    , stm
+    , system-alpha
+    , text
+    , time
+    , transformers
+    , wai
+    , warp
+  other-modules:
+      Paths_system_alpha
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs:
+      test
+  ghc-options: -fprint-potential-instances
+  build-depends:
+      aeson
+    , async
+    , base
+    , bytestring
+    , hspec
+    , hspec-wai
+    , hspec-wai-json
+    , http-client
+    , http-types
+    , lens-labels
+    , microlens
+    , proto-lens
+    , proto-lens-protoc
+    , random
+    , servant
+    , servant-client
+    , servant-server
+    , statistics
+    , stm
+    , system-alpha
+    , text
+    , time
+    , transformers
+    , uuid
+    , vector
+    , wai
+    , warp >=3.2.4
+  other-modules:
+      Paths_system_alpha
+  default-language: Haskell2010

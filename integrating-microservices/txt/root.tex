@@ -85,6 +85,9 @@ System 1 <=> MySQL
 System 1 <=> Dynamo 
           -> Kinesis => Kinesis Replicator -> Lambda -> Kinesis -> Lambda -> MySQL <=> System 2
 
+\section{Scalability and resilience}
+TODO.
+
 \section{Practical applicaiton}
 X requested a feature in the Y system to implement a REST API endpoint that can be queried for the current state of a particular media assignment; but this request should also create a subscription for any changes to be delivered to the X system over a Kafka topic. The motivation for the feature was X’s need to know Y’s state, but to avoid doing periodic polling. (Polling, the team X reasoned, is just not cool, and might still miss an important change that happens between the two polls.)
 \begin{itemize}

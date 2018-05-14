@@ -1,0 +1,6 @@
+resolver: lts-10.3
+packages:
+  - '.'
+extra-deps:
+  - hw-kafka-client-2.5.0
+  # From https://github.com/haskell-works/hw-kafka-client
