@@ -58,9 +58,26 @@ If the system cannot take advantage of any built-in functionality to the underly
 
 If the two systems are connected ``from the beginning of time'' (that is \circled{B} receives all messages from \circled{A} from the first message), or if the two systems only need to synchronise a fixed number of messages, there will be no need to worry about the initial snapshot poll from \circled{A}. In other cases, \circled{B} requests the initial state from \circled{A} and then subscribes to the updates. Unfortunately, \circled{A} keeps updating its state, even as it serves the response to the initial poll to \circled{B}. A simple algorithm that \circled{A} can follow--\pcode{state <- poll(B); subscribe(B);}--runs the risk of missing messages that happened just after the initial poll. A systematic way of solving this is to include an offset in the initial poll response specifying the position at which the snapshot was taken. \circled{B} is responsible for subscribing to updates from \circled{A} from that offset. This way, there is no risk in missing updates from \circled{A}. An alternative is to measure the risk of missing an update vs. doing too much work and subscribing from the end of the topic less some arbitrary offset.
 
+A typical event-driven system with persistent messaging implemented in Kafka typically uses multiple topics, each with multiple partitions. The offset is associated with each topic partition; the response to the initial poll request needs to to include a map of \pcode{(topic, partition) -> offset}. \autoref{fig:2s-es-msgs} illustrates the message contents and flow.
+
+\fig{2s-es-msgs.png}{2s-es-msgs}{Messages}
+
+The first message is the response to the request for initial state. It contains the state (in the \pcode{body} field) and the topic partition offsets used to construct the state\footnote{The \pcode{tps} field has nothing to do Initech's T.P.S. reports.}. After processing the initial state \circled{B} subscribes to the topics indicated by \circled{A} to receive updates. This gurarantees that no messages will be lost, though it does not guarantee a \emph{total ordering} of the update messages on the topic; \circled{B} has to be able to deal with out-of-order delivery of the update messages. (Distributed messaging systems such as Kafka\cite{kafka} or AWS Kinesis\cite{kinesis} only have total order in a specific partition of a topic.) \autoref{code:2s-es-msg-flow} shows a typical code in \circled{B}.
 
 
-System 1 <=> (Dynamo, Kafka) -> Output? => Input -> Kafka -> MySQL <=> System 2
+\begin{lstlisting}[caption={Message flow}, label={code:2s-es-msg-flow}, language=Pseudo, escapechar=|]
+if emptyState then 
+    (tps, state) <- poll(A)
+    insert(state)
+    subscribe(mode = SemiAutomatic, tps = tps, 
+              onMessage = /\m -> update(m))
+else
+    subscribe(mode = FullyAutomatic,
+              onMessage = /\m -> update(m))
+end if
+\end{lstlisting}
+
+The \pcode{emptyState} indicates that \circled{B} has never been synchronised with A; the \pcode{mode = SemiAutomatic} instructs the messaging infrastructure to handle offset management, but allow initial offset specification; the \pcode{mode = FullyAutomatic} indicates that the messaging infrastructure should start the subscription from the last consumed offset.
 
 \subsection{AWS tooling}
 System 1 <=> Dynamo -> Lambda? -> Kinesis => Lambda -> MySQL <=> System 2
