@@ -58,38 +58,62 @@ Send packet CA $\rightarrow$ Netherlands $\rightarrow$ CA & \SI{4.8}{y} & Govern
 XXX
 
 \begin{table}[h]
-    \begin{tabular}{p{3cm}lp{3.5cm}}
+    \begin{tabular}{lrrrrr}
         \toprule
-        Computer & Human & Analogy \\
+        Program           & \multicolumn{5}{c}{Implementation \& Runtime} \\
+        \cmidrule(r){2-6} & Scala  & Go  & C++ & Haskell & JS \\
         \midrule
-L1 cache reference & \SI{0.5}{\second} & One heart beat \\
-Branch mispredict  & \SI{5}{\second} & Yawn \\
-L2 cache reference & \SI{7}{\second} & Long yawn \\
-Mutex lock/unlock  & \SI{25}{\second} & Making a cup of tea \\
-        \midrule
-Main memory reference & \SI{100}{\second} &  Brushing one's teeth \\
-Compress \SI{1}{\kibi\byte} with Zippy & \SI{50}{\minute} & Build Scala \\
-Send \SI{2}{\kibi\byte} over \SI{1}{\giga\bit\per\second} network & \SI{5.5}{\hour} & London to Edinburgh \\
-        \midrule
-SSD random read & \SI{1.7}{\day} & Weekend \\
-Read \SI{1}{\mebi\byte} sequentially from memory & \SI{2.9}{\day} & Long weekend \\
-Round trip within same datacentre & \SI{5.8}{\day} & Short holiday \\
-Read \SI{1}{\mebi\byte} sequentially from SSD & \SI{11.6}{\day} & Holiday \\
-        \midrule
-Disk seek & \SI{16.5}{w} & Term of university \\
-Read \SI{1}{\mebi\byte} sequentially from disk & \SI{7.8}{m} & Fully paid maternity in Norway \\
-Send packet CA $\rightarrow$ Netherlands $\rightarrow$ CA & \SI{4.8}{y} & Government's term \\
+        Simple            & 440    & ??? & ??? & ???     & ???  \\
+        Some exceptions   & 920    & ??? & ??? & ???     & ???  \\
+        All exceptions    & 91411  & ??? & ??? & ???     & ???  \\
+        Enterprise        & 443    & ??? & ??? & ???     & ???  \\
+        Async             & 189156 & ??? & ??? & ???     & ???  \\
         \bottomrule
     \end{tabular}
-    \caption{Low-level latency}
-    \label{tbl:ll-latency}
+    \caption{Runtime}
+    \label{tbl:code-style-impact}
 \end{table}
 
+\begin{figure}[h]
+  \begin{tikzpicture}
+    \begin{axis}[
+      height=7cm, 
+      width=9cm, 
+      yminorgrids=true,
+      xtick=data,
+      ymode=log,
+      xlabel={Program}, 
+      ylabel={Execution time [ms]},
+      ymin=440,ymax=220000,
+      xmin=0,xmax=4,
+      legend pos=north west,
+      legend cell align={left},
+      xticklabels={Simple, Some ex., All ex., Enterprise, Async}
+      ]
 
-                no exceptions -> the odd exception -> all exceptions -> futures.
-hard-wired      3112 & 3583 & 14161
-enterprise      2989
-category-theory
+      % \addplot coordinates {
+      %   (0, 3112)
+      %   (1, 3583)
+      %   (2, 14161)
+      %   (3, 2989)
+      %   (4, 200036)
+      % };
+      % \addlegendentry{Scala naïve driver}
+
+      \addplot+ coordinates {
+        (0, 440)
+        (1, 920)
+        (2, 91411)
+        (3, 443)
+        (4, 189156)
+      };
+      \addlegendentry{Scala}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Monthly costs}
+  \label{plot:monthly-costs}
+\end{figure}
+
 
 \section{State in distributed system}
 Imagine two systems that need to share information; a good starting point may be an endpoint where one system can request the state of the other system. If the first system needs to keep ``in sync'' with the second system, it needs to periodically query the endpoint to obtain the state from the second system. This keeps the two systems independent and decoupled, but it means that the systems might miss important state changes that happen between the two polls, and it makes both systems do needless work by querying the endpoints, even if the state remains the same.

@@ -30,7 +30,7 @@ include_directories("${gtest_SOURCE_DIR}/include" "${gmock_SOURCE_DIR}/include")
 set(easyloggingpp_SRC ${easyloggingpp_SOURCE_DIR}/src/easylogging++.cc)
 include_directories(${easyloggingpp_SOURCE_DIR}/src)
 
-file(GLOB_RECURSE PROTOS ${CMAKE_CURRENT_SOURCE_DIR}/../protocol/*.proto)
+file(GLOB_RECURSE PROTOS ${CMAKE_CURRENT_SOURCE_DIR}/../protobuf/*.proto)
 protobuf_generate_cpp(PROTO_SRC PROTO_HEADER ${PROTOS})
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 include_directories(${PROTOBUF_INCLUDE_DIR})
