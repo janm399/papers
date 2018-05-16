@@ -98,40 +98,23 @@ object Perf {
     result
   }
 
-  def smart(count: Int, f: Int ⇒ String): String = {
-    val result = new StringBuilder(f(1))
-    var i = 2
-    while (i < count) {
-      result.append(", ").append(f(i))
-      i += 1
-    }
-    result.toString()
-  }
-
-  def timed[A](f: ⇒ A): (Long, A) = {
+  def timed[A](f: Int ⇒ A): Long = {
     val start = System.currentTimeMillis()
     var i = 0
-    while (i < 100000) {
-      f
+    while (i < 4000000) {
+      f(i)
       i += 1
     }
-    val elapsed = System.currentTimeMillis() - start
-    (elapsed, f)
+    System.currentTimeMillis() - start
   }
 
   def main(args: Array[String]): Unit = {
     def run = {
-      println(timed(naive(100, fb1)))
-      println(timed(naive(100, fb2a)))
-      println(timed(naive(100, fb2b)))
-      println(timed(naive(100, fb3)))
-      println(timed(naive(100, fb4)))
-
-      println(timed(smart(100, fb1)))
-      println(timed(smart(100, fb2a)))
-      println(timed(smart(100, fb2b)))
-      println(timed(smart(100, fb3)))
-      println(timed(smart(100, fb4)))
+      println(timed(fb1))
+      println(timed(fb2a))
+      println(timed(fb2b))
+      println(timed(fb3))
+      println(timed(fb4))
 
       println()
       println()

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include <easylogging++.h>
+#include <future>
 #include "messages.pb.h"
 
 using namespace std;
@@ -8,14 +9,14 @@ using namespace std::chrono;
 
 INITIALIZE_EASYLOGGINGPP
 
-const std::string fb1(const int i) noexcept {
+const string fb1(const int i) noexcept {
     if (i % 3 == 0 && i % 5 == 0) return "FizzBuzz";
     else if (i % 3 == 0) return "Fizz";
     else if (i % 5 == 0) return "Buzz";
     else return to_string(i);
 }
 
-const std::string fb2a(const int i) noexcept {
+const string fb2a(const int i) noexcept {
     try {
         if (i % 3 == 0 && i % 5 == 0) throw runtime_error("FizzBuzz");
         else if (i % 3 == 0) return "Fizz";
@@ -26,7 +27,7 @@ const std::string fb2a(const int i) noexcept {
     }
 }
 
-const std::string fb2b(const int i) noexcept {
+const string fb2b(const int i) noexcept {
     try {
         if (i % 3 == 0 && i % 5 == 0) throw runtime_error("FizzBuzz");
         else if (i % 3 == 0) throw runtime_error("Fizz");
@@ -43,7 +44,7 @@ public:
     virtual bool check(T t) = 0;
 };
 
-const std::string fb3(const int i) noexcept {
+const string fb3(const int i) noexcept {
     using cc = condition_checker<int>;
     using scc = shared_ptr<cc>;
     class fizz_cc : public cc {
@@ -79,11 +80,28 @@ const std::string fb3(const int i) noexcept {
     else return std::to_string(i);
 }
 
-int main(int argc, char** argv) {
+const string fb4(const int i) noexcept {
+    return async(fb1, i).get();
+}
+
+template<typename F>
+long run(F f) {
     auto start = system_clock::now();
-    for (int i = 0; i < 1000000; i++) {
-        fb3(i);
+    for (int i = 0; i < 4000000; i++) {
+        f(i);
     }
     auto ms = duration_cast<milliseconds>(system_clock::now() - start);
     cout << "took " << ms.count() << endl;
+    return ms.count();
+};
+
+int main(int argc, char** argv) {
+    for (int i = 0; i < 10; i++) {
+        run(fb1);
+        run(fb2a);
+        run(fb2b);
+        run(fb3);
+        run(fb4);
+        cout << endl << endl;
+    }
 }
