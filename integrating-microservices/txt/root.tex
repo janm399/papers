@@ -58,17 +58,16 @@ Send packet CA $\rightarrow$ Netherlands $\rightarrow$ CA & \SI{4.8}{y} & Govern
 XXX
 
 \begin{table}[h]
-    \begin{tabular}{lrrrrr}
+    \begin{tabular}{lrrrrrr}
         \toprule
-        Program           & \multicolumn{5}{c}{Implementation \& Runtime} \\
-        \cmidrule(r){2-6} & Scala  & Go  & C++ & Haskell & JS \\
+        Program           & \multicolumn{6}{c}{Implementation \& Runtime} \\
+        \cmidrule(r){2-7} & Scala  & Go  & C++ & Haskell & Python & JavaScript \\
         \midrule
-        % 
-        Simple            & 440    & ??? & ??? & ???     & ???  \\
-        Some exceptions   & 920    & ??? & ??? & ???     & ???  \\
-        All exceptions    & 91411  & ??? & ??? & ???     & ???  \\
-        Enterprise        & 443    & ??? & ??? & ???     & ???  \\
-        Async             & 189156 & ??? & ??? & ???     & ???  \\
+        Simple            1.00   & 3.84    & 1.86  & 3.97   & 0 & 0 \\
+        Some exceptions   5.16   & 8.02    & 2.26  & 3.93   & 0 & 0 \\
+        All exceptions    42.51  & 66.00   & 4.12  & 3.93   & 0 & 0 \\
+        Enterprise        3.00   & 25.12   & 2.24  & 3.92   & 0 & 0 \\
+        Bad async         868.50 & 959.99  & 44.30 & 615.51 & 0 & 0 \\
         \bottomrule
     \end{tabular}
     \caption{Runtime}
@@ -85,34 +84,52 @@ XXX
       ymode=log,
       xlabel={Program}, 
       ylabel={Execution time [ms]},
-      ymin=440,ymax=220000,
+      ymin=1,ymax=1000,
       xmin=0,xmax=4,
       legend pos=north west,
       legend cell align={left},
       xticklabels={Simple, Some ex., All ex., Enterprise, Async}
       ]
 
-      % \addplot coordinates {
-      %   (0, 3112)
-      %   (1, 3583)
-      %   (2, 14161)
-      %   (3, 2989)
-      %   (4, 200036)
-      % };
-      % \addlegendentry{Scala naïve driver}
-
       \addplot+ coordinates {
-        (0, 440)
-        (1, 920)
-        (2, 91411)
-        (3, 443)
-        (4, 189156)
+        (0, 1)
+        (1, 5.162790698)
+        (2, 42.51162791)
+        (3, 3)
+        (4, 868.5)
       };
       \addlegendentry{Scala}
+
+      \addplot+ coordinates {
+        (0, 3.837209302)
+        (1, 8.023255814)
+        (2, 66)
+        (3, 25.12790698)
+        (4, 959.9883721)
+      };
+      \addlegendentry{C++}
+
+      \addplot+ coordinates {
+        (0, 1.860465116)
+        (1, 2.255813953)
+        (2, 4.11627907)
+        (3, 2.244186047)
+        (4, 44.30232558)
+      };
+      \addlegendentry{Go}
+
+      \addplot+ coordinates {
+        (0, 3.965116279)
+        (1, 3.930232558)
+        (2, 3.930232558)
+        (3, 3.918604651)
+        (4, 615.5116279)
+      };
+      \addlegendentry{Haskell}
     \end{axis}
   \end{tikzpicture}
-  \caption{Monthly costs}
-  \label{plot:monthly-costs}
+  \caption{Simple computation}
+  \label{plot:simple-computation}
 \end{figure}
 
 
