@@ -1,6 +1,10 @@
 #include <iostream>
+#include <chrono>
 #include <easylogging++.h>
 #include "messages.pb.h"
+
+using namespace std;
+using namespace std::chrono;
 
 INITIALIZE_EASYLOGGINGPP
 
@@ -8,27 +12,27 @@ const std::string fb1(const int i) noexcept {
     if (i % 3 == 0 && i % 5 == 0) return "FizzBuzz";
     else if (i % 3 == 0) return "Fizz";
     else if (i % 5 == 0) return "Buzz";
-    else return std::to_string(i);
+    else return to_string(i);
 }
 
 const std::string fb2a(const int i) noexcept {
     try {
-        if (i % 3 == 0 && i % 5 == 0) throw std::runtime_error("FizzBuzz");
+        if (i % 3 == 0 && i % 5 == 0) throw runtime_error("FizzBuzz");
         else if (i % 3 == 0) return "Fizz";
         else if (i % 5 == 0) return "Buzz";
-        else return std::to_string(i);
-    } catch(std::exception& ex) {
+        else return to_string(i);
+    } catch(exception& ex) {
         return ex.what();
     }
 }
 
 const std::string fb2b(const int i) noexcept {
     try {
-        if (i % 3 == 0 && i % 5 == 0) throw std::runtime_error("FizzBuzz");
-        else if (i % 3 == 0) throw std::runtime_error("Fizz");
-        else if (i % 5 == 0) throw std::runtime_error("Buzz");
-        else throw std::runtime_error(std::to_string(i));
-    } catch(std::exception& ex) {
+        if (i % 3 == 0 && i % 5 == 0) throw runtime_error("FizzBuzz");
+        else if (i % 3 == 0) throw runtime_error("Fizz");
+        else if (i % 5 == 0) throw runtime_error("Buzz");
+        else throw runtime_error(to_string(i));
+    } catch(exception& ex) {
         return ex.what();
     }
 }
@@ -41,18 +45,20 @@ public:
 
 const std::string fb3(const int i) noexcept {
     using cc = condition_checker<int>;
-    using scc = std::shared_ptr<cc>;
-    class fizz_cc : cc {
+    using scc = shared_ptr<cc>;
+    class fizz_cc : public cc {
+    public:
         bool check(int t) override {
             return t % 3 == 0;
         }
     };
-    class buzz_cc : cc {
+    class buzz_cc : public cc {
+    public:
         bool check(int t) override {
             return t % 5 == 0;
         }
     };
-    class fizzbuzz_cc : cc {
+    class fizzbuzz_cc : public cc {
     private:
         scc is_fizz;
         scc is_buzz;
@@ -63,9 +69,21 @@ const std::string fb3(const int i) noexcept {
             return is_fizz->check(t) && is_buzz->check(t);
         }
     };
+    auto fizz = make_shared<fizz_cc>();
+    auto buzz = make_shared<buzz_cc>();
+    auto fizz_buzz = fizzbuzz_cc(fizz, buzz);
 
+    if (fizz_buzz.check(i)) return "FizzBuzz";
+    else if (fizz->check(i)) return "Fizz";
+    else if (buzz->check(i)) return "Buzz";
+    else return std::to_string(i);
 }
 
 int main(int argc, char** argv) {
-    return 0;
+    auto start = system_clock::now();
+    for (int i = 0; i < 1000000; i++) {
+        fb3(i);
+    }
+    auto ms = duration_cast<milliseconds>(system_clock::now() - start);
+    cout << "took " << ms.count() << endl;
 }
