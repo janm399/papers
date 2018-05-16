@@ -1,14 +1,13 @@
--- This file has been generated from package.yaml by hpack version 0.20.0.
+-- This file has been generated from package.yaml by hpack version 0.28.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fb6d389c508e017203be06228436f22fdb7a67ee5b0afedf179d07ac76605e82
+-- hash: 008d79a7a358d6138043391e0ef31b3c603b5166e7439b1e338672b943ebc5e9
 
 name:           system-alpha
 version:        0.0.0
 build-type:     Simple
 cabal-version:  >= 1.10
-
 extra-source-files:
     ../protobuf/com.acme/cam/messages.proto
 
@@ -26,7 +25,6 @@ library
     , containers
     , data-default-class
     , http-media
-    , hw-kafka-client
     , lens-family
     , lens-labels
     , microlens

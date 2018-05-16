@@ -54,7 +54,7 @@ library:
     - proto-lens
     - word8
     - text
-    - hw-kafka-client
+    # - hw-kafka-client
   source-dirs:
     - src
     - protobuf
