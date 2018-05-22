@@ -1,5 +1,7 @@
 package com.acme.intms
 
+import java.nio.file._
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
@@ -98,6 +100,14 @@ object Perf {
     result
   }
 
+  def withIO[A](fn: String, f: Int ⇒ A): (Int ⇒ A) = { x ⇒
+    val arr = Array.fill(1024)(' ')
+    val rdr = Files.newBufferedReader(FileSystems.getDefault.getPath(fn))
+    rdr.read(arr, 0, arr.length)
+    rdr.close()
+    f(x)
+  }
+
   def timed[A](f: Int ⇒ A): Long = {
     val start = System.currentTimeMillis()
     var i = 0
@@ -115,6 +125,8 @@ object Perf {
       println(timed(fb2b))
       println(timed(fb3))
       println(timed(fb4))
+      println(timed(withIO("/dev/zero", fb1)))
+      println(timed(withIO("/tmp/zeros", fb1)))
 
       println()
       println()

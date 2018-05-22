@@ -3,14 +3,16 @@ module Main where
 
 import Data.Time
 import Control.Concurrent
-import System.IO
+import qualified Data.ByteString.Lazy as BL
 
-withIO :: (a -> b) -> a -> IO b
-withIO f x = do
-  h <- openBinaryFile "/dev/null" ReadMode
-  
-  hClose h
-  return $ f x
+withIO :: String -> (a -> b) -> (a -> IO b)
+withIO fn f = 
+  \a -> wrap (f a)
+  where
+    wrap b = do
+      nulls <- BL.readFile fn
+      let !_ = take 1024 (BL.unpack nulls)
+      return b
 
 fb1 :: Int -> String
 fb1 x 
@@ -88,10 +90,13 @@ main = do
       t1 <- timed fb1
       t2 <- timed fb2
       t3 <- timed fb3
-      (t4, _) <- timed' fb4
-      (t5, _) <- timed' $ withIO fb1
+      (t4, _) <- timed' fb4 
+      (t5, _) <- timed' (withIO "/dev/zero" fb1) 
+      (t6, _) <- timed' (withIO "/tmp/zeros" fb1) 
       putStrLn (show t1)
       putStrLn (show t2)
       putStrLn (show t3)
       putStrLn (show t4)
       putStrLn (show t5)
+      putStrLn (show t6)
+      putStrLn ""
