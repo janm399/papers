@@ -83,12 +83,13 @@ XXX
       xtick=data,
       ymode=log,
       xlabel={Program}, 
-      ylabel={Execution time [ms]},
+      ylabel={Relative execution time},
       ymin=1,ymax=1000,
       xmin=0,xmax=4,
       legend pos=north west,
       legend cell align={left},
-      xticklabels={Simple, Some ex., All ex., Enterprise, Async}
+      xticklabel style={rotate=90},
+      xticklabels={Simple, Some ex., All ex., Enterprise, Bad async}
       ]
 
       \addplot+ coordinates {

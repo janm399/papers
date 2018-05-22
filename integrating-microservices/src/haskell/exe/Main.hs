@@ -3,6 +3,14 @@ module Main where
 
 import Data.Time
 import Control.Concurrent
+import System.IO
+
+withIO :: (a -> b) -> a -> IO b
+withIO f x = do
+  h <- openBinaryFile "/dev/null" ReadMode
+  
+  hClose h
+  return $ f x
 
 fb1 :: Int -> String
 fb1 x 
@@ -74,14 +82,16 @@ timed f = do
 
 main :: IO ()
 main = do
-  mapM_ loop [1..10]
+  mapM_ loop ([1..10] :: [Int])
   where
     loop _ = do
       t1 <- timed fb1
       t2 <- timed fb2
       t3 <- timed fb3
       (t4, _) <- timed' fb4
+      (t5, _) <- timed' $ withIO fb1
       putStrLn (show t1)
       putStrLn (show t2)
       putStrLn (show t3)
       putStrLn (show t4)
+      putStrLn (show t5)
