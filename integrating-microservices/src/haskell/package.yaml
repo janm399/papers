@@ -96,3 +96,5 @@ dependencies:
   - proto-lens
   - proto-lens-protoc
   - lens-labels
+  - random
+

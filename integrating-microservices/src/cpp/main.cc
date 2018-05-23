@@ -84,20 +84,12 @@ const string fb4(const int i) noexcept {
     return async(fb1, i).get();
 }
 
-const string fbio1(const int i) noexcept {
-    string fn("/dev/zero");
-    ifstream in(fn);
-    char buffer[1024 * 1024];
-    in.read(buffer, sizeof(buffer));
-    in.close();
-    return fb1(i);
-}
-
 template<typename F>
 auto withIO(const string fn, const F f) {
     return [fn, f](const int i) {
-        ifstream in(fn);
+        ifstream in(fn, ios::in | ios::binary);
         char buffer[1024 * 1024];
+        in.rdbuf()->pubsetbuf(buffer, sizeof buffer);
         in.read(buffer, sizeof(buffer));
         in.close();
         return f(i);
@@ -122,7 +114,6 @@ int main(int argc, char** argv) {
         run(fb2b);
         run(fb3);
         run(fb4);
-        run(fbio1);
         run(withIO("/dev/zero", fb1));
         run(withIO("/tmp/zeros", fb1));
         cout << endl << endl;

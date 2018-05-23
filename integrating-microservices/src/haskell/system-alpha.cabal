@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 008d79a7a358d6138043391e0ef31b3c603b5166e7439b1e338672b943ebc5e9
+-- hash: 63bce627019987c7d5e799b414a6ddcfe8e5c46968819c426e9146327027c7eb
 
 name:           system-alpha
 version:        0.0.0
@@ -30,6 +30,7 @@ library
     , microlens
     , proto-lens
     , proto-lens-protoc
+    , random
     , servant
     , servant-server
     , stm
@@ -59,6 +60,7 @@ executable system-alpha
     , microlens
     , proto-lens
     , proto-lens-protoc
+    , random
     , servant
     , servant-server
     , stm

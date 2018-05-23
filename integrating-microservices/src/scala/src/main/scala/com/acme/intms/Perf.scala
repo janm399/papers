@@ -100,11 +100,11 @@ object Perf {
     result
   }
 
+  val arr = Array.fill(1024 * 1024)(0.toByte)
   def withIO[A](fn: String, f: Int ⇒ A): (Int ⇒ A) = { x ⇒
-    val arr = Array.fill(1024)(' ')
-    val rdr = Files.newBufferedReader(FileSystems.getDefault.getPath(fn))
-    rdr.read(arr, 0, arr.length)
-    rdr.close()
+    val is = Files.newInputStream(FileSystems.getDefault.getPath(fn), StandardOpenOption.READ)
+    is.read(arr, 0, arr.length)
+    is.close()
     f(x)
   }
 
