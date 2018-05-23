@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.1.0)
 set(CMAKE_CXX_STANDARD 17)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 project (all)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/modules)
@@ -36,9 +44,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 include_directories(${PROTOBUF_INCLUDE_DIR})
 
 include_directories(include)
-# add_subdirectory(faceextract)
-# add_subdirectory(faceextract-test)
-# add_subdirectory(test)
 
 file(GLOB SRC *.cc)
 
