@@ -13,6 +13,8 @@
     \maketitle
     \begin{abstract}
       Amongst other things, a machine learning system should be built! It can solve anything, there are so many wonderful frameworks, so many conference talks that show just how easy it is to throw together just a few line of Python, and hey presto!--a machine that can recognise digits in images, recognise hot dog and \emph{not} hot dog... it even runs on a mobile phone. This essay is about the difficulties that are lurking in the execution and running of a robust \& mature machine learning system.
+      
+      It concludes with a ML readiness test, and recommendations on how to roll-out machine learning to an organisation (including tips on the process to follow, the people to hire). Mature ML organisation should enable a new person to make an impact in a ML system on the first day!
     \end{abstract}
   \end{@twocolumnfalse}
 ]
@@ -349,64 +351,7 @@ Even though the mobile application can handle all the required computation for a
 
 \fig{arch.png}{arch}{Overall architecture}
 
-In any machine learning system, the most valuable component is the data. The first consideration is the data size: after compression, \SI{1}{\hour} of sensor data (accelerometer and gyroscope from the wrist; accelerometer and gyroscope from the waist; heart rate) and metadata (coarse and fine location, Markov chains, labels) takes up approximately \SI{2}{\mebi\byte}. This \SI{1}{\hour} represents a typical exercise session; with just 1000 users (with 50 \% training load) the system ingests \SI{1}{\gibi\byte} every day. Even though the mobile application uses lightweight touch to upload the data with the \pcode{URLSession} and \pcode{URLSessionDataTask} with the background priority, but the server still needs to handle bursts of uploads that happen when a large number of users finish their workouts: typically around 0830, and then again around 1800 during workdays, and around 1000 and 1500 during weekends. It is possible to save some of the computation and storage costs: approximately 10 \% of the users consistently mis-label their exercises\footnote{Bad number of repetitions, bad intensity, bad labels; not through malice, but by simply changing their minds. They \emph{intend to} to exercise \name{A}, but end up doing \name{B} using the same equipment or station; sometimes, they even change half-way through the exercise}; if the server side code can detect this, it can remove the \pcode{upload} claim from the JWT issued to the client application. Even without attempting to reduce the load, the good news is that for a low number of users (around 1000), AWS's \name{free usage tier} covers the required \SI{500}{\gibi\byte} storage per year, including the data transfer charges; the compute costs come to approximately \$60 per month. The performance requirements for the storage, model compute, and general compute resources for 1000 users form the baseline measurement; \autoref{plot:monthly-costs} shows the estimates for the costs for larger number of users. 
-
-\begin{figure}[h]
-  \begin{tikzpicture}
-    \begin{axis}[
-      height=7cm, 
-      width=9cm, 
-      yminorgrids=true,
-      xmajorgrids=true,
-      xmode=log,
-      ymode=log,
-      xlabel={Number of users}, 
-      ylabel={Monthly cost [\$]},
-      xmin=1000,xmax=1000000,
-      ymin=10,ymax=16000,
-      legend pos=north west,
-      legend cell align={left}
-      ]
-
-      \addplot coordinates {
-        (1000, 0)
-        (10000, 70)
-        (100000, 1600)
-        (1000000, 16000)
-      };
-      \addlegendentry{Data \& Model storage}
-
-      \addplot coordinates {
-        (1000, 0)
-        (10000, 10)
-        (100000, 400)
-        (1000000, 3000)
-      };
-      \addlegendentry{Other storage}
-
-      \addplot coordinates {
-        (1000, 30)
-        (10000, 300)
-        (100000, 400)
-        (1000000, 8000)
-      };
-      \addlegendentry{Model compute}
-
-      \addplot coordinates {
-        (1000, 30)
-        (10000, 60)
-        (100000, 150)
-        (1000000, 1500)
-      };
-      \addlegendentry{General compute}
-
-    \end{axis}
-  \end{tikzpicture}
-  \caption{Monthly costs}
-  \label{plot:monthly-costs}
-\end{figure}
-
-The costs for the \numprint{1000000} users are just an illustration: in addition to the transfer, storage, and compute resources, deployment of this scale will need additional infrastructure, monitoring; multi-region deployment for resilience will also need to be considered. Finally, the scaling requirements for the services may require some of the stateful components to be entirely re-architected using CQRS/ES architecture and reactive toolkits such as Akka\cite{akka}. Nevertheless, with a low number of users and low peak loads, the system's services are sufficient to be simple stateless services that rely on the underlying infrastructure to maintain their state\footnote{In practice, this means that the services are essentially CRUD-style.}. In addition to the ALB, the server-side code uses S3 for data and model storage, DynamoDB for the profile and authorisation stores, and AWS Lambda (with Golang) for ingestion. 
+In any machine learning system, the most valuable component is the data. The first consideration is the data size: after compression, \SI{1}{\hour} of sensor data (accelerometer and gyroscope from the wrist; accelerometer and gyroscope from the waist; heart rate) and metadata (coarse and fine location, Markov chains, labels) takes up approximately \SI{2}{\mebi\byte}. This \SI{1}{\hour} represents a typical exercise session; with just 1000 users (with 50 \% training load) the system ingests \SI{1}{\gibi\byte} every day. At the experiment phase, it is sufficient to implement all services in simple CRUD-style in Go. If the usage grows significantly, some of the services may require the CRUD services to be entirely re-architected using CQRS/ES architecture and reactive toolkits such as Akka\cite{akka}. Nevertheless, with a low number of users and low peak loads, the system's services are sufficient to be simple stateless services that rely on the underlying infrastructure to maintain their state\footnote{In practice, this means that the services are essentially CRUD-style.}.  
 
 \subsection{Ingestion \& storage}
 The ingestion accepts the sensor data, the Markov chain data, and any labels from one or more exercise sessions from the mobile. The submission is a gzipped Protocol Buffers\cite{protobuf} binary representation of a message conforming to \autoref{code:session-protocol}.
@@ -558,6 +503,11 @@ A practical consequence for our system is that it is difficult to associate the 
 
 \section{Further work}
 There is a lot of further areas of research. I think that exercise should firstly bring enjoyment and fun: this encourages further exercise, and only long-term sustainable exercise brings significant health benefits. The system collects all the information about the completed exercises (names, intensities, timings, sequence); it will then be useful to \emph{ask} the users to indicate their enjoyment after each exercise session. This can be as simple as \smiley{}, \neutranie{}, and \frownie{}; and then use the server-side processing to identify the exercises, their sequences, and intensities that the particular user (and other users in the same cluster) find enjoyable. Similarly, the concept of improvement needs further exploration: for some users, improvement means being able to lift more weight; but for users recovering from an injury, improvement means increasing their range of movement.
+
+\section{Sounds great; where do I begin?}
+...
+TODO: ML Joel test
+TODO: pipeline
 
 \printbibliography
 
