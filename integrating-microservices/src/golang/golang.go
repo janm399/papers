@@ -4,6 +4,7 @@ import ("strconv"
 	"time"
 	"fmt"
 	"errors"
+	"os"
 )
 
 func fb1(i int) string {
@@ -103,6 +104,16 @@ func fb4(i int) string {
 	return <- out
 }
 
+func withIO(fn string, f func(int) string) (func(int) string) {
+	return func(n int) string {
+		file, _ := os.OpenFile(fn, os.O_RDONLY, 0)
+		bytes := make([]byte, 1024*1024)
+		file.Read(bytes)
+		file.Close()
+		return f(n)
+	}
+}
+
 func timed(f func(int) string) int64 {
 	start := time.Now()
 	for i := 0; i < 4000000; i++ {
@@ -120,6 +131,8 @@ func main() {
 		timed(fb2b)
 		timed(fb3)
 		timed(fb4)
+		timed(withIO("/dev/zero", fb1))
+		timed(withIO("/tmp/zeros", fb1))
 		fmt.Println()
 		fmt.Println()
 	}

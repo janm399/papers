@@ -3,7 +3,6 @@ module Main where
 
 import Data.Time
 import Control.Concurrent
-import System.Random
 import System.IO
 import qualified Data.ByteString as B
 
@@ -17,7 +16,7 @@ withIO fn f =
         read1M handle = do 
           let size = 1024 * 1024
           hSetBuffering handle (BlockBuffering (Just size))
-          nulls <- B.hGetSome handle size
+          _ <- B.hGetSome handle size
           -- idx <- randomRIO (1, size)
           -- let x = B.index nulls (idx - 1)
           -- if x /= 0 then
@@ -97,9 +96,9 @@ main :: IO ()
 main = do
   mapM_ loop ([1..10] :: [Int])
   where
-    loop' _ = do
-      (t5, _) <- timed' (withIO "/dev/zero" fb1) 
-      putStrLn (show t5)
+    -- loop' _ = do
+    --   (t5, _) <- timed' (withIO "/dev/zero" fb1) 
+    --   putStrLn (show t5)
 
     loop _ = do
       t1 <- timed fb1
