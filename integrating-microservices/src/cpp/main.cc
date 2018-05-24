@@ -3,9 +3,15 @@
 #include <easylogging++.h>
 #include <future>
 #include "messages.pb.h"
+#include <boost/asio.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast.hpp>
+#include <boost/beast/http.hpp>
 
 using namespace std;
 using namespace std::chrono;
+using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+namespace http = boost::beast::http;    // from <boost/beast/http.hpp>
 
 INITIALIZE_EASYLOGGINGPP
 
@@ -81,7 +87,7 @@ const string fb3(const int i) noexcept {
 }
 
 const string fb4(const int i) noexcept {
-    return async(fb1, i).get();
+    return std::async(fb1, i).get();
 }
 
 template<typename F>
@@ -97,6 +103,26 @@ auto withIO(const string fn, const F f) {
 }
 
 template<typename F>
+auto withHttp(const F f) {
+    auto const ctx = shared_ptr<boost::asio::io_context>(new boost::asio::io_context());
+    auto const resolver = shared_ptr<tcp::resolver>(new tcp::resolver{*ctx});
+    auto const socket = shared_ptr<tcp::socket>(new tcp::socket{*ctx}, [=](tcp::socket *s) {
+        s->shutdown(tcp::socket::shutdown_both);
+    });
+    auto const results = resolver->resolve("localhost", "8080");
+    boost::asio::connect(*socket, results.begin(), results.end());
+
+    return [socket, f](const int i) {
+        http::request<http::string_body> req{http::verb::get, "/hello.txt", 11};
+        http::write(*socket, req);
+        http::response<http::dynamic_body> res;
+        boost::beast::flat_buffer buffer;
+        http::read(*socket, buffer, res);
+        return f(i);
+    };
+}
+
+template<typename F>
 long run(F f) {
     auto start = system_clock::now();
     for (int i = 0; i < 4000000; i++) {
@@ -107,8 +133,9 @@ long run(F f) {
     return ms.count();
 };
 
-int main(int argc, char** argv) {
+int main() {
     for (int i = 0; i < 10; i++) {
+        run(withHttp(fb1));
         run(fb1);
         run(fb2a);
         run(fb2b);

@@ -17,6 +17,7 @@ include(DownloadProject.cmake)
 include(FindProtobuf)
 find_package(Protobuf REQUIRED)
 find_package(LibRDKafka REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system)
 enable_testing()
 
 download_project(PROJ       googletest
@@ -44,8 +45,15 @@ set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 include_directories(${PROTOBUF_INCLUDE_DIR})
 
 include_directories(include)
+include_directories(${Boost_INCLUDE_DIRS})
 
 file(GLOB SRC *.cc)
 
+if(!Boost_FOUND)
+    message("**!!!")
+endif()
+
+message("*** ${Boost_LIBRARIES}")
+
 add_executable(main ${PROTO_HEADER} ${PROTO_SRC} ${easyloggingpp_SRC} ${SRC})
-target_link_libraries(main pthread ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LibRDKafka_LIBRARIES})
+target_link_libraries(main pthread ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LibRDKafka_LIBRARIES} ${Boost_LIBRARIES})
