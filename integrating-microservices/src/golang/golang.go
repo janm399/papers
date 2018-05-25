@@ -5,6 +5,7 @@ import ("strconv"
 	"fmt"
 	"errors"
 	"os"
+	"net/http"
 )
 
 func fb1(i int) string {
@@ -114,6 +115,20 @@ func withIO(fn string, f func(int) string) (func(int) string) {
 	}
 }
 
+func withHttp(url string, f func(int) string) (func(int) string) {
+	tr := &http.Transport{
+		MaxIdleConns:       10,
+		IdleConnTimeout:    30 * time.Second,
+		DisableCompression: true,
+	}
+	client := &http.Client{Transport: tr}
+	return func(n int) string {
+		resp, _:= client.Get(url)
+		resp.Body.Close()
+		return f(n)
+	}
+}
+
 func timed(f func(int) string) int64 {
 	start := time.Now()
 	for i := 0; i < 4000000; i++ {
@@ -126,6 +141,7 @@ func timed(f func(int) string) int64 {
 
 func main() {
 	for i := 0; i < 10; i++ {
+		timed(withHttp("http://localhost:8080", fb1))
 		timed(fb1)
 		timed(fb2a)
 		timed(fb2b)
