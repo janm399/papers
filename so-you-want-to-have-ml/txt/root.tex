@@ -509,6 +509,16 @@ There is a lot of further areas of research. I think that exercise should firstl
 TODO: ML Joel test
 TODO: pipeline
 
+\fig{pipeline.png}{pipeline}{ML pipeline}
+
+And with code...
+
+\fig{pipeline+code.png}{pipeline+code}{ML pipeline with code}
+
+The ML team maintains the tooling for the pipeline, consults on the best models, researches, ...; but the product teams (that ultimately work on the service that \emph{uses} the model) have the first dibs on implementing the model. Successful implementation of this strategy means that anyone can implement a new model (even if only to just see what will happen!), train it, debug it, and deploy it all within a single day. All the mechanics of data ingestion, storage, versioning; runtime of training a model, evaluation, storage, versioning; debugging and deploying; and the usage is all implemented. 
+
+In this sense, the machine learning code is just like any other ordinary code; it is subject to all the high engineering standards and safeguards.
+
 \printbibliography
 
 \end{document} 
