@@ -1,0 +1,44 @@
+\input{../../common.tex}
+
+\addbibresource{root.bib}
+
+\title{So you want to build a ML system}
+
+\author{Jan Macháček}
+
+\begin{document}
+
+\twocolumn[
+  \begin{@twocolumnfalse}
+    \maketitle
+    \begin{abstract}
+      It concludes with a ML readiness test, and recommendations on how to roll-out machine learning to an organisation (including tips on the process to follow, the people to hire). Mature ML organisation should enable a new person to make an impact in a ML system on the first day!
+    \end{abstract}
+  \end{@twocolumnfalse}
+]
+
+\section{I want ML}
+``Joel test'':
+\begin{enumerate}
+  \item Versioned, testable; continously tested and sanity-checked analytics (BI)  
+  \item Any BI query can be answered under 10 minutes
+  \item Monitoring on the BI environment to identify queries that use normalised data
+  \item The results of the BI queries that humans process define what ML should solve
+  \item Ingestion components decoupled from the rest of the system
+  \item Versioned, testable; continously tested and sanity-checked data sets 
+  \label{txt:ml-code}\item Pre-computed ``return constant'' model
+  \item Versioned, testable; continously tested and sanity-checked model storage with training and validation data set references
+  \item Model deployer and ``debugger''
+\end{enumerate}
+
+But where is the ML that builds the model? That's the code that the engineering teams need to build to replace \autoref{txt:ml-code}. 
+
+Once the first four steps are known, the engineering teams can implement the remaining steps of the pipeline. If the system that is to take advantage of ML is event-based, the event delivery mechanism provides the decoupling, resulting in architecture shown in \autoref{fig:es-pipeline+code}.
+
+\fig{es-pipeline+code.png}{es-pipeline+code}{ML pipeline with code}
+
+The ML team maintains the tooling for the pipeline, consults on the best models, researches, ...; but the product teams (that ultimately work on the service that \emph{uses} the model) have the first dibs on implementing the model. Successful implementation of this strategy means that anyone can implement a new model (even if only to just see what will happen!), train it, debug it, and deploy it all within a single day. All the mechanics of data ingestion, storage, versioning; runtime of training a model, evaluation, storage, versioning; debugging and deploying; and the usage is all implemented. 
+
+In this sense, the machine learning code is just like any other ordinary code; it is subject to all the high engineering standards and safeguards.
+
+\end{document}

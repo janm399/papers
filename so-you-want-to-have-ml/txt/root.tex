@@ -13,8 +13,6 @@
     \maketitle
     \begin{abstract}
       Amongst other things, a machine learning system should be built! It can solve anything, there are so many wonderful frameworks, so many conference talks that show just how easy it is to throw together just a few line of Python, and hey presto!--a machine that can recognise digits in images, recognise hot dog and \emph{not} hot dog... it even runs on a mobile phone. This essay is about the difficulties that are lurking in the execution and running of a robust \& mature machine learning system.
-      
-      It concludes with a ML readiness test, and recommendations on how to roll-out machine learning to an organisation (including tips on the process to follow, the people to hire). Mature ML organisation should enable a new person to make an impact in a ML system on the first day!
     \end{abstract}
   \end{@twocolumnfalse}
 ]
@@ -503,21 +501,6 @@ A practical consequence for our system is that it is difficult to associate the 
 
 \section{Further work}
 There is a lot of further areas of research. I think that exercise should firstly bring enjoyment and fun: this encourages further exercise, and only long-term sustainable exercise brings significant health benefits. The system collects all the information about the completed exercises (names, intensities, timings, sequence); it will then be useful to \emph{ask} the users to indicate their enjoyment after each exercise session. This can be as simple as \smiley{}, \neutranie{}, and \frownie{}; and then use the server-side processing to identify the exercises, their sequences, and intensities that the particular user (and other users in the same cluster) find enjoyable. Similarly, the concept of improvement needs further exploration: for some users, improvement means being able to lift more weight; but for users recovering from an injury, improvement means increasing their range of movement.
-
-\section{Sounds great; where do I begin?}
-...
-TODO: ML Joel test
-TODO: pipeline
-
-\fig{pipeline.png}{pipeline}{ML pipeline}
-
-And with code...
-
-\fig{pipeline+code.png}{pipeline+code}{ML pipeline with code}
-
-The ML team maintains the tooling for the pipeline, consults on the best models, researches, ...; but the product teams (that ultimately work on the service that \emph{uses} the model) have the first dibs on implementing the model. Successful implementation of this strategy means that anyone can implement a new model (even if only to just see what will happen!), train it, debug it, and deploy it all within a single day. All the mechanics of data ingestion, storage, versioning; runtime of training a model, evaluation, storage, versioning; debugging and deploying; and the usage is all implemented. 
-
-In this sense, the machine learning code is just like any other ordinary code; it is subject to all the high engineering standards and safeguards.
 
 \printbibliography
 
