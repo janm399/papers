@@ -2,7 +2,7 @@
 
 \addbibresource{root.bib}
 
-\title{So you want to build a ML system}
+\title{Machine Learning to the rescue}
 
 \author{Jan Macháček}
 
@@ -12,13 +12,16 @@
   \begin{@twocolumnfalse}
     \maketitle
     \begin{abstract}
-      It concludes with a ML readiness test, and recommendations on how to roll-out machine learning to an organisation (including tips on the process to follow, the people to hire). Mature ML organisation should enable a new person to make an impact in a ML system on the first day!
+      Machine learning to the rescue!... the first question is ``to the rescue of what?''; immediately followed by ``when is it indeed rescued?''. The answers to these questions are crucial; luckily, the software engineering process is quite used to asking and answering these questions. Careful project analysis and inception, followed by continous integration and continous deployment in development (supported by adequate tests); all overseen by systematic project governance leads to successful software projects. This paper's proposition is that machine learning projects that are to apply established machine learning approaches and algorithms are no different than any other software project; and they must follow all practices of software engineering. 
     \end{abstract}
   \end{@twocolumnfalse}
 ]
 
-\section{I want ML}
-``Joel test'':
+\section{Machine Learning to the rescue!}
+Before embarking on a machine learning project, the first question is ``to the rescue of what?''; immediately followed by ``when is it indeed rescued?''. The answers to these questions are crucial; luckily, the software engineering process is quite used to asking and answering these questions. Careful project analysis and inception, followed by continous integration and continous deployment in development (supported by adequate tests); all overseen by systematic project governance leads to successful software projects. 
+
+This paper's proposition is that ``business'' projects that use machine learning are no different than any other software project; and that all practices of software engineering have to be applied to the machine learning subsystems.
+
 \begin{enumerate}
   \item Versioned, testable; continously tested and sanity-checked analytics (BI)  
   \item Any BI query can be answered under 10 minutes
@@ -33,9 +36,15 @@
 
 But where is the ML that builds the model? That's the code that the engineering teams need to build to replace \autoref{txt:ml-code}. 
 
-Once the first four steps are known, the engineering teams can implement the remaining steps of the pipeline. If the system that is to take advantage of ML is event-based, the event delivery mechanism provides the decoupling, resulting in architecture shown in \autoref{fig:es-pipeline+code}.
+Once the first four steps are known, the engineering teams can implement the remaining steps of the pipeline. If the system that is to take advantage of ML is event-based, the event delivery mechanism provides the decoupling, resulting in architecture shown in \autoref{fig:pipeline-es}.
 
-\fig{es-pipeline+code.png}{es-pipeline+code}{ML pipeline with code}
+\fig{pipeline-es.png}{pipeline-es}{ML pipeline in event-based system}
+
+If the front-end system is not event-sourced, the ingestion must be decoupled using a read-only replica of the live data. Notice in \autoref{fig:pipeline-nes} the flow of the data: the data is pushed into the read-only replica in the first step to allow the front-end system to control the load on its data store; from the read-only replica, the data is pulled into the ML data store. 
+
+\fig{pipeline-nes.png}{pipeline-nes}{ML pipeline in non event-based system}
+
+Regardless of the approach used (or even if a hybrid approach is deployed), the entire system has to be aware of any back-pressure.
 
 The ML team maintains the tooling for the pipeline, consults on the best models, researches, ...; but the product teams (that ultimately work on the service that \emph{uses} the model) have the first dibs on implementing the model. Successful implementation of this strategy means that anyone can implement a new model (even if only to just see what will happen!), train it, debug it, and deploy it all within a single day. All the mechanics of data ingestion, storage, versioning; runtime of training a model, evaluation, storage, versioning; debugging and deploying; and the usage is all implemented. 
 
