@@ -6,6 +6,8 @@
 
 \author{Jan Macháček}
 
+\newcommand{\joel}[1]{\\ \emph{Joel: #1}}
+
 \begin{document}
 
 \twocolumn[
@@ -18,21 +20,50 @@
 ]
 
 \section{Software engineering}
-An efficient software organisation focuses on finding out
+...
 
-Before embarking on a machine learning project, the first question is ``to the rescue of what?''; immediately followed by ``when is it indeed rescued?''. The answers to these questions are crucial; luckily, the software engineering process is quite used to asking and answering these questions. Careful project analysis and inception, followed by continous integration and continous deployment in development (supported by adequate tests); all overseen by systematic project governance leads to successful software projects. 
+The Joel test\cite{joeltest} is a product of one man's biased, ad-hoc, informal, ... view of what makes successful software projects. Annoyingly, high scores on the Joel test correlate with successfully delivered software projects. Spolsky acknowledges that it's possible for a small team of cowboys to deliver amazing software with score of 0, as much as it is possible for a team that scores 12 to be the software equivalent of the Titanic. Nevertheless, high scores on the test correlate with good practices and discipline, which usually leads to good software.
 
-This paper's proposition is that ``business'' projects that use machine learning are no different than any other software project; and that all practices of software engineering have to be applied to the machine learning subsystems.
+This paper's proposition is that ``business'' projects that use machine learning are no different than any other software project; and that all practices of software engineering have to be applied to the machine learning subsystems. Specifically, that the 12 points on the Joel test are just as applicable, but with additional 12 points. 
 
 \begin{enumerate}
-  \item Versioned, testable; continously tested and sanity-checked analytics (BI)  
+  \item Version control for the ML models and data sets used to train them
+        \joel{Do you use source control?}
+  \item Single-step / automated data selection, model training, evaluation, and deployment
+        \joel{Can you make a build in one step?}
+  \item [At least] daily training and deployment process
+        \joel{Do you make daily builds?}
+  \item The results of the BI queries that humans process define what ML should solve
+        \joel{Do you have a bug database?}
+  \item Versioned, testable; continuously tested and sanity-checked BI
+        \joel{Do you fix bugs before writing new code?}
+  \item BI that allows any query to be answered in under 10 minutes
+        \joel{Do you have a spec?}
+Do you have an up-to-date schedule?
+Do programmers have quiet working conditions?
+Do you use the best tools money can buy?
+Do you have testers?
+Do new candidates write code during their interview?
+Do you do hallway usability testing?
+  \item Versioned, testable; continuously tested and sanity-checked analytics (BI)  
+  \item Monitoring on the BI environment to identify queries that use normalised data
+  \item The results of the BI queries that humans process define what ML should solve
+  \item Ingestion components decoupled from the rest of the system
+  \item Versioned, testable; continuously tested and sanity-checked data sets 
+  \label{txt:ml-code}\item Pre-computed ``return constant'' model
+  \item Versioned, testable; continuously tested and sanity-checked model storage with training and validation data set references
+  \item Model deployer and ``debugger''
+\end{enumerate}
+
+\begin{enumerate}
+  \item Versioned, testable; continuously tested and sanity-checked analytics (BI)  
   \item Any BI query can be answered under 10 minutes
   \item Monitoring on the BI environment to identify queries that use normalised data
   \item The results of the BI queries that humans process define what ML should solve
   \item Ingestion components decoupled from the rest of the system
-  \item Versioned, testable; continously tested and sanity-checked data sets 
+  \item Versioned, testable; continuously tested and sanity-checked data sets 
   \label{txt:ml-code}\item Pre-computed ``return constant'' model
-  \item Versioned, testable; continously tested and sanity-checked model storage with training and validation data set references
+  \item Versioned, testable; continuously tested and sanity-checked model storage with training and validation data set references
   \item Model deployer and ``debugger''
 \end{enumerate}
 
