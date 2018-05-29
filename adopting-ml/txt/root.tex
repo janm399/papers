@@ -7,6 +7,18 @@
 \author{Jan Macháček}
 
 \newcommand{\joel}[1]{\\ \emph{Joel: #1}}
+\newcommand{\pc}[1]{\lstinline[basicstyle=\small,columns=fixed]|#1|}
+\usetikzlibrary{positioning}
+
+\tikzset{
+    table/.style={
+           rectangle,
+           draw=black, very thick,
+           minimum height=2em,
+           inner sep=2pt,
+           text centered,
+           },
+}
 
 \begin{document}
 
@@ -89,8 +101,68 @@ Attach technologies to the blocks in \autoref{fig:pipeline-es} and \autoref{fig:
 \subsection{Initial research}
 The practical application of the ``ML enablement process'' aimed to deliver failure predictions and automatic error recovery based in an event-based architecture system. The system already published seemingly too many events, but the detail in the events were very useful in building the data sets for the ML project. The first step the team needed to take was to build traditional business intelligence database--the goal was to find out whether our human knowledge and experience allowed us to find meaningful information in the data.
 
-The system's journal (Apache Kafka\cite{kafka}) is configured with 7 days' message retention policy; at the very start of the work, the team was able to download events for the last 7 days. This was approximately \SI{60}{\gibi\byte} of uncompressed Protocol Buffers\cite{protobuf} binary messages. Because of the compactness of the binary wire representation of the Protocol Buffers messages, this translated to \SI{60}{\gibi\byte} of a RDBMS (MySQL\cite{mysql}) storage requirements. The loader program performed batch JDBC inserts into the MySQL tables matching the topic name.
+The system's journal (Apache Kafka\cite{kafka}) is configured with 7 days' message retention policy; at the very start of the work, the team was able to download events for the last 7 days. This was approximately \SI{60}{\gibi\byte} of uncompressed Protocol Buffers\cite{protobuf} binary messages. Because of the compactness of the binary wire representation of the Protocol Buffers messages, this translated to \SI{60}{\gibi\byte} of a RDBMS (MySQL\cite{mysql}) storage requirements. The loader program performed batch JDBC inserts into the MySQL tables. The events in the \pcode{HttpRequest} and \pcode{HttpResponse} topics were imported to the matching tables, the events in the \pcode{ServiceStateChanged}, \pcode{ServiceStateUnchanged}, \pcode{ServiceAdded}, and \pcode{ServiceRemoved} were pre-processed and inserted into the \pcode{Service} table. The tables are not even in the 1\textsuperscript{st} normal form; there is only the primary key, but there are no foreign key constraints; during the batch import, there are no indexes. 
 
+\begin{figure}
+\begin{tikzpicture}
+  \tikzstyle{every node}=[font=\small] 
+  \node[table, align=left] (HttpRequest)
+  {
+    \begin{tabular}{ll}
+      \textbf{HttpRequest} \\\hline
+      \pc{correlationId}     & \pc{varchar(36)} \\
+      \pc{time}              & \pc{timestamp} \\
+      \pc{method}            & \pc{varchar(10)} \\
+      \pc{uri}               & \pc{varchar(255)} \\
+      \pc{headers}           & \pc{text} \\
+      \pc{entityContentType} & \pc{varchar(64)} \\
+      \pc{entity}            & \pc{blob} \\
+    \end{tabular}
+  };
+
+  \node[table
+       , below=1cm of HttpRequest
+       ] (HttpResponse)
+  {
+    \begin{tabular}{ll}
+      \textbf{HttpResponse} \\\hline
+      \pc{correlationId}     & \pc{varchar(36)} \\
+      \pc{duration}          & \pc{integer} \\
+      \pc{statusCode}        & \pc{integer} \\
+      \pc{headers}           & \pc{text} \\
+      \pc{entityContentType} & \pc{varchar(64)} \\
+      \pc{entity}            & \pc{blob} \\
+    \end{tabular}
+  };
+
+  \node[table
+       , below=1cm of HttpResponse
+       ] (Status)
+  {
+    \begin{tabular}{ll}
+      \textbf{Status} \\\hline
+      \pc{correlationId}     & \pc{varchar(36)} \\
+      \pc{hostId}            & \pc{varchar(50)} \\
+      \pc{serviceId}         & \pc{varchar(50)} \\
+      \pc{time}              & \pc{timestamp} \\
+      \pc{state1}            & \pc{integer} \\
+      \pc{state2}            & \pc{integer} \\
+      \pc{lastState1}        & \pc{integer} \\
+      \pc{lastState2}        & \pc{integer} \\
+      \pc{entity}            & \pc{blob} \\
+      \pc{lastEntity}        & \pc{blob} \\
+    \end{tabular}
+  };
+
+  \end{tikzpicture}
+  \label{fig:erd}
+  \caption{Database schema}
+\end{figure}
+
+The first seven days' worth of data import ended up as \numprint{5103397} rows in \pcode{HttpRequest}, \numprint{5103397} rows in \pcode{HttpResponse}\footnote{The same number of rows in the \pcode{HttpRequest} and \pcode{HttpResponse} is a very good sanity-check!}, and \numprint{54566575} rows in \pcode{Service}. This imported database was the starting point for the human analysis code. ``How many \pcode{statusCode != 200} in \pcode{HttpResponse} are there?''--(\numprint{72796}); ``what is the average response duration?''--(\SI{4.0759}{\milli\second}); ``what is the average response duration for successful responses''--(\SI{4.9862}{\milli\second}), and so on. In order to answer these questions, the database needed a few indexes: remember, ``any ad-hoc analytics query needs to be answerable within 10 minutes.'' The \pcode{db.m4.4xlarge} instance was completely sufficient for the first 7 days' worth of data; even for the first 70 days' worth of data. It delivered just over \SI{150}{\mebi\byte\per\second} in read and write throughput, and with only a few users running queries, its CPU usage never got above 50 \%; it was allocated \SI{5}{\tebi\byte} of SSD storage. Remember
+
+
+These were great first exploratory questions, the next round focused on building time series of requests, responses, and status changes. The tool was simple SQL \pcode{create table ... from select ... inner join}; the sequence of events ended up as \numprint{50182398} rows, describing \numprint{545357} sequences. (Sanity-check: a sequence is made up of multiple requests and responses, and multiple service changed rows; there cannot be more sequences than requests and responses).
 
 \subsection{Buy vs. build (AWS services vs. custom code)}
 
