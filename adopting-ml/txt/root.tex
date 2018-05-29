@@ -87,7 +87,10 @@ In this sense, the machine learning code is just like any other ordinary code; i
 Attach technologies to the blocks in \autoref{fig:pipeline-es} and \autoref{fig:pipeline-nes}. Show on practical example, attempt to pull out reusable blocks and show examples of good and bad code. Think the RAZCP ML experiments; demonstrating just how much time the initial research and experiments take. Reinventing the experimental wheel must be avoided--the ML team should curate the bootstrapping environment, making it available ``on demand'' for other teams. The work on the ML core code can only successfully happen when all other pieces are in place. 
 
 \subsection{Initial research}
-What tooling can the teams use to conduct their first cut of research. Show analytics tools and some ML tooling.
+The practical application of the ``ML enablement process'' aimed to deliver failure predictions and automatic error recovery based in an event-based architecture system. The system already published seemingly too many events, but the detail in the events were very useful in building the data sets for the ML project. The first step the team needed to take was to build traditional business intelligence database--the goal was to find out whether our human knowledge and experience allowed us to find meaningful information in the data.
+
+The system's journal (Apache Kafka\cite{kafka}) is configured with 7 days' message retention policy; at the very start of the work, the team was able to download events for the last 7 days. This was approximately \SI{60}{\gibi\byte} of uncompressed Protocol Buffers\cite{protobuf} binary messages. Because of the compactness of the binary wire representation of the Protocol Buffers messages, this translated to \SI{60}{\gibi\byte} of a RDBMS (MySQL\cite{mysql}) storage requirements. The loader program performed batch JDBC inserts into the MySQL tables matching the topic name.
+
 
 \subsection{Buy vs. build (AWS services vs. custom code)}
 
