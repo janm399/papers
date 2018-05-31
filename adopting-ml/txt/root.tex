@@ -31,6 +31,23 @@
   \end{@twocolumnfalse}
 ]
 
+\section{Basic blocks}
+
+Business analytics
+Data collection \& preparation
+  (System to store data from a front-end system in a suitable storage \& format)
+  (Normalize, de-duplicate)
+Data verification 
+  (Distribution, correlations, ...; e.g. statistical analysis)
+Data selection
+  (Training and verification data sets)
+Model training
+  (The iterative computation)
+Model evaluation
+  (Check the computed model, and all other models)
+Model deployment
+  (...)
+
 \section{Software engineering}
 ...
 
@@ -38,45 +55,45 @@ The Joel test\cite{joeltest} is a product of one man's biased, ad-hoc, informal,
 
 This paper's proposition is that ``business'' projects that use machine learning are no different than any other software project; and that all practices of software engineering have to be applied to the machine learning subsystems. Specifically, that the 12 points on the Joel test are just as applicable, but with additional 12 points. 
 
-\begin{enumerate}
-  \item Version control for the ML models and data sets used to train them
-        \joel{Do you use source control?}
-  \item Single-step / automated data selection, model training, evaluation, and deployment
-        \joel{Can you make a build in one step?}
-  \item [At least] daily training and deployment process
-        \joel{Do you make daily builds?}
-  \item The results of the BI queries that humans process define what ML should solve
-        \joel{Do you have a bug database?}
-  \item Versioned, testable; continuously tested and sanity-checked BI
-        \joel{Do you fix bugs before writing new code?}
-  \item BI that allows any query to be answered in under 10 minutes
-        \joel{Do you have a spec?}
-Do you have an up-to-date schedule?
-Do programmers have quiet working conditions?
-Do you use the best tools money can buy?
-Do you have testers?
-Do new candidates write code during their interview?
-Do you do hallway usability testing?
-  \item Versioned, testable; continuously tested and sanity-checked analytics (BI)  
-  \item Monitoring on the BI environment to identify queries that use normalised data
-  \item The results of the BI queries that humans process define what ML should solve
-  \item Ingestion components decoupled from the rest of the system
-  \item Versioned, testable; continuously tested and sanity-checked data sets 
-  \label{txt:ml-code}\item Pre-computed ``return constant'' model
-  \item Versioned, testable; continuously tested and sanity-checked model storage with training and validation data set references
-  \item Model deployer and ``debugger''
-\end{enumerate}
+% \begin{enumerate}
+%   \item Version control for the ML models and data sets used to train them
+%         \joel{Do you use source control?}
+%   \item Single-step / automated data selection, model training, evaluation, and deployment
+%         \joel{Can you make a build in one step?}
+%   \item [At least] daily training and deployment process
+%         \joel{Do you make daily builds?}
+%   \item The results of the BI queries that humans process define what ML should solve
+%         \joel{Do you have a bug database?}
+%   \item Versioned, testable; continuously tested and sanity-checked BI
+%         \joel{Do you fix bugs before writing new code?}
+%   \item BI that allows any query to be answered in under 10 minutes
+%         \joel{Do you have a spec?}
+% Do you have an up-to-date schedule?
+% Do programmers have quiet working conditions?
+% Do you use the best tools money can buy?
+% Do you have testers?
+% Do new candidates write code during their interview?
+% Do you do hallway usability testing?
+%   \item Versioned, testable; continuously tested and sanity-checked analytics (BI)  
+%   \item Monitoring on the BI environment to identify queries that use normalised data
+%   \item The results of the BI queries that humans process define what ML should solve
+%   \item Ingestion components decoupled from the rest of the system
+%   \item Versioned, testable; continuously tested and sanity-checked data sets 
+%   \label{txt:ml-code}\item Pre-computed ``return constant'' model
+%   \item Versioned, testable; continuously tested and sanity-checked model storage with training and validation data set references
+%   \item Model deployer and ``debugger''
+% \end{enumerate}
 
 \begin{enumerate}
-  \item Versioned, testable; continuously tested and sanity-checked analytics (BI)  
-  \item Any BI query can be answered under 10 minutes
+  \item Versioned, testable; continuously tested and sanity-checked analytics (BI)
+  \item BI setup so that any previously executed query can be answered under 10 minutes
   \item Monitoring on the BI environment to identify queries that use normalised data
-  \item The results of the BI queries that humans process define what ML should solve
-  \item Ingestion components decoupled from the rest of the system
-  \item Versioned, testable; continuously tested and sanity-checked data sets 
-  \label{txt:ml-code}\item Pre-computed ``return constant'' model
-  \item Versioned, testable; continuously tested and sanity-checked model storage with training and validation data set references
-  \item Model deployer and ``debugger''
+  \item The output of the BI that humans process define what ML should solve
+  \item Ingestion system decoupled from the rest of the system
+  \item Test and verification data set storage with statistical data verification
+  \label{txt:ml-code}\item Naïve ``return constant'' model
+  \item Versioned computed model storage with training and validation data set references, and the model evaluation
+  \item Automated or single-click model deployer and ``debugger''
 \end{enumerate}
 
 But where is the ML that builds the model? That's the code that the engineering teams need to build to replace \autoref{txt:ml-code}. 
