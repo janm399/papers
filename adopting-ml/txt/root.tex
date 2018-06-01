@@ -225,6 +225,26 @@ Treat the output of the ML box as if it were a scientific experiment: what is th
 \section{Compromises}
 How to manage the growing data sizes and time to train the models; particularly with complex models that need a lot of computation to train? Where to keep the old data and old models? Is there ever value in digging out models and data that are 10 versions old?
 
+\section{Stability \& Maintainability}
+Detect
+\begin{itemize}
+  \item Feedback loops, especially hidden feedback loops
+  \item Legacy data / features (something that's no longer needed, but still included in the training)
+  \item Bundled data / features (deadline is looming, let's just throw in this blob to see what happens... hey!--it worked, we're keeping \emph{all of it}.)
+  \item \textepsilon-features: one more thing will increase the accuracy by 0.1 \%...
+  \item Data / feature provenance (where did it come from, what version is it?)
+  \item Glue code / hacks: in a mature ML system very little code \emph{does machine learning}. It is better to implement the ML code in a language / framework that is the best match for the system that uses it rather than gluing together other libraries (or even other languages). ``It is better to re-implement X in Scala than to use the big fat Java library that implements X already.
+  \item Pipeline spaghetti, particularly when it comes to preparing / assembling data for ML. Usually result of experiments or separation of the ML and engineering teams. The ML team does the minimum engineering work (think \pcode{Perl}) to allow it to focus on the ML model; and the engineering team then has to make the write-only code run. Imagine temporary files in people's hard-coded home directories or \pcode{/var/bamtech-ml/exp1} and similar.
+  \item Commented-out / dead experimental code. ML / engineering code that is no longer needed, but may be left behind a forever \pcode{false} branch, buried in a Docker container. (At some point, someone is going to remove that environmental variable that blocks the dead code, and tears will flow.)
+\end{itemize}
+
+Test
+\begin{itemize}
+  \item Remove [detected under-utilised] features and re-evaluate the models
+  \item Statistical test of predictions (sanity checks for biases and ``reasonable'' predictions)
+  \item Action limits (particularly in RT systems with feedback loops to prevent ML from ``turning on X'' as the outcome of one prediction, immediately followed by ``turning off X'' as a result of the prediction that follows.)
+\end{itemize}  
+
 \printbibliography
 
 \end{document}
