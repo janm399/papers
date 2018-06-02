@@ -1,9 +1,18 @@
 package com.acme.intms
 
 import java.nio.file._
+import java.util.concurrent.atomic.AtomicInteger
+
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
+import akka.http.scaladsl.settings.ConnectionPoolSettings
+import akka.stream.{ActorMaterializer, OverflowStrategy}
+import akka.stream.scaladsl.{Keep, Sink, Source}
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, Future, Promise}
+import scala.util.Success
 
 object Perf {
 
@@ -100,12 +109,32 @@ object Perf {
     result
   }
 
-  def withIO[A](fn: String, f: Int ⇒ A): (Int ⇒ A) = { x ⇒
+  def withIO[A](fn: String, f: Int ⇒ A): Int ⇒ A = { x ⇒
     val arr = Array.ofDim[Byte](1024 * 1024)
     val is = Files.newInputStream(FileSystems.getDefault.getPath(fn), StandardOpenOption.READ)
     is.read(arr, 0, arr.length)
     is.close()
     f(x)
+  }
+
+  def withHttp[A](uri: String, fn: Int ⇒ A)(implicit system: ActorSystem, mat: ActorMaterializer): Int ⇒ A = {
+    val parsedUri = Uri(uri)
+    val maximumQueueSize = 128
+    val settings = ConnectionPoolSettings(system.settings.config).withMaxConnections(maximumQueueSize).withMaxOpenRequests(maximumQueueSize)
+    val pool = Http().cachedHostConnectionPool[A](parsedUri.authority.host.address(), parsedUri.authority.port, settings)
+    // val queueSize = new AtomicInteger(0)
+    // val queue = Source.queue[(HttpRequest, Promise[HttpResponse])](100, OverflowStrategy.backpressure)
+
+    { x ⇒
+      val (_, fa) = Source
+        .single(HttpRequest() → fn(x))
+        .via(pool)
+        .map { case (r, a) ⇒ r.foreach(_.discardEntityBytes()); a }
+        .toMat(Sink.head)(Keep.both)
+        .run()
+
+      Await.result(fa, Duration.Inf)
+    }
   }
 
   def timed[A](f: Int ⇒ A): Long = {
@@ -120,6 +149,9 @@ object Perf {
 
   def main(args: Array[String]): Unit = {
     def run = {
+      implicit val system: ActorSystem = ActorSystem()
+      implicit val mat: ActorMaterializer = ActorMaterializer()
+      println(timed(withHttp("http://localhost:8080", fb1)))
       println(timed(fb1))
       println(timed(fb2a))
       println(timed(fb2b))

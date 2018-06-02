@@ -12,6 +12,8 @@ organization := "com.acme"
 // )
 
 libraryDependencies ++= Seq(
+  "com.typesafe.akka" %% "akka-http" % "10.1.1",
+  "com.typesafe.akka" %% "akka-stream" % "2.5.11"
   //"org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // "com.trueaccord.scalapb" %% "scalapb-runtime" % com.trueaccord.scalapb.compiler.Version.scalapbVersion % "protobuf",
   // "com.trueaccord.scalapb" %% "scalapb-json4s" % "0.3.3",
