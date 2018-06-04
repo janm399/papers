@@ -133,6 +133,101 @@ XXX
   \label{plot:simple-computation}
 \end{figure}
 
+\twocolumn[
+\begin{@twocolumnfalse}
+\begin{figure}[h]
+  \begin{tikzpicture}
+    \begin{axis}[
+      height=15cm, 
+      width=15cm, 
+      yminorgrids=true,
+      xtick=data,
+      ymode=log,
+      xlabel={Program}, 
+      ylabel={Relative execution time},
+      ymin=1,ymax=10516002326,
+      xmin=0,xmax=9,
+      legend pos=north west,
+      legend cell align={left},
+      xticklabel style={rotate=90},
+      xticklabels={ i, ii, iii, iv, v, vi, vii, viii, ix, x}
+      ]
+
+      \addplot+ coordinates {
+        (0, 1)
+        (1, 5.162790698)
+        (2, 42.51162791)
+        (3, 3)
+        (4, 868.5)
+        (5, 8988.348837)
+        (6, 10586.84884)
+        (7, 60683.83721)
+        (8, 525800.1163)
+        (9, 10516002326)
+      };
+      \addlegendentry{Scala}
+
+      \addplot+ coordinates {
+        (0, 3.837209302)
+        (1, 8.023255814)
+        (2, 66)
+        (3, 25.12790698)
+        (4, 959.9883721)
+        (5, 2610.965116)
+        (6, 4225.232558)
+        (7, 47250.87209)
+        (8, 512367.1512)
+        (9, 10247343023)
+      };
+      \addlegendentry{C++}
+
+      \addplot+ coordinates {
+        (0, 1.860465116)
+        (1, 2.255813953)
+        (2, 4.11627907)
+        (3, 2.244186047)
+        (4, 44.30232558)
+        (5, 6135.988372)
+        (6, 7553.034884)
+        (7, 116279.0581)
+        (8, 581395.3372)
+        (9, 11627906744)
+      };
+      \addlegendentry{Go}
+
+      \addplot+ coordinates {
+        (0, 3.965116279)
+        (1, 3.930232558)
+        (2, 3.930232558)
+        (3, 3.918604651)
+        (4, 615.5116279)
+        (5, 9842.953488)
+        (6, 11480.0814)
+        (7, 116279.0581)
+        (8, 581395.3372)
+        (9, 11627906744)
+      };
+      \addlegendentry{Haskell}
+    \end{axis}
+  \end{tikzpicture}
+  Where 
+  \begin{enumerate}[i]
+    \item Simple
+    \item Some ex.
+    \item All ex.
+    \item Enterprise
+    \item Bad async
+    \item \SI{1}{\mebi\byte} from \pcode{/dev/zero}
+    \item \SI{1}{\mebi\byte} from regular file
+    \item REST API call with \SI{100}{\micro\second} latency
+    \item REST API call with \SI{10}{\milli\second} latency
+    \item REST API call with \numprint{0.00001} error rate + \SI{10}{\milli\second} latency
+  \end{enumerate}
+  \caption{Simple computation}
+  \label{plot:simple-computation}
+\end{figure}
+\end{@twocolumnfalse}
+]
 
 \section{State in distributed system}
 Imagine two systems that need to share information; a good starting point may be an endpoint where one system can request the state of the other system. If the first system needs to keep ``in sync'' with the second system, it needs to periodically query the endpoint to obtain the state from the second system. This keeps the two systems independent and decoupled, but it means that the systems might miss important state changes that happen between the two polls, and it makes both systems do needless work by querying the endpoints, even if the state remains the same.
