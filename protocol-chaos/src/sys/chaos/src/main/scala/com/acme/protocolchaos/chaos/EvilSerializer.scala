@@ -8,10 +8,6 @@ import scala.util.Random
 
 object EvilSerializer {
 
-  implicit class ES[A](inner: Serializer[A]) {
-    def evil: Serializer[A] = new EvilSerializer[A](inner)
-  }
-
   def apply[A](inner: Serializer[A]): Serializer[A] =
     new EvilSerializer[A](inner)
 
