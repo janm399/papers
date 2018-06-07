@@ -18,6 +18,58 @@
 \end{abstract}
 \bigskip
 
+\section{Spring Framework}
+The Spring Framework is a dependency injection framework; it encourages composition over inheritance, it encourages expressing dependencies as interfaces rather than concrete implementations. The framework takes care of instantiating the components in the correct order; most components (the ones that fall into the \pcode{@Component} sterotype) are \emph{singletons}. This means that it is possible to treat the \pcode{@Component}-annotated components as namespaces rather than containers of state\footnote{In fact if the methods in \pcode{@Component}-annotated classes mutates \& accesses its fields, it will suffer from race conditions.}. The reason why Spring Framework encourages programming to interfaces is to make the software easily testable: there can be separate implementations or mocks for unit and integration tests.
+
+\begin{lstlisting}[caption={Components}, label={code:sf1-java}, language=Java, escapechar=|]
+interface ReportGenerator {
+    |Generates the PDF report for the given $user$,|
+    |returns the byte array representing the PDF contents|
+    byte[] generate(final User user);
+}
+
+@Component
+public class ReportService {
+    private final ReportGenerator reportGenerator;
+    private final CrudRepository<User, Long> userRepository;
+
+    @Inject
+    public ReportService(final ReportGenerator reportGenerator,
+                         final CrudRepository<User, Long> userRepository) {
+        this.reportGenerator = reportGenerator;
+        this.userRepository = userRepository;
+    }
+
+    public void reportAll() {
+        for (final User user : userRepository.findAll()) {
+            final byte[] pdf = this.reportGenerator.generate(user);
+            |Now you're on your own...|
+        }
+    }
+}
+\end{lstlisting}
+
+For a Spring Framework application to be able to construct the \pcode{ReportService}, it needs to be able to construct exactly one component that implements the \pcode{ReportGenerator} interface.
+
+\begin{lstlisting}[caption={Components}, label={code:sf2-java}, language=Java, escapechar=|]
+@Component
+public class JasperReportsReportGenerator implements ReportGenerator {
+    public byte[] generate(final User user) {
+        ...
+    }
+}
+\end{lstlisting}
+
+Without a DI framework, the work of constructing the dependencies would fall on the programmers, yielding code similar to \autoref{code:sf3-java}.
+
+\begin{lstlisting}[caption={Manual DI}, label={code:sf3-java}, language=Java, escapechar=|]
+|Typically in |public static void main(String[] args) |or in a test:|
+
+ReportGenerator rg = new JasperReportsReportGenerator();
+CrudRepository<User, Long> ur = ...;
+ReportService rs = new ReportService(rg, ur);
+\end{lstlisting}
+
 \section{Zero to hundred}
 FizzBuzz is a typical program that follows \emph{Hello, world}, adding iteration and conditions. The Scala version of FizzBuzz is shown in \autoref{code:fb1}--it shows the definition of a function \pcode{def}, followed by name and arguments, and its implementation that follows the \pcode{=} sign. The loop (\pcode{for}) and condition (\pcode{if}, \pcode{else}) keywords are the old friends from other languages. 
 
