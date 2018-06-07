@@ -1,0 +1,89 @@
+\documentclass[10 pt]{article}
+\input{../../common.tex}
+
+\usepackage[OT1]{fontenc}
+\newcommand*\eiadfamily{\fontencoding{OT1}\fontfamily{eiad}\selectfont}
+
+\addbibresource{root.bib}
+
+\title{Scala Tutorial I}
+
+\author{Jan Macháček}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+  Scala is a fusion langauge that combines functional and object-oriented programming paradigms in a syntax that is similar to most other \emph{C-like} languages. The ...
+\end{abstract}
+\bigskip
+
+\section{Zero to hundred}
+FizzBuzz is a typical program that follows \emph{Hello, world}, adding iteration and conditions. The Scala version of FizzBuzz is shown in \autoref{code:fb1}--it shows the definition of a function \pcode{def}, followed by name and arguments, and its implementation that follows the \pcode{=} sign. The loop (\pcode{for}) and condition (\pcode{if}, \pcode{else}) keywords are the old friends from other languages. 
+
+\begin{lstlisting}[caption={Fizz Buzz}, label={code:fb1}, language=Scala, escapechar=|]
+def fizzBuzz = {
+  for (i <- 1 to 100) {
+    if (i % 15 == 0) println("FizzBuzz")
+    else if (i % 3 == 0) println("Fizz")
+    else if (i % 5 == 0) println("Buzz")
+    else println(i)
+  }
+}
+\end{lstlisting}
+
+The FizzBuzz from \autoref{code:fb1} isn't particularly re-usable: it simply prints 100 elements to the standard output, nothing else and nothing more. There is no way, for example, to direct the output to a web socket, or to use it to determine how it maps of the value in the \pcode{integer} domain to the ``FizzBuzz domain''. Hmm!--\emph{mapping} and \emph{domain} sound like mathematics; and functional programming is supposed to be somehow more mathematical. And mathematics is jolly wonderful. 
+
+The first step in making the \pcode{fizzBuzz} more mathematical is to make it map an input to exactly one useful output. Right now, its return type now is \pcode{Unit}, which is a bit like \pcode{void} in Java and C; changing its definition to \pcode{def fizzBuzz2(max: Int): Unit} (and then using the \pcode{max} parameter in the loop) isn't particularly useful: it is a mapping from a number to \pcode{Unit}. And, if this were mathematics, there can be only one such mapping: \pcode{def fizzBuzz2(max: Int): Unit = ()}. Instead of printing the elements to the console, the implementation needs to return a value that can be printed. A a simple \pcode{String} would do, but a \pcode{Seq} of \pcode{String}s is better. The type becomes \pcode{Int => Seq[String]}, and the implementation is shown in \autoref{code:fb2}.
+
+\begin{lstlisting}[caption={Fizz Buzz}, label={code:fb2}, language=Scala, escapechar=|]
+def fizzBuzz(max: Int): Seq[String] = {
+  var result = List.empty[String]
+  for (i <- 1 to max) {
+    if (i % 15 == 0) result = result :+ "FizzBuzz"
+    else if (i % 3 == 0) result = result :+ "Fizz"
+    else if (i % 5 == 0) result = result :+ "Buzz"
+    else result = result :+ i.toString
+  }
+  result
+}
+\end{lstlisting}
+
+This is a huge improvement! The \pcode{fizzBuzz} is now indeed a function: it maps input to output and its result depends only on the value of the parameter. It would even be possible to pre-compute the result for all possible values of the input and replace the function's body with a look-up in that table: the function would become just data! 
+
+Well, the outside looks great, but the implementation stinks! It uses mutation, and what about the strange \pcode{:+} operator in \pcode{result :+ "Fizz"}, never mind the \pcode{for (i <- 1 to max) \{...\}} nonsense!
+
+\begin{lstlisting}[caption={Fizz Buzz}, label={code:fb3}, language=Scala, escapechar=|]
+def fizzBuzz(max: Int): Seq[String] = {
+  def fb(i: Int): String =
+    if (i % 15 == 0) "FizzBuzz"
+    else if (i % 3 == 0) "Fizz"
+    else if (i % 5 == 0) "Buzz"
+    else i.toString
+
+  (1 to max).map(fb)
+}
+\end{lstlisting}
+
+
+
+
+In Scala, every concrete type (except \pcode{Nothing}) can have a value: for example, the type \pcode{Boolean} is inhabited by values \pcode{true, false}; the type \pcode{Int} is inhabited by values such as \pcode{5, 42, -100, 0, ...}; the type \pcode{String} is inhabited by values such as \pcode{"Hi", ":)", ""}; the type \pcode{Unit} is inhabited by the only value \pcode{()}. (No, really, it's perfectly good Scala syntax to write \pcode{()} as value. It's just not particularly useful.) The only type that does not have any inhabitants is \pcode{Nothing}: it represents expressions that \emph{diverge}, for example throwing an exception.
+
+Taking a more precise look at \pcode{def fizzBuzz} reveals its type to be \pcode{Unit}; it evaluates to only one value, namely \pcode{()}. If it were a function in the sense of strictly mapping input to output, it would be no different from any other \pcode{()} \emph{constant}. But \pcode{fizzBuzz} does some additional work before returning \pcode{()}; this additional work is not represented by its type, even though it is its \emph{raison d'être}. 
+
+In Java and C, there is no \emph{value} of type \pcode{void}
+
+ As it stands, its type is \pcode{() => Unit}, 
+
+\newpage
+
+\section{Pattern matching}
+sasd
+\newpage
+
+\section{}
+
+\printbibliography
+
+\end{document}
