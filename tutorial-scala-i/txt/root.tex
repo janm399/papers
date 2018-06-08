@@ -18,6 +18,68 @@
 \end{abstract}
 \bigskip
 
+\section{Syntax crash-course}
+Scala's syntax follows the syntax of other C-like languages, though--like Pascal--the type specification follows an identifier. Scala's \pcode{class} behaves exactly like Java's \pcode{class}, and its synax is not wildly different. (See \autoref{code:syntax-class}.)
+
+\begin{lstlisting}[caption={Classes and methods}, label={code:syntax-class}, language=Scala, escapechar=|]
+|Class declaration means the same thing as Java; constructor parameters are specified in the block immediately following the class name.|
+|Note that the types follow the identifier; instead of |String constructorParam1| Scala uses |constructorParam1: String
+class MyClass(constructorParam1: String, constuctorParam2: Int) {
+  
+  |Methods begin with the keyword |def|, followed by name and parameters. The return type follows similar pattern; |Unit| means |void.
+  |The body of the method follows the equals sign.|
+  def execute(methodParam1: List[Int]): Unit = {
+
+  }
+
+}
+
+|Constructing instances uses the typical |new| keyword...|
+new MyClass("foo", 42)
+  |Method invocation is exactly like Java's|
+  .execute(List(1, 2, 3))
+\end{lstlisting}
+
+Most of this syntax is familiar and unsurprising; the only thing that might feel odd is the square bracket for ``generics'' in \pcode{List[Int]}: in Java, this would be written as \pcode{List<Int>}. This is part of Scala's legacy. A long, long time ago, XML was very exciting; and Scala allows XML literals. These XML literals use the angle brackets. This meant that a different symbol had to be used for type parameters. Because the square bracket is used for type parameters, array indexing is also done using regular parentheses\footnote{I know, it looks like VisualBasic or Fortran (formerly FORTRAN)!}.
+
+Interfaces use the \pcode{trait} keyword in Scala; their usage and features are similar to \pcode{interface} in Java (particularly Java 8 which adds default implementations). It is possible to make anonymous implementations of a \pcode{trait}, as well as to implement it in ordinary \pcode{class}es. (Viz \autoref{code:syntax-trait}.)
+
+\begin{lstlisting}[caption={Traits}, label={code:syntax-trait}, language=Scala, escapechar=|]
+|Apart from the |trait| keyword, the syntax is unremarkable|
+trait ReportGenerator {
+  |Interface methods are public and abstract; they specify parameters and return type|
+  def generate(userId: Int): Array[Byte]
+}
+
+|A |trait| can be implemented in a |class| using the keyword |extends|. Additional traits to be implemented use the |with| keyword.|
+class ReportGeneratorImpl extends ReportGenerator with Cloneable {
+  |Instead of the |@Override| annotation Scala uses the |override| keyword.|
+  override def generate(userId: Int): Array[Byte] = ...
+  override def clone(): AnyRef = ...
+}
+
+|It is also possible to make an anonymous implementation of a trait using the |new| keyword.|
+new ReportGenerator {
+  override def generate(userId: Int): Array[Byte] = ...
+}
+\end{lstlisting}
+
+It is worth noting that there is no special syntax for \emph{array of X} in Scala. Instead, it uses \pcode{Array} with the specified type parameter. (So, Java's \pcode{byte[]} becomes \pcode{Array[Byte]}, \pcode{User[]} becomes \pcode{Array[User]}, and so on.) Also notice the \pcode{AnyRef} in the implementation of the \pcode{clone()} method--it is equivalent to \pcode{java.lang.Object}.
+
+\section{Killer features}
+To a modern Java programmer, Scala comes with five killer features, which make everyday programming tasks much easier.
+
+\begin{itemize}
+  \item everything is an expression
+  \item case classes
+  \item pattern matching
+  \item for comprehensions
+  \item implicits
+  \item rich type system
+\end{itemize}
+
+
+
 \section{Spring Framework}
 The Spring Framework is a dependency injection framework; it encourages composition over inheritance, it encourages expressing dependencies as interfaces rather than concrete implementations. The framework takes care of instantiating the components in the correct order; most components (the ones that fall into the \pcode{@Component} sterotype) are \emph{singletons}. This means that it is possible to treat the \pcode{@Component}-annotated components as namespaces rather than containers of state\footnote{In fact if the methods in \pcode{@Component}-annotated classes mutates \& accesses its fields, it will suffer from race conditions.}. The reason why Spring Framework encourages programming to interfaces is to make the software easily testable: there can be separate implementations or mocks for unit and integration tests.
 
@@ -25,28 +87,25 @@ The Spring Framework is a dependency injection framework; it encourages composit
 interface ReportGenerator {
     |Generates the PDF report for the given $user$,|
     |returns the byte array representing the PDF contents|
-    byte[] generate(final User user);
+    byte[] generate(final String user);
 }
 
 @Component
 public class ReportService {
     private final ReportGenerator reportGenerator;
-    private final CrudRepository<User, Long> userRepository;
 
     @Inject
-    public ReportService(final ReportGenerator reportGenerator,
-                         final CrudRepository<User, Long> userRepository) {
+    public ReportService(final ReportGenerator reportGenerator) {
         this.reportGenerator = reportGenerator;
-        this.userRepository = userRepository;
     }
 
     public void reportAll() {
-        for (final User user : userRepository.findAll()) {
+        for (final String user : Arrays.asList("a", "b", "c")) {
             final byte[] pdf = this.reportGenerator.generate(user);
             |Now you're on your own...|
         }
     }
-}
+ }
 \end{lstlisting}
 
 For a Spring Framework application to be able to construct the \pcode{ReportService}, it needs to be able to construct exactly one component that implements the \pcode{ReportGenerator} interface.
@@ -54,7 +113,7 @@ For a Spring Framework application to be able to construct the \pcode{ReportServ
 \begin{lstlisting}[caption={Components}, label={code:sf2-java}, language=Java, escapechar=|]
 @Component
 public class JasperReportsReportGenerator implements ReportGenerator {
-    public byte[] generate(final User user) {
+    public byte[] generate(final String user) {
         ...
     }
 }
@@ -66,9 +125,11 @@ Without a DI framework, the work of constructing the dependencies would fall on 
 |Typically in |public static void main(String[] args) |or in a test:|
 
 ReportGenerator rg = new JasperReportsReportGenerator();
-CrudRepository<User, Long> ur = ...;
-ReportService rs = new ReportService(rg, ur);
+ReportService rs = new ReportService(rg);
 \end{lstlisting}
+
+Constructing the instances of the \pcode{JasperReportsReportGenerator} and \pcode{ReportService} using their constructors isn't a problem per se, but with growing number of dependencies this grows to be tedious.
+
 
 \section{Zero to hundred}
 FizzBuzz is a typical program that follows \emph{Hello, world}, adding iteration and conditions. The Scala version of FizzBuzz is shown in \autoref{code:fb1}--it shows the definition of a function \pcode{def}, followed by name and arguments, and its implementation that follows the \pcode{=} sign. The loop (\pcode{for}) and condition (\pcode{if}, \pcode{else}) keywords are the old friends from other languages. 
