@@ -199,7 +199,7 @@ import scala.util.Random
   case ("Lucky?", 42)                   => |None of the elements are accessible here.|
 
   |Matches any tuple as long as the first element is longer than 5 characters and second element is less than 10.|
-  case (x, y) if x.length > 5 && y < 10 => |Both first and second elements are accessible.|
+  case (x, y) if x.length > 5 && y < 10 => |Both first and second elements are accessible as |x| and |y|.|
   
   |Matches any value|
   case _                                => |None of the elements are accessible here.|
