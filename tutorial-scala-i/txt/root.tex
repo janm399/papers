@@ -126,7 +126,7 @@ The syntax (and its application) so far looks just like Java with less typing. T
   \item rich type system
 \end{itemize}
 
-\paragraph{case classes} A case class is just like a class in that it is a container for data and methods, but the fields it contains only have getters. (Immutability only goes as far as immutability of the references. Even in Scala, immutability without any additional code is equivalent to using \pcode{final} in Java.) Nevertheless, case classes are fantastically convenient to define data structures. Consider the \pcode{Person} case class defined in \autoref{code:cc1}.
+\paragraph{Case classes.} A case class is just like a class in that it is a container for data and methods, but the fields it contains only have getters. (Immutability only goes as far as immutability of the references. Even in Scala, immutability without any additional code is equivalent to using \pcode{final} in Java.) Nevertheless, case classes are fantastically convenient to define data structures. Consider the \pcode{Person} case class defined in \autoref{code:cc1}.
 
 \begin{lstlisting}[caption={Case class \pcode{Person}}, label={code:cc1}, language=Scala, escapechar=|]
 case class Person(firstName: String, lastName: String, age: Int)
@@ -158,13 +158,87 @@ fq == Person("Foo", "Quux", 42)  | $\rvert$ |true|, even though they are \emph{d
 The consciseness of Scala's syntax is beginning to show. It would have been much more cumbersome to implement all this (including correct \pcode{hashCode}, \pcode{equals}, and reasonable \pcode{toString}) in Java. Even with correct implementations, it would not have been possible to use \pcode{==} to test for instance equality. 
 
 \begin{example}[Try this out: Using case classes and functions]
-In \pcode{src/scala}, run \pcode{sbt console}; in the console, define a \pcode{case class} for an employee record (decide which fields would be useful); then define a \pcode{case class} for employment linking an \pcode{employee} and his or her \pcode{salary}. Then use \pcode{List.fill(N)(Employment(...))} and useful methods in \pcode{scala.util.Random} to generate $N$ random \pcode{Employment} instances. Assign those to a variable.
-
+In \pcode{src/scala}, run \pcode{sbt console}; in the console, define the \pcode{Person} case class from \autoref{code:cc1}. Then use \pcode{List.fill(N)(Person(...))} and useful methods in \pcode{scala.util.Random} to generate $N$ random \pcode{Person} instances. Assign those to a variable.
 \begin{itemize}
-  \item find the top fat cat in the list. (Hint: use \pcode{map}, \pcode{max}, and \pcode{find} functions on the \pcode{List[Employment]} to find the fattest cat.)
-  \item find the top 10 fat cats in the list. (Hint: use \pcode{sortBy} or \pcode{sortWith}, followed by \pcode{take})
+  \item find the oldest person in the list. (Hint: use \pcode{map}, \pcode{max}, and \pcode{find} functions on the \pcode{List[Person]}.)
+  \item find the 10 youngest people in the list. (Hint: use \pcode{sortBy} or \pcode{sortWith}, followed by \pcode{take}.)
 \end{itemize}
 \end{example}
+
+Case classes are also called \emph{product} types. The word product refers to the possible number of values that a case class can hold. Take \pcode{case class ABC(a: Boolean, b: Boolean, c: Boolean)}: there are eight possible values: \pcode{ABC(false, false, false)}, ..., \pcode{ABC(true, true, true)}. The value $8$ is the result of \emph{multiplying} the possible values of all parameters. \pcode{Boolean}s have two values; three \pcode{Boolean} values yield $2 \times 2 \times 2$ possible values of the \pcode{ABC} type. Similarly, \pcode{case class IB(i: Int, b: Boolean)} has $4294967295 \times 2$ possible values. 
+
+Imagine, for a moment, that \pcode{Boolean} is not a built-in primitive. It would be defined as \emph{sum} type: \pcode{sealed trait Boolean; case object True extends Boolean; case object False extends Boolean}. The case instances \pcode{True} and \pcode{False} have exactly one value; consequently, the sum type \pcode{Boolean} has $1 + 1$ possible values.
+
+Sum types are very useful way to express alternatives that might not have anything in common other than being of the given type. It is a very useful way to prevent building rich class hierarchies. The \pcode{Person} case class defined above
+
+Employee = Engineer | Sales | Marketing | Executive
+
+\paragraph{Patten matching.} A pattern match is a way to check that a value has the right ``shape'', and to pull out some or all values from that shape. Think of the simplest pattern matching expression as Java's \pcode{switch} statement in \autoref{code:pm1}.
+
+\begin{lstlisting}[caption={Pattern matching}, label={code:pm1}, language=Scala, escapechar=$]
+$This is the equivalent of Java's $switch$ statement, with multi-case and a default case.$
+Random.nextInt(10) match {
+  $Matches values 0..3$
+  case 0|1|2|3 =>
+  $Matches only value 6$
+  case 6 =>
+  $Matches all other values$
+  case _ =>
+}
+\end{lstlisting}
+
+It is possible to match on much more complicated structures; such as tuples. A tuple is a collection of a specific length with elements of arbitrary types. For example \pcode{(1, "foo")} is a tuple of 2 elements of types \pcode{Int} and \pcode{String}; \pcode{("foo", "bar", 1.3)} is a tuple of 3 elements of types \pcode{String}, \pcode{String}, and \pcode{Double}. It is possible to pattern match on those, as shown in \autoref{code:pm2}
+
+\begin{lstlisting}[caption={Pattern matching II}, label={code:pm2}, language=Scala, escapechar=|]
+import scala.util.Random
+(Random.nextString(Random.nextInt(16)), Random.nextInt(100)) match {
+  |Matches tuples with any first element, and second element |== 10|.|
+  case (s, 10)                          => |The first element is accessible as |s| here.|
+
+  |Matches only the |("Lucky?", 42)| tuple.|
+  case ("Lucky?", 42)                   => |None of the elements are accessible here.|
+
+  |Matches any tuple as long as the first element is longer than 5 characters and second element is less than 10.|
+  case (x, y) if x.length > 5 && y < 10 => |Both first and second elements are accessible.|
+  
+  |Matches any value|
+  case _                                => |None of the elements are accessible here.|
+}
+\end{lstlisting}
+
+As useful as tuples are for quick ad-hoc structures, the real deal in pattern matching are case classes. Just like matching on a tuple, it is possible to match on case classes and extract their fields as needed. In addition to using the \pcode{match} keyword followed by \pcode{case}s, pattern matching also applies to declarations of variables in \autoref{code:pm3}.
+
+\begin{lstlisting}[caption={Pattern matching III}, label={code:pm3}, language=Scala, escapechar=|]
+|Pattern matches on the right-hand side, pulls out the first parameter as |val first: String|.|
+val Person(first, _, _) = Person("Foo", "Bar", 99)
+
+|Pattern matches on the right-hand side, comparing the value of the first parameter to be equal to in-scope variable |first|. (Notice the backticks.)|
+val Person(`first`, _, _) = Person("Foo", "Bar", 99)
+
+|Because there are no alternatives, if the |val| pattern match fails, it raises an exception.|
+val Person(`first`, _, _) = Person("Fooz", "Bar", 99)
+\end{lstlisting}
+
+The Scala standard library defines many standard structures in case classes. Picking the two most useful ones, \pcode{Option} and \pcode{Either} are defined as case classes. This means that it is possible to pattern match on their values.
+
+\begin{lstlisting}[caption={Pattern matching in stdlib}, label={code:pm4}, language=Scala, escapechar=|]
+|These are the definition in the standard library; note that the actual definitions are more complex, but this code expresses the essence.|
+
+Option[A]| has two alternatives: |Some[A]| and |None|. It is used to express one-or-missing values.|
+sealed trait Option[A]
+case class Some[A](a: A) extends Option[A]
+case object None extends Option[Nothing]
+
+Either[L, R]| has also two alternatives: |Left[L]| and |Right[R]|. It is used to express success or failure, with success by convention|
+|on the right and failure on the left.|
+sealed trait Either[L, R]
+case class Right[R](r: R) extends Either[Nothing, R]
+case class Left[L](l: L) extends Either[L, Nothing]
+\end{lstlisting}
+
+...
+
+
 
 \section{Spring Framework}
 The Spring Framework is a dependency injection framework; it encourages composition over inheritance, it encourages expressing dependencies as interfaces rather than concrete implementations. The framework takes care of instantiating the components in the correct order; most components (the ones that fall into the \pcode{@Component} sterotype) are \emph{singletons}. This means that it is possible to treat the \pcode{@Component}-annotated components as namespaces rather than containers of state\footnote{In fact if the methods in \pcode{@Component}-annotated classes mutates \& accesses its fields, it will suffer from race conditions.}. The reason why Spring Framework encourages programming to interfaces is to make the software easily testable: there can be separate implementations or mocks for unit and integration tests.

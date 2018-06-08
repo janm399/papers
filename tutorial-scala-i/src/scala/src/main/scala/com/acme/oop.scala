@@ -28,4 +28,10 @@ object Main extends App {
 
   List(1, 2, 3).map(2 * _)
 
+  Random.nextInt(10) match {
+    case 0|1|2|3 ⇒
+    case 6 ⇒
+    case _ ⇒
+  }
+
 }
