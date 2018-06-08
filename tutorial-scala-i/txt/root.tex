@@ -2,6 +2,7 @@
 \input{../../common.tex}
 
 \usepackage[OT1]{fontenc}
+\usepackage{marvosym}
 \newcommand*\eiadfamily{\fontencoding{OT1}\fontfamily{eiad}\selectfont}
 
 \addbibresource{root.bib}
@@ -66,19 +67,104 @@ new ReportGenerator {
 
 It is worth noting that there is no special syntax for \emph{array of X} in Scala. Instead, it uses \pcode{Array} with the specified type parameter. (So, Java's \pcode{byte[]} becomes \pcode{Array[Byte]}, \pcode{User[]} becomes \pcode{Array[User]}, and so on.) Also notice the \pcode{AnyRef} in the implementation of the \pcode{clone()} method--it is equivalent to \pcode{java.lang.Object}.
 
-\section{Killer features}
-To a modern Java programmer, Scala comes with five killer features, which make everyday programming tasks much easier.
+So far, there are no major surprises: classes and interfaces work just like most other languages, constructor, method, and parameter definition also looks fairly ordinary. The syntax for functions (finally!) uses parameters (each with its type following the \pcode{:} symbol, if needed) followed by fat arrow \pcode{=>}, and the body of the function. Usage is the same as Java 8; and Scala's collections library contains concepts that are fairly similar.
+
+\begin{lstlisting}[caption={Fields \& variables}, label={code:syntax-fun}, language=Scala, escapechar=|]
+|Double every |Int| in the list|
+List(1, 2, 3, ...).map { (x: Int) => 2 * x }
+
+|Scala can infer the type of |x|, so there's no need to specify it|
+List(1, 2, 3, ...).map { x => 2 * x }
+
+|An alternative syntax uses paretheses in place of brackets|
+List(1, 2, 3, ...).map(x => 2 * x)
+
+|It is possible to avoid having to declare the parameter |x|, and use |_| instead. Scala compiler replaces the every occurrence of |_| with a fresh parameter declaration.|
+List(1, 2, 3, ...).map(2 * _)
+\end{lstlisting}
+
+Finally, fields (and variables) use the keywords \pcode{val} and \pcode{var}. The first declares an immutable variable (and a getter if field), the second declares a mutable variable (and a getter and setter if field); see \autoref{code:syntax-fv}.
+
+\begin{lstlisting}[caption={Fields \& variables}, label={code:syntax-fv}, language=Scala, escapechar=|]
+|Field definitions have to specify initial value; use |_| for default value.|
+class User {
+  var id: Long = _
+  var name: String = _
+  var dob: Date = _
+}
+
+val user = new User
+\end{lstlisting}
+
+This code is terrible! The default value for reference types (\pcode{AnyRef}s) is \pcode{null}, and variants of \emph{zero} for primitive types. The \pcode{name} and \pcode{dob} fields in the \pcode{user} instance are \pcode{null}, and \pcode{id} is \pcode{0L}. What's worse, the class has setters for these fields, and it's possible to invoke them. The syntax is somewhat nicer--it looks like plain assignment using the \pcode{=} operator, though it is actually invoking a setter--but the semantics of the code in \autoref{code:syntax-fv2} is terrible.
+
+\begin{lstlisting}[caption={Fields \& variables II}, label={code:syntax-fv2}, language=Scala, escapechar=|]
+|Field definitions have to specify initial value; use |_| for default value.|
+class User {
+  var id: Long = _
+  var name: String = _
+  var dob: Date = _
+}
+
+val user = new User
+user.id = 5
+user.name = "Foo Quux"
+user.dob = ...
+\end{lstlisting}
+
+While syntactically valid code, it is very confusing. The \pcode{user} variable is declared immutable, yet it is possible to invoke its setters. The equivalent Java code would declare the \pcode{user} variable \pcode{final}, but then still use the setters to mutate it.
+
+\subsection{Killer features}
+The syntax (and its application) so far looks just like Java with less typing. There must be something else that makes it worth leaving the creature comforts of Java. 
 
 \begin{itemize}
-  \item everything is an expression
   \item case classes
   \item pattern matching
+  \item everything is an expression
   \item for comprehensions
   \item implicits
   \item rich type system
 \end{itemize}
 
+\paragraph{case classes} A case class is just like a class in that it is a container for data and methods, but the fields it contains only have getters. (Immutability only goes as far as immutability of the references. Even in Scala, immutability without any additional code is equivalent to using \pcode{final} in Java.) Nevertheless, case classes are fantastically convenient to define data structures. Consider the \pcode{Person} case class defined in \autoref{code:cc1}.
 
+\begin{lstlisting}[caption={Case class \pcode{Person}}, label={code:cc1}, language=Scala, escapechar=|]
+case class Person(firstName: String, lastName: String, age: Int)
+\end{lstlisting}
+
+This is all it takes to define an immutable structure (with the T\&Cs from above) with the fields \pcode{firstName}, \pcode{lastName}, and \pcode{age}; but also with appropriate \pcode{toString}, \pcode{hashCode}, and \pcode{equals} implementations. These automatically generated implementations delegate to the \pcode{toString}, \pcode{hashCode}, and \pcode{equals} methods of all the fields, in the order in which they are specified.
+
+To create an instance of a case class, do not use the \pcode{new} keyword; instead, write the parameters directly after the case class name, as shown in \autoref{code:cc2}.
+
+\begin{lstlisting}[caption={Using case class \pcode{Person}}, label={code:cc2}, language=Scala, escapechar=|]
+|Notice that there is no |new| keyword; the parameter values are applied directly after the case class name.|
+val fq = Person("Foo", "Quux", 42)
+
+|To access the fields, use the familiar |.| notation.|
+fq.firstName | $\rvert$ |"Foo"
+
+|Invoking the |toString| method prints a reasonable representation of the case class.|
+fq.toString | $\rvert$ |"Person(Foo,Quux,42)"
+
+|It is possible to vary the order of the parameters if the parameter names are also specified. This can help readability.|
+val fb = Person(lastName = "Baz", firstName = "Foo", age = 50)
+fb.toString | $\rvert$ |"Person(Foo,Baz,50)"
+
+|Equality is implemented by delegation to the parameters' |hashCode| and |equals| methods.|
+Person("Foo", "Quux", 42) == fq  | $\rvert$ |true|, even though they are \emph{different} instances.|
+fq == Person("Foo", "Quux", 42)  | $\rvert$ |true|, even though they are \emph{different} instances.|
+\end{lstlisting}
+
+The consciseness of Scala's syntax is beginning to show. It would have been much more cumbersome to implement all this (including correct \pcode{hashCode}, \pcode{equals}, and reasonable \pcode{toString}) in Java. Even with correct implementations, it would not have been possible to use \pcode{==} to test for instance equality. 
+
+\begin{example}[Try this out: Using case classes and functions]
+In \pcode{src/scala}, run \pcode{sbt console}; in the console, define a \pcode{case class} for an employee record (decide which fields would be useful); then define a \pcode{case class} for employment linking an \pcode{employee} and his or her \pcode{salary}. Then use \pcode{List.fill(N)(Employment(...))} and useful methods in \pcode{scala.util.Random} to generate $N$ random \pcode{Employment} instances. Assign those to a variable.
+
+\begin{itemize}
+  \item find the top fat cat in the list. (Hint: use \pcode{map}, \pcode{max}, and \pcode{find} functions on the \pcode{List[Employment]} to find the fattest cat.)
+  \item find the top 10 fat cats in the list. (Hint: use \pcode{sortBy} or \pcode{sortWith}, followed by \pcode{take})
+\end{itemize}
+\end{example}
 
 \section{Spring Framework}
 The Spring Framework is a dependency injection framework; it encourages composition over inheritance, it encourages expressing dependencies as interfaces rather than concrete implementations. The framework takes care of instantiating the components in the correct order; most components (the ones that fall into the \pcode{@Component} sterotype) are \emph{singletons}. This means that it is possible to treat the \pcode{@Component}-annotated components as namespaces rather than containers of state\footnote{In fact if the methods in \pcode{@Component}-annotated classes mutates \& accesses its fields, it will suffer from race conditions.}. The reason why Spring Framework encourages programming to interfaces is to make the software easily testable: there can be separate implementations or mocks for unit and integration tests.
