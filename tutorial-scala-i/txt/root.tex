@@ -118,13 +118,15 @@ While syntactically valid code, it is very confusing. The \pcode{user} variable 
 The syntax (and its application) so far looks just like Java with less typing. There must be something else that makes it worth leaving the creature comforts of Java. 
 
 \begin{itemize}
+  \item everything is an expression
   \item case classes
   \item pattern matching
-  \item everything is an expression
   \item for comprehensions
   \item implicits
   \item rich type system
 \end{itemize}
+
+\paragraph{Everything is an expression.} In Java, C, and similar langauges, there are statements and expressions. Statements do not have value, they are typicall control-flow constructs. For example, in Java, \pcode{if (a == b) X else Y} cannot be assigned to a variable, because \pcode{if-then-else} is a statement. In Scala, everything yields a value that can be assigned to a variable. 
 
 \paragraph{Case classes.} A case class is just like a class in that it is a container for data and methods, but the fields it contains only have getters. (Immutability only goes as far as immutability of the references. Even in Scala, immutability without any additional code is equivalent to using \pcode{final} in Java.) Nevertheless, case classes are fantastically convenient to define data structures. Consider the \pcode{Person} case class defined in \autoref{code:cc1}.
 
@@ -157,7 +159,7 @@ fq == Person("Foo", "Quux", 42)  | $\rvert$ |true|, even though they are \emph{d
 
 The consciseness of Scala's syntax is beginning to show. It would have been much more cumbersome to implement all this (including correct \pcode{hashCode}, \pcode{equals}, and reasonable \pcode{toString}) in Java. Even with correct implementations, it would not have been possible to use \pcode{==} to test for instance equality. 
 
-\begin{example}[Try this out: Using case classes and functions]
+\begin{example}[Exercise: Using case classes and functions]
 In \pcode{src/scala}, run \pcode{sbt console}; in the console, define the \pcode{Person} case class from \autoref{code:cc1}. Then use \pcode{List.fill(N)(Person(...))} and useful methods in \pcode{scala.util.Random} to generate $N$ random \pcode{Person} instances. Assign those to a variable.
 \begin{itemize}
   \item find the oldest person in the list. (Hint: use \pcode{map}, \pcode{max}, and \pcode{find} functions on the \pcode{List[Person]}.)
@@ -169,10 +171,48 @@ Case classes are also called \emph{product} types. The word product refers to th
 
 Imagine, for a moment, that \pcode{Boolean} is not a built-in primitive. It would be defined as \emph{sum} type: \pcode{sealed trait Boolean; case object True extends Boolean; case object False extends Boolean}. The case instances \pcode{True} and \pcode{False} have exactly one value; consequently, the sum type \pcode{Boolean} has $1 + 1$ possible values.
 
-Sum types are very useful way to express alternatives that might not have anything in common other than being of the given type. It is a very useful way to prevent building rich class hierarchies. The \pcode{Person} case class defined above
+Sum types are very useful way to express alternatives that might not have anything in common other than being of the given type, without clumsy \pcode{instanceof} checking with \autoref{sec:pattern-matching}.
 
-Employee = Engineer | Sales | Marketing | Executive
+% It is a very useful way to prevent building rich class hierarchies. Take the typical OOP ``living things taxonomy'' example, where a \pcode{Cat} is a subtype of \pcode{Mammal}, which itself is a subtype of \pcode{Animal}. This yields code in \autoref{code:taxonomy1}.
 
+% \begin{lstlisting}[caption={Taxonomy}, label={code:taxonomy1}, language=Scala, escapechar=|]
+% class Animal
+% class Mammal extends Animal
+% class Cat extends Mammal
+% \end{lstlisting}
+
+% Unfortunately, this model is missing plants, protozoa, fungi, and bacteria. It is possible to extend the hierarchy by adding one common superclass, but this superclass would not contain any useful methods, because every subtype is so wildly different. It would be better to define the \pcode{LivingThing} as a sum type of animal, plant, protozoa, fungus, and bacterium. Languages like Haskell\cite{haskell}, F\#\cite{fsharp}, and others have convenient syntax for sum types; see \autoref{code:taxonomy2}.
+
+% \begin{lstlisting}[caption={Taxonomy as sum type}, label={code:taxonomy2}, language=Haskell, escapechar=@]
+% data LivingThing = Animal 
+%                  | Plant 
+%                  | Protozoa 
+%                  | Fungus 
+%                  | Bacterium 
+% \end{lstlisting}
+
+% Scala's syntax has to fit the JVM, so it is somewhat more complex, but it still models the same concept in \autoref{code:taxonomy3}.
+
+% \begin{lstlisting}[caption={Taxonomy as sum type}, label={code:taxonomy3}, language=Scala, escapechar=|]
+% sealed trait LivingThing
+% case object Animal extends LivingThing
+% case object Plant extends LivingThing
+% ...
+% val x: LivingThing = Animal
+
+% |For ``namespacing'', it is sometimes useful to put the elements in the companion itself.|
+% sealed trait LivingThing
+% object LivingThing {
+%   case object Animal extends LivingThing
+%   case object Plant extends LivingThing
+%   ...
+% }
+% val x: LivingThing = LivingThing.Animal
+% \end{lstlisting}
+
+% But where are the actual animals, plants, and so on? The code in \autoref{code:taxonomy3} only allows the broadest classification.
+
+\label{sec:pattern-matching}
 \paragraph{Patten matching.} A pattern match is a way to check that a value has the right ``shape'', and to pull out some or all values from that shape. Think of the simplest pattern matching expression as Java's \pcode{switch} statement in \autoref{code:pm1}.
 
 \begin{lstlisting}[caption={Pattern matching}, label={code:pm1}, language=Scala, escapechar=$]
@@ -219,6 +259,77 @@ val Person(`first`, _, _) = Person("Foo", "Bar", 99)
 val Person(`first`, _, _) = Person("Fooz", "Bar", 99)
 \end{lstlisting}
 
+The pattern match that raises an exception if it fails is often convenient to use in tests. Suppose there 
+
+\begin{example}[Exercise: Using case classes and pattern matching]
+Build an numerical expression evaluator; the evaluator should support binary operators $+, -, \times, /$ and support arbitrary nesting. It should be able to evaluate, for example $4+3(5/(12-7))$. To make things simpler, it is not necessary to include error reporting (division by zero, for example), and it is not necessary to provide a way to turn a \pcode{String} into an expression.
+
+\begin{lstlisting}[caption={Expression evaluator}, label={code:ee}, language=Scala, escapechar=|]
+|The sum type Expr's subtypes define the ``operations'' we support.|
+sealed trait Expr
+|The different cases need to support our operations and constants.|
+case class Plus(left: Expr, right: Expr) extends Expr
+...
+case class Const(const: Int) extends Expr
+
+|It will be convenient to package our evaluator in its own module.|
+object Evaluator {
+  
+  |Hint: you will need to pattern-match on the different |Expr|s.|
+  def eval(expr: Expr): Int = expr match {
+    ...
+  }
+
+}
+
+object EvaluatorMain extends App {
+
+  val e = Evaluator.eval(Plus(Plus(Const(4), Const(5)), Const(3)))
+  println(e) | \Printer{ }|12
+
+}
+\end{lstlisting}
+\end{example}
+
+\begin{example}[Exercise: boolean expression simplifier]
+Build a logical expression simplifier that reduces the number of logical operations to be performed, and can spot tautologies and contraditions. For example, $(a \land b) \lor (a \land b)$ should simplify to just $a \land b$; $(a \lor \lnot{a})$ should simplify to $\top$ (tautology; always true); $(a \lor \lnot{a}) \land (a \oplus a)$ should simplify to $\bot$ (contradiction; always false).
+
+\begin{lstlisting}[caption={Logical expression simplifier}, label={code:ls}, language=Scala, escapechar=|]
+|The sum type LExpr defines the different logical expressions we support.|
+sealed trait LExpr
+
+|The different cases need to support our operations and constants.|
+case class LAnd(left: LExpr, right: LExpr) extends LExpr
+case object Contradiction extends LExpr
+...
+case class Var(named: String) extends LExpr
+
+|Just like the evaluator, package the simplifier in its own module.|
+object Simplifier {
+    
+  |Hint: you will need to pattern-match on the different |LExpr|s.|
+  def simplify(expr: LExpr): LExpr = expr match {
+    ...
+  }
+
+}
+
+object SimplifierMain extends App {
+
+  val se = Simplifier.simplify(
+    LAnd(
+      LOr(Var("a"), LNot(Var("a"))),
+      LXor(Var("a"), Var("a"))
+    )
+  )
+  println(se) | \Printer{ }|"Contradition"
+
+}
+\end{lstlisting}
+
+\end{example}
+ 
+\section{The standard library}
 The Scala standard library defines many standard structures in case classes. Picking the two most useful ones, \pcode{Option} and \pcode{Either} are defined as case classes. This means that it is possible to pattern match on their values.
 
 \begin{lstlisting}[caption={Pattern matching in stdlib}, label={code:pm4}, language=Scala, escapechar=|]
@@ -237,7 +348,6 @@ case class Left[L](l: L) extends Either[L, Nothing]
 \end{lstlisting}
 
 ...
-
 
 
 \section{Spring Framework}
