@@ -32,7 +32,7 @@ object Simplifier {
     case LXor(LNot(l), r) if l == r ⇒ Tautology
     case LXor(l, r)       if l != r ⇒ simplify(LXor(simplify(l), simplify(r)))
 
-    case LNot(LNot(x))             ⇒ x
+    case LNot(LNot(x))              ⇒ x
 
     case x ⇒ x
   }
