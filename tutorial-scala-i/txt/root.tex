@@ -171,7 +171,7 @@ Case classes are also called \emph{product} types. The word product refers to th
 
 Imagine, for a moment, that \pcode{Boolean} is not a built-in primitive. It would be defined as \emph{sum} type: \pcode{sealed trait Boolean; case object True extends Boolean; case object False extends Boolean}. The case instances \pcode{True} and \pcode{False} have exactly one value; consequently, the sum type \pcode{Boolean} has $1 + 1$ possible values.
 
-Sum types are very useful way to express alternatives that might not have anything in common other than being of the given type, without clumsy \pcode{instanceof} checking with \autoref{sec:pattern-matching}.
+Sum types are very useful way to express alternatives that might not have anything in common other than being of the given type, without clumsy \pcode{instanceof} checks with pattern matching.
 
 % It is a very useful way to prevent building rich class hierarchies. Take the typical OOP ``living things taxonomy'' example, where a \pcode{Cat} is a subtype of \pcode{Mammal}, which itself is a subtype of \pcode{Animal}. This yields code in \autoref{code:taxonomy1}.
 
@@ -212,7 +212,6 @@ Sum types are very useful way to express alternatives that might not have anythi
 
 % But where are the actual animals, plants, and so on? The code in \autoref{code:taxonomy3} only allows the broadest classification.
 
-\label{sec:pattern-matching}
 \paragraph{Patten matching.} A pattern match is a way to check that a value has the right ``shape'', and to pull out some or all values from that shape. Think of the simplest pattern matching expression as Java's \pcode{switch} statement in \autoref{code:pm1}.
 
 \begin{lstlisting}[caption={Pattern matching}, label={code:pm1}, language=Scala, escapechar=$]
@@ -285,13 +284,13 @@ object Evaluator {
 object EvaluatorMain extends App {
 
   val e = Evaluator.eval(Plus(Plus(Const(4), Const(5)), Const(3)))
-  println(e) | \Printer{ }|12
+  println(e) | $\rvert$ \Printer{ }|12
 
 }
 \end{lstlisting}
 \end{example}
 
-\begin{example}[Exercise: boolean expression simplifier]
+\begin{example}[Exercise: logical expression simplifier]
 Build a logical expression simplifier that reduces the number of logical operations to be performed, and can spot tautologies and contraditions. For example, $(a \land b) \lor (a \land b)$ should simplify to just $a \land b$; $(a \lor \lnot{a})$ should simplify to $\top$ (tautology; always true); $(a \lor \lnot{a}) \land (a \oplus a)$ should simplify to $\bot$ (contradiction; always false).
 
 \begin{lstlisting}[caption={Logical expression simplifier}, label={code:ls}, language=Scala, escapechar=|]
@@ -322,7 +321,7 @@ object SimplifierMain extends App {
       LXor(Var("a"), Var("a"))
     )
   )
-  println(se) | \Printer{ }|"Contradition"
+  println(se) | $\rvert$ \Printer{ }|"Contradition"
 
 }
 \end{lstlisting}
@@ -349,6 +348,37 @@ case class Left[L](l: L) extends Either[L, Nothing]
 
 ...
 
+\paragraph{Implicits.} Lipsum...
+
+Pimp-my library.
+
+
+\begin{example}[Exercise: Pimp my library]
+Build a DSL that allows the expression evaluator to be written using natural-looking Scala code--though sadly not using the standard \pcode{+, -, *, /} operators, but using our own \pcode{plus, minus, mult, div} instead. 
+
+\begin{lstlisting}[caption={Expression evaluator}, label={code:eepm}, language=Scala, escapechar=|]
+|It will be useful to package the PML conversions in their own module.|
+object Expr {
+  |Implicit conversions are powerful and potentially very dangerous. Use this import to indicate the|
+  |acceptance of this great power and responsibility.|
+  import language.implicitConversions
+
+  |Three conversions will be necessary: |Int -> Expr|, |Expr -> RichExpr|, |Int -> RichInt|.|
+  implicit class RichInt ...
+  implicit class RichExpr ...
+  implicit def intToExpr ...
+
+}
+
+object EvaluatorMain extends App {
+  import Expr._
+  val e = Evaluator.eval((5 plus 10) minus 8)
+  println(e)
+}
+\end{lstlisting}
+
+If you are feeling inventive or perhaps mischievous, pick unicode identifiers for the boring ASCII method names in the DSL. Resurrect APL by using ÷ instead of \pcode{div}!
+\end{example}
 
 \section{Spring Framework}
 The Spring Framework is a dependency injection framework; it encourages composition over inheritance, it encourages expressing dependencies as interfaces rather than concrete implementations. The framework takes care of instantiating the components in the correct order; most components (the ones that fall into the \pcode{@Component} sterotype) are \emph{singletons}. This means that it is possible to treat the \pcode{@Component}-annotated components as namespaces rather than containers of state\footnote{In fact if the methods in \pcode{@Component}-annotated classes mutates \& accesses its fields, it will suffer from race conditions.}. The reason why Spring Framework encourages programming to interfaces is to make the software easily testable: there can be separate implementations or mocks for unit and integration tests.
