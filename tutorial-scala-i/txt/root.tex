@@ -195,45 +195,6 @@ data Subscription = OneOff Date
 
 Sum types are very useful way to express alternatives that might not have anything in common other than being of the given type, without clumsy \pcode{instanceof} checks with pattern matching.
 
-% It is a very useful way to prevent building rich class hierarchies. Take the typical OOP ``living things taxonomy'' example, where a \pcode{Cat} is a subtype of \pcode{Mammal}, which itself is a subtype of \pcode{Animal}. This yields code in \autoref{code:taxonomy1}.
-
-% \begin{lstlisting}[caption={Taxonomy}, label={code:taxonomy1}, language=Scala, escapechar=|]
-% class Animal
-% class Mammal extends Animal
-% class Cat extends Mammal
-% \end{lstlisting}
-
-% Unfortunately, this model is missing plants, protozoa, fungi, and bacteria. It is possible to extend the hierarchy by adding one common superclass, but this superclass would not contain any useful methods, because every subtype is so wildly different. It would be better to define the \pcode{LivingThing} as a sum type of animal, plant, protozoa, fungus, and bacterium. Languages like Haskell\cite{haskell}, F\#\cite{fsharp}, and others have convenient syntax for sum types; see \autoref{code:taxonomy2}.
-
-% \begin{lstlisting}[caption={Taxonomy as sum type}, label={code:taxonomy2}, language=Haskell, escapechar=@]
-% data LivingThing = Animal 
-%                  | Plant 
-%                  | Protozoa 
-%                  | Fungus 
-%                  | Bacterium 
-% \end{lstlisting}
-
-% Scala's syntax has to fit the JVM, so it is somewhat more complex, but it still models the same concept in \autoref{code:taxonomy3}.
-
-% \begin{lstlisting}[caption={Taxonomy as sum type}, label={code:taxonomy3}, language=Scala, escapechar=|]
-% sealed trait LivingThing
-% case object Animal extends LivingThing
-% case object Plant extends LivingThing
-% ...
-% val x: LivingThing = Animal
-
-% |For ``namespacing'', it is sometimes useful to put the elements in the companion itself.|
-% sealed trait LivingThing
-% object LivingThing {
-%   case object Animal extends LivingThing
-%   case object Plant extends LivingThing
-%   ...
-% }
-% val x: LivingThing = LivingThing.Animal
-% \end{lstlisting}
-
-% But where are the actual animals, plants, and so on? The code in \autoref{code:taxonomy3} only allows the broadest classification.
-
 \subsection{Patten matching.} 
 A pattern match is a way to check that a value has the right ``shape'', and to pull out some or all values from that shape. Think of the simplest pattern matching expression as Java's \pcode{switch} statement in \autoref{code:pm1}.
 
@@ -428,7 +389,15 @@ object EvaluatorMain extends App {
   ...
 }
 \end{lstlisting}
+
+Extra work: \begin{itemize}
+  \item explore and explain the difference in just adding the generic parameter to the \pcode{Const} data constructor (leaving \pcode{sealed trait Expr} intact), or letting \pcode{Expr} become \pcode{sealed trait Expr[A]}.
+  \item explain the effects of covariant type parameter in \pcode{sealed trait Expr[+A]}. (Try \pcode{val e: BigDecimal = Evaluator.eval(Const(4))} with invariant \pcode{Expr} and then with covariant \pcode{Expr} to get started.)
+\end{itemize}
+
 \end{example}
+
+
 
 \subsection{Rich type system.}
 
