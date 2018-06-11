@@ -114,7 +114,7 @@ user.dob = ...
 
 While syntactically valid code, it is very confusing. The \pcode{user} variable is declared immutable, yet it is possible to invoke its setters. The equivalent Java code would declare the \pcode{user} variable \pcode{final}, but then still use the setters to mutate it.
 
-\subsection{Killer features}
+\section{Killer features}
 The syntax (and its application) so far looks just like Java with less typing. There must be something else that makes it worth leaving the creature comforts of Java. 
 
 \begin{itemize}
@@ -126,9 +126,10 @@ The syntax (and its application) so far looks just like Java with less typing. T
   \item rich type system
 \end{itemize}
 
-\paragraph{Everything is an expression.} In Java, C, and similar langauges, there are statements and expressions. Statements do not have value, they are typicall control-flow constructs. For example, in Java, \pcode{if (a == b) X else Y} cannot be assigned to a variable, because \pcode{if-then-else} is a statement. In Scala, everything yields a value that can be assigned to a variable. 
+\subsection{Everything is an expression.} 
+In Java, C, and similar langauges, there are statements and expressions. Statements do not have value, they are typicall control-flow constructs. For example, in Java, \pcode{if (a == b) X else Y} cannot be assigned to a variable, because \pcode{if-then-else} is a statement. In Scala, everything yields a value that can be assigned to a variable. 
 
-\paragraph{Case classes.} A case class is just like a class in that it is a container for data and methods, but the fields it contains only have getters. (Immutability only goes as far as immutability of the references. Even in Scala, immutability without any additional code is equivalent to using \pcode{final} in Java.) Nevertheless, case classes are fantastically convenient to define data structures. Consider the \pcode{Person} case class defined in \autoref{code:cc1}.
+\subsection{Case classes.} A case class is just like a class in that it is a container for data and methods, but the fields it contains only have getters. (Immutability only goes as far as immutability of the references. Even in Scala, immutability without any additional code is equivalent to using \pcode{final} in Java.) Nevertheless, case classes are fantastically convenient to define data structures. Consider the \pcode{Person} case class defined in \autoref{code:cc1}.
 
 \begin{lstlisting}[caption={Case class \pcode{Person}}, label={code:cc1}, language=Scala, escapechar=|]
 case class Person(firstName: String, lastName: String, age: Int)
@@ -212,7 +213,8 @@ Sum types are very useful way to express alternatives that might not have anythi
 
 % But where are the actual animals, plants, and so on? The code in \autoref{code:taxonomy3} only allows the broadest classification.
 
-\paragraph{Patten matching.} A pattern match is a way to check that a value has the right ``shape'', and to pull out some or all values from that shape. Think of the simplest pattern matching expression as Java's \pcode{switch} statement in \autoref{code:pm1}.
+\subsection{Patten matching.} 
+A pattern match is a way to check that a value has the right ``shape'', and to pull out some or all values from that shape. Think of the simplest pattern matching expression as Java's \pcode{switch} statement in \autoref{code:pm1}.
 
 \begin{lstlisting}[caption={Pattern matching}, label={code:pm1}, language=Scala, escapechar=$]
 $This is the equivalent of Java's $switch$ statement, with multi-case and a default case.$
@@ -328,6 +330,88 @@ object SimplifierMain extends App {
 
 \end{example}
  
+\subsection{Implicits.} Lipsum...
+
+Pimp-my library.
+
+
+\begin{example}[Exercise: Pimp my library]
+Build a DSL that allows the expression evaluator to be written using natural-looking Scala code--though sadly not using the standard \pcode{+, -, *, /} operators, but using our own \pcode{plus, minus, mult, div} instead. The expression \pcode{5 plus 10} should evaluate to \pcode{Plus(Const(5), Const(10))}. The type \pcode{Int} and \pcode{Expr} do not contain the methods \pcode{plus}, ..., \pcode{div}; it will be necessary to implement implicit conversions (use \pcode{implicit class} for convenience) that contains those methods. 
+
+Hints: \begin{itemize}
+  \item because the methods \pcode{plus(r: Expr): Expr}, ..., \pcode{div(r: Expr): Expr} would be the same, consider defining them in a trait (\pcode{trait ExprOps} would be a jolly good name!) that is then mixed into the implicit classes, where the trait defines abstract member \pcode{self: Expr}, which is then used as the left-hand side in the \pcode{Expr} data constructors; the right-hand side coming from the parameter of the method.
+  \item implementing a class that adds the methods \pcode{plus}, ..., \pcode{div} to \pcode{Int} will allow for code such as \pcode{10 plus Const(5)}, but it will not compile \pcode{10 plus 5}, because there is no function \pcode{plus}, ..., \pcode{div} that takes an \pcode{Int}. The preferred option is to add those over implicit conversion from \pcode{Int} to \pcode{Expr}: \pcode{implicit def intToExpr(i: Int): Expr} is generally frowned-upon because it allows silent and potentially very powerful conversions.
+\end{itemize}
+
+\begin{lstlisting}[caption={Expression evaluator}, label={code:eepm}, language=Scala, escapechar=|]
+|It will be useful to package the PML conversions in their own module.|
+object Expr {
+  |Two conversions will be necessary: |Int -> Expr|, |Expr -> RichExpr|.|
+  implicit class RichInt ...
+  implicit class RichExpr ...
+
+}
+
+object EvaluatorMain extends App {
+  import Expr._
+  val e = Evaluator.eval((5 plus 10) minus 8)
+  println(e)
+}
+\end{lstlisting}
+
+If you are feeling inventive or perhaps mischievous, pick unicode identifiers for the boring ASCII method names in the DSL. Resurrect APL by using ÷ instead of \pcode{div}!
+\end{example}
+
+\paragraph{Type classes.} XXX
+
+\begin{example}[Exercise: Flexible evaluator]
+Allow the expression evaluator to operate on any number-like types, not just \pcode{Int}s. Instead of relying on inheritance, forcing all users of the evaluator to evaluate values conforming to some trait (with the number-crunching methods \pcode{+, -, *, /}), use parametric polymorphism and type classes. The \pcode{Const} data constructor will need to take any type instead of \pcode{Int}; \pcode{RichInt} implicit class will need to pimp any type, not just \pcode{Int}; the \pcode{eval} method will also need to be generic, but will need to (implicitly) require a typeclass \pcode{Numeric} for the generic type. 
+
+Hints: \begin{itemize}
+  \item it is not necessary to constrain the type of the \pcode{Const} data constructor; it can be ``forall A.'' \pcode{Const[A]}.
+  \item it will be convenient to use the full implicit syntax in the \pcode{eval} method: \pcode{def eval[A](expr: Expr)(implicit N: Numeric[A]): A} instead of \pcode{def eval[A : Numeric](expr: Expr): A}
+  \item the type information for the generic type \pcode{A} will be erased, causing compiler warning in the pattern match. It is possible to eliminate the warning by using another type class. Look for \emph{Scala type tags and manifests}.
+\end{itemize}
+
+\begin{lstlisting}[caption={Flexible evaluator (with DSL)}, label={code:eepm2}, language=Scala, escapechar=|]
+object Expr {
+
+  trait ExprOps {
+    def self: Expr
+    def plus... |This will need to take generic type |A|.|
+    ...
+  }
+
+  implicit class RichA... |This will need to take generic type |A|.|
+  implicit class RichExpr(val self: Expr) extends ExprOps
+
+}
+
+sealed trait Expr
+...
+case class Const... |This will need to take generic type |A|.|
+
+object Evaluator {
+
+  |It will be convenient to use the full implicit syntax here|
+  def eval[A](expr: Expr)...: A = expr match {
+    ...
+  }
+
+}
+
+object EvaluatorMain extends App {
+  import Expr._
+  |The point of application constrains the generic parameter, it is necessary to specify the type |A|. in |eval|.|
+  val e = Evaluator.eval[Double]((5.4 plus math.Pi) minus 8.8)
+  ...
+}
+\end{lstlisting}
+\end{example}
+
+\subsection{Rich type system.}
+
+
 \section{The standard library}
 The Scala standard library defines many standard structures in case classes. Picking the two most useful ones, \pcode{Option} and \pcode{Either} are defined as case classes. This means that it is possible to pattern match on their values.
 
@@ -348,37 +432,6 @@ case class Left[L](l: L) extends Either[L, Nothing]
 
 ...
 
-\paragraph{Implicits.} Lipsum...
-
-Pimp-my library.
-
-
-\begin{example}[Exercise: Pimp my library]
-Build a DSL that allows the expression evaluator to be written using natural-looking Scala code--though sadly not using the standard \pcode{+, -, *, /} operators, but using our own \pcode{plus, minus, mult, div} instead. 
-
-\begin{lstlisting}[caption={Expression evaluator}, label={code:eepm}, language=Scala, escapechar=|]
-|It will be useful to package the PML conversions in their own module.|
-object Expr {
-  |Implicit conversions are powerful and potentially very dangerous. Use this import to indicate the|
-  |acceptance of this great power and responsibility.|
-  import language.implicitConversions
-
-  |Three conversions will be necessary: |Int -> Expr|, |Expr -> RichExpr|, |Int -> RichInt|.|
-  implicit class RichInt ...
-  implicit class RichExpr ...
-  implicit def intToExpr ...
-
-}
-
-object EvaluatorMain extends App {
-  import Expr._
-  val e = Evaluator.eval((5 plus 10) minus 8)
-  println(e)
-}
-\end{lstlisting}
-
-If you are feeling inventive or perhaps mischievous, pick unicode identifiers for the boring ASCII method names in the DSL. Resurrect APL by using ÷ instead of \pcode{div}!
-\end{example}
 
 \section{Spring Framework}
 The Spring Framework is a dependency injection framework; it encourages composition over inheritance, it encourages expressing dependencies as interfaces rather than concrete implementations. The framework takes care of instantiating the components in the correct order; most components (the ones that fall into the \pcode{@Component} sterotype) are \emph{singletons}. This means that it is possible to treat the \pcode{@Component}-annotated components as namespaces rather than containers of state\footnote{In fact if the methods in \pcode{@Component}-annotated classes mutates \& accesses its fields, it will suffer from race conditions.}. The reason why Spring Framework encourages programming to interfaces is to make the software easily testable: there can be separate implementations or mocks for unit and integration tests.

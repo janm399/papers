@@ -12,6 +12,7 @@ organization := "com.acme"
 // )
 
 libraryDependencies ++= Seq(
+  "org.scala-lang" % "scala-reflect" % scalaVersion.value
   //"com.typesafe.akka" %% "akka-http" % "10.1.1",
   //"com.typesafe.akka" %% "akka-stream" % "2.5.11"
   //"org.scala-lang" % "scala-reflect" % scalaVersion.value,
