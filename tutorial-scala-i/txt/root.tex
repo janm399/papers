@@ -393,6 +393,7 @@ object EvaluatorMain extends App {
 Extra work: \begin{itemize}
   \item explore and explain the difference in just adding the generic parameter to the \pcode{Const} data constructor (leaving \pcode{sealed trait Expr} intact), or letting \pcode{Expr} become \pcode{sealed trait Expr[A]}.
   \item explain the effects of covariant type parameter in \pcode{sealed trait Expr[+A]}. (Try \pcode{val e: BigDecimal = Evaluator.eval(Const(4))} with invariant \pcode{Expr} and then with covariant \pcode{Expr} to get started.)
+  \item try the same thing in Haskell.
 \end{itemize}
 
 \end{example}
