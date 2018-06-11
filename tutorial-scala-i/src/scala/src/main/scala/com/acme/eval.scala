@@ -40,6 +40,13 @@ object Evaluator {
 }
 
 object EvaluatorMain extends App {
+  implicit class RichDouble(d: Double) {
+    def ^(y: Double): Double = math.pow(x, y)
+  }
+
+  val x: Double = 42
+  x ^ 2
+
   import Expr._
 
   val e: BigDecimal = Evaluator.eval(Const(4))

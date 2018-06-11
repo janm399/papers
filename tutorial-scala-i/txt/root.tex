@@ -15,12 +15,12 @@
 
 \maketitle
 \begin{abstract}
-  Scala is a fusion langauge that combines functional and object-oriented programming paradigms in a syntax that is similar to most other \emph{C-like} languages. The ...
+  Scala is a fusion language that combines functional and object-oriented programming paradigms in a syntax that is similar to most other \emph{C-like} languages. The ...
 \end{abstract}
 \bigskip
 
 \section{Syntax crash-course}
-Scala's syntax follows the syntax of other C-like languages, though--like Pascal--the type specification follows an identifier. Scala's \pcode{class} behaves exactly like Java's \pcode{class}, and its synax is not wildly different. (See \autoref{code:syntax-class}.)
+Scala's syntax follows the syntax of other C-like languages, though--like Pascal--the type specification follows an identifier. Scala's \pcode{class} behaves exactly like Java's \pcode{class}, and its syntax is not wildly different. (See \autoref{code:syntax-class}.)
 
 \begin{lstlisting}[caption={Classes and methods}, label={code:syntax-class}, language=Scala, escapechar=|]
 |Class declaration means the same thing as Java; constructor parameters are specified in the block immediately following the class name.|
@@ -127,7 +127,7 @@ The syntax (and its application) so far looks just like Java with less typing. T
 \end{itemize}
 
 \subsection{Everything is an expression.} 
-In Java, C, and similar langauges, there are statements and expressions. Statements do not have value, they are typicall control-flow constructs. For example, in Java, \pcode{if (a == b) X else Y} cannot be assigned to a variable, because \pcode{if-then-else} is a statement. In Scala, everything yields a value that can be assigned to a variable. 
+In Java, C, and similar languages, there are statements and expressions. Statements do not have value, they are typical control-flow constructs. For example, in Java, \pcode{if (a == b) X else Y} cannot be assigned to a variable, because \pcode{if-then-else} is a statement. In Scala, everything yields a value that can be assigned to a variable. 
 
 \subsection{Case classes.} A case class is just like a class in that it is a container for data and methods, but the fields it contains only have getters. (Immutability only goes as far as immutability of the references. Even in Scala, immutability without any additional code is equivalent to using \pcode{final} in Java.) Nevertheless, case classes are fantastically convenient to define data structures. Consider the \pcode{Person} case class defined in \autoref{code:cc1}.
 
@@ -312,10 +312,42 @@ object SimplifierMain extends App {
 
 \end{example}
  
-\subsection{Implicits.} Lipsum...
+\subsection{Implicits.} 
+Implicits are one of the key features of Scala. As the word suggests, implicit parameter values are supplied ``automatically'' by looking the appropriate values in the current \emph{implicit scope}\footnote{The implicit scope is somewhat complex; for now, it will be sufficient to remember that implicit scoping is similar to regular visibility scoping}. The look-up ignores the parameter names, it only cares about the types. Implicits also apply when the compiler encounters an identifier on a value of some type that the type does not implement. In that case, the compiler will follow the same implicit scoping rules to find an implicit conversion that turns the given type into another type that contains the identifier. 
 
-Pimp-my library.
+\begin{lstlisting}[caption={Simple implicits}, label={code:implicits1}, language=Scala, escapechar=|]
+object SimpleImplicitsMain extends App {
+  |Defines an implicit conversion from a |String| into |LoudString|, which adds the method |bangBang|.|
+  implicit class LoudString(s: String) {
+    def bangBang: String = s + "!!"
+  }
 
+  |Define the implicit value of type |String|.; notice the implicit application of the |LoudString.bangBang|.|
+  implicit val completelyArbitraryName: String = "Hello, world".bangBang
+
+  |The |sayHello1| method has single implicit parameter list, with one parameter of type |String|.|
+  def sayHello1(implicit greeting: String): Unit = println(greeting)
+
+  |The |sayHello2| method has two parameter lists, one empty, and one implicit with one parameter of type |String|.|
+  def sayHello2()(implicit greeting: String): Unit = println(greeting)
+
+  sayHello1    | $\rvert$ to apply, omit the implicit parameter list, leaving just |sayHello1|.|
+  sayHello2()  | $\rvert$ to apply, omit the implicit parameter list, leaving just |sayHello2()|.|
+}
+\end{lstlisting}
+
+Defining implicit \pcode{String}s demonstrates the principle, but it is rather useless because values of type \pcode{String} is so ubiquitous in typical programs. Different types are sometimes more useful; consider a \pcode{javax.sql.Connection} which might be passed implicitly to various data access code to avoid having to do too much typing. The ability to turn values into values that contain identifiers that are not available on the original types are also quite useful. The real power, though, comes from the fact that the implicit resolution does not stop at the first step. The compiler follows all possible paths, using as many conversions as necessary, to get the code to compile. 
+
+\paragraph{Pimp my library.} Providing implicit conversions from existing types to other types that contain useful or convenient identifiers is called \emph{pimp my library}. It is a fancy name for the adapter pattern\cite{adapter-pattern}, but implicits provide the convenience to avoid having to create instances of the adapters manually. It is a useful way to construct domain-specific languages, particularly when combined with Scala's ability to call single parameter method without dots and braces, as though it were an operator.
+
+\begin{lstlisting}[caption={Pimp my library}, label={code:pml1}, language=Scala, escapechar=|]
+implicit class RichDouble(x: Double) {
+  def ^(y: Double): Double = math.pow(x, y)
+}
+
+val x: Double = 42
+x ^ 2 | $\rvert$ Computes the second power of |x| by essentially doing |new RichDouble(x).^(2)|.|
+\end{lstlisting}
 
 \begin{example}[Exercise: Pimp my library]
 Build a DSL that allows the expression evaluator to be written using natural-looking Scala code--though sadly not using the standard \pcode{+, -, *, /} operators, but using our own \pcode{plus, minus, mult, div} instead. The expression \pcode{5 plus 10} should evaluate to \pcode{Plus(Const(5), Const(10))}. The type \pcode{Int} and \pcode{Expr} do not contain the methods \pcode{plus}, ..., \pcode{div}; it will be necessary to implement implicit conversions (use \pcode{implicit class} for convenience) that contains those methods. 
@@ -341,7 +373,7 @@ object EvaluatorMain extends App {
 }
 \end{lstlisting}
 
-If you are feeling inventive or perhaps mischievous, pick unicode identifiers for the boring ASCII method names in the DSL. Resurrect APL by using ÷ instead of \pcode{div}!
+If you are feeling inventive or perhaps mischievous, pick Unicode identifiers for the boring ASCII method names in the DSL. Resurrect APL by using ÷ instead of \pcode{div}!
 \end{example}
 
 \paragraph{Type classes.} XXX
@@ -355,7 +387,7 @@ Hints: \begin{itemize}
   \item the type information for the generic type \pcode{A} will be erased, causing compiler warning in the pattern match. It is possible to eliminate the warning by using another type class. Look for \emph{Scala type tags and manifests}.
 \end{itemize}
 
-\begin{lstlisting}[caption={Flexible evaluator (with DSL)}, label={code:eepm2}, language=Scala, escapechar=|]
+\begin{lstlisting}[caption={Flexible evaluator (with DSL)}, label={code:eepm3}, language=Scala, escapechar=|]
 object Expr {
 
   trait ExprOps {
@@ -392,7 +424,7 @@ object EvaluatorMain extends App {
 
 Extra work: \begin{itemize}
   \item explore and explain the difference in just adding the generic parameter to the \pcode{Const} data constructor (leaving \pcode{sealed trait Expr} intact), or letting \pcode{Expr} become \pcode{sealed trait Expr[A]}.
-  \item explain the effects of covariant type parameter in \pcode{sealed trait Expr[+A]}. (Try \pcode{val e: BigDecimal = Evaluator.eval(Const(4))} with invariant \pcode{Expr} and then with covariant \pcode{Expr} to get started.)
+  \item explain the effects of covariant type parameter in \pcode{sealed trait Expr[+A]}. (Try \pcode{val e: BigDecimal = Evaluator.eval(Const(4))}, with invariant \pcode{Expr} and then with covariant \pcode{Expr} to get started.)
   \item try the same thing in Haskell.
 \end{itemize}
 
@@ -404,7 +436,7 @@ Extra work: \begin{itemize}
 
 \begin{example}[Exercise: Flexible evaluator with errors]
 
-\begin{lstlisting}[caption={Flexible evaluator (with DSL)}, label={code:eepm2}, language=Scala, escapechar=|]
+\begin{lstlisting}[caption={Flexible evaluator (with DSL)}, label={code:eepm4}, language=Scala, escapechar=|]
 object EvaluatorMain extends App {
   import Expr._
   Evaluator.eval[Double, Option](4 div 0) | $\rvert$ |None|.|
@@ -439,7 +471,7 @@ case class Left[L](l: L) extends Either[L, Nothing]
 
 
 \section{Spring Framework}
-The Spring Framework is a dependency injection framework; it encourages composition over inheritance, it encourages expressing dependencies as interfaces rather than concrete implementations. The framework takes care of instantiating the components in the correct order; most components (the ones that fall into the \pcode{@Component} sterotype) are \emph{singletons}. This means that it is possible to treat the \pcode{@Component}-annotated components as namespaces rather than containers of state\footnote{In fact if the methods in \pcode{@Component}-annotated classes mutates \& accesses its fields, it will suffer from race conditions.}. The reason why Spring Framework encourages programming to interfaces is to make the software easily testable: there can be separate implementations or mocks for unit and integration tests.
+The Spring Framework is a dependency injection framework; it encourages composition over inheritance, it encourages expressing dependencies as interfaces rather than concrete implementations. The framework takes care of instantiating the components in the correct order; most components (the ones that fall into the \pcode{@Component} stereotype) are \emph{singletons}. This means that it is possible to treat the \pcode{@Component}-annotated components as namespaces rather than containers of state\footnote{In fact if the methods in \pcode{@Component}-annotated classes mutates \& accesses its fields, it will suffer from race conditions.}. The reason why Spring Framework encourages programming to interfaces is to make the software easily testable: there can be separate implementations or mocks for unit and integration tests.
 
 \begin{lstlisting}[caption={Components}, label={code:sf1-java}, language=Java, escapechar=|]
 interface ReportGenerator {
