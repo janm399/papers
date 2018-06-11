@@ -161,16 +161,37 @@ fq == Person("Foo", "Quux", 42)  | $\rvert$ |true|, even though they are \emph{d
 The consciseness of Scala's syntax is beginning to show. It would have been much more cumbersome to implement all this (including correct \pcode{hashCode}, \pcode{equals}, and reasonable \pcode{toString}) in Java. Even with correct implementations, it would not have been possible to use \pcode{==} to test for instance equality. 
 
 \begin{example}[Exercise: Using case classes and functions]
-In \pcode{src/scala}, run \pcode{sbt console}; in the console, define the \pcode{Person} case class from \autoref{code:cc1}. Then use \pcode{List.fill(N)(Person(...))} and useful methods in \pcode{scala.util.Random} to generate $N$ random \pcode{Person} instances. Assign those to a variable.
+Create a new case class \pcode{Person} file in \pcode{src/main/scala/com.acme} from \autoref{code:cc1}. Then use \pcode{List.fill(N)(Person(...))} and useful methods in \pcode{scala.util.Random} to generate $N$ random \pcode{Person} instances. Assign those to a variable.
 \begin{itemize}
   \item find the oldest person in the list. (Hint: use \pcode{map}, \pcode{max}, and \pcode{find} functions on the \pcode{List[Person]}.)
   \item find the 10 youngest people in the list. (Hint: use \pcode{sortBy} or \pcode{sortWith}, followed by \pcode{take}.)
 \end{itemize}
+
+\begin{lstlisting}[caption={Pattern matching}, label={code:pmex}, language=Scala, escapechar=|]
+...
+
+object PersonMain extends App {
+  
+  List.fill(100) ...  
+
+}
+\end{lstlisting}
 \end{example}
 
 Case classes are also called \emph{product} types. The word product refers to the possible number of values that a case class can hold. Take \pcode{case class ABC(a: Boolean, b: Boolean, c: Boolean)}: there are eight possible values: \pcode{ABC(false, false, false)}, ..., \pcode{ABC(true, true, true)}. The value $8$ is the result of \emph{multiplying} the possible values of all parameters. \pcode{Boolean}s have two values; three \pcode{Boolean} values yield $2 \times 2 \times 2$ possible values of the \pcode{ABC} type. Similarly, \pcode{case class IB(i: Int, b: Boolean)} has $4294967295 \times 2$ possible values. 
 
-Imagine, for a moment, that \pcode{Boolean} is not a built-in primitive. It would be defined as \emph{sum} type: \pcode{sealed trait Boolean; case object True extends Boolean; case object False extends Boolean}. The case instances \pcode{True} and \pcode{False} have exactly one value; consequently, the sum type \pcode{Boolean} has $1 + 1$ possible values.
+Imagine, for a moment, that \pcode{Boolean} is not a built-in primitive. It would be defined as \emph{sum} type: \pcode{sealed trait Boolean; case object True extends Boolean; case object False extends Boolean}. The case instances \pcode{True} and \pcode{False} have exactly one value; consequently, the sum type \pcode{Boolean} has $1 + 1$ possible values. Languages like Haskell\cite{haskell}, F\#\cite{fsharp}, and others have convenient syntax for sum types; see \autoref{code:haskell}.
+
+\begin{lstlisting}[caption={Taxonomy as sum type}, label={code:haskell}, language=Haskell, escapechar=@]
+@Defines the data type @Boolean@ as a sum of two products, but each product only has one value.@
+data Boolean = True   
+             | False
+
+@Defines the subscription type as either a ``one-off'' that carries a particular end-date, or a recurring@
+@subscription that carries the start date and the billing period.@
+data Subscription = OneOff Date 
+                  | Recurring Date Period
+\end{lstlisting}
 
 Sum types are very useful way to express alternatives that might not have anything in common other than being of the given type, without clumsy \pcode{instanceof} checks with pattern matching.
 
@@ -365,11 +386,11 @@ If you are feeling inventive or perhaps mischievous, pick unicode identifiers fo
 \paragraph{Type classes.} XXX
 
 \begin{example}[Exercise: Flexible evaluator]
-Allow the expression evaluator to operate on any number-like types, not just \pcode{Int}s. Instead of relying on inheritance, forcing all users of the evaluator to evaluate values conforming to some trait (with the number-crunching methods \pcode{+, -, *, /}), use parametric polymorphism and type classes. The \pcode{Const} data constructor will need to take any type instead of \pcode{Int}; \pcode{RichInt} implicit class will need to pimp any type, not just \pcode{Int}; the \pcode{eval} method will also need to be generic, but will need to (implicitly) require a typeclass \pcode{Numeric} for the generic type. 
+Allow the expression evaluator to operate on any number-like types, not just \pcode{Int}s. Instead of relying on inheritance, forcing all users of the evaluator to evaluate values conforming to some trait (with the number-crunching methods \pcode{+, -, *, /}), use parametric polymorphism and type classes. The \pcode{Const} data constructor will need to take any type instead of \pcode{Int}; \pcode{RichInt} implicit class will need to pimp any type, not just \pcode{Int}; the \pcode{eval} method will also need to be generic, but will need to (implicitly) require a typeclass \pcode{Fractional} for the generic type. (The Scala standard library defines \pcode{Fractional} and \pcode{Integral} type classes, which contain the division operation whereas \pcode{Numeric} typeclass does not. Pick one, the limitation that not all types are fractional or integral. Dotty will unify this!)
 
 Hints: \begin{itemize}
   \item it is not necessary to constrain the type of the \pcode{Const} data constructor; it can be ``forall A.'' \pcode{Const[A]}.
-  \item it will be convenient to use the full implicit syntax in the \pcode{eval} method: \pcode{def eval[A](expr: Expr)(implicit N: Numeric[A]): A} instead of \pcode{def eval[A : Numeric](expr: Expr): A}
+  \item it will be convenient to use the full implicit syntax in the \pcode{eval} method: \pcode{def eval[A](expr: Expr)(implicit N: Fractional[A]): A} instead of \pcode{def eval[A : Fractional](expr: Expr): A}
   \item the type information for the generic type \pcode{A} will be erased, causing compiler warning in the pattern match. It is possible to eliminate the warning by using another type class. Look for \emph{Scala type tags and manifests}.
 \end{itemize}
 
@@ -410,6 +431,20 @@ object EvaluatorMain extends App {
 \end{example}
 
 \subsection{Rich type system.}
+
+\begin{example}[Exercise: Flexible evaluator with errors]
+
+\begin{lstlisting}[caption={Flexible evaluator (with DSL)}, label={code:eepm2}, language=Scala, escapechar=|]
+object EvaluatorMain extends App {
+  import Expr._
+  Evaluator.eval[Double, Option](4 div 0) | $\rvert$ |None|.|
+  Evaluator.eval[Double, Id](4 div 0) | $\rvert$ |RuntimeException("Division by zero")|.|
+  Evaluator.eval[Double, ({type L[A] = Either[String, A]})#L](4 div 0) | $\rvert$ |Left("Division by zero")|.|
+  ...
+  Evaluator.eval[Double, ({type L[A] = Either[String, A]})#L](4 div 1) | $\rvert$ |Right(4.0)|.|
+}
+\end{lstlisting}
+\end{example}
 
 
 \section{The standard library}
