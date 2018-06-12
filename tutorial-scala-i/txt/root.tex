@@ -376,10 +376,111 @@ object EvaluatorMain extends App {
 If you are feeling inventive or perhaps mischievous, pick Unicode identifiers for the boring ASCII method names in the DSL. Resurrect APL by using ÷ instead of \pcode{div}!
 \end{example}
 
-\paragraph{Type classes.} XXX
+\paragraph{Type classes.} Type class is a concept from Haskell\cite{haskell}; it is a definition of methods that can be implemented for some type. A type class is therefore an interface parametrized by a type; the implementations are instances of this interface for some types. Suppose the expression evaluator needs to be able to evaluate not just \pcode{Int}s, but also other number-like values. The only change to its structure is an interface that implements the addition, subtraction, multiplication, and division for \emph{some} number-like type; see \autoref{code:eewt1}.
+
+\begin{lstlisting}[caption={Expression evaluator without typeclasses}, label={code:eewt1}, language=Scala, escapechar=|]
+|Define the typeclass that defines the methods that instances for the type |A| must implement.|
+trait NumberLike[A] {
+  def plus(x: A, y: A): A
+  ...
+  def div(x: A, y: A): A
+}
+
+sealed trait Expr
+...
+|Modify the |Const| data constructor to take any type |A| instead of the concrete |Int|.|
+case class Const[A](a: A) extends Expr
+
+object Evaluator {
+ 
+  |The |eval| function now needs to take the interface that implements the number-like behaviour for type |A|.| 
+  def eval[A](expr: Expr, numberLike: NumberLike[A]): A = expr match {
+    case Plus(l, r) => numberLike.plus(eval(l, numberLike), eval(r, numberLike))
+    ...
+    case Const(a: A) => a
+  }
+
+}
+
+object EvaluatorMain extends App {
+  import Expr._
+  import Evaluator._
+  
+  val expr = 5 plus 10
+  eval(expr, new NumberLike[Int] {
+    def plus(x: Int, y: Int): Int = x + y
+    ...
+    def div(x: Int, y: Int): Int = x / y
+  }) | $\rvert$ evaluates to |15|.|
+
+}
+\end{lstlisting}
+
+This is rather tedious to write, especially all the points where the \pcode{numberLike} instance has to be passed around to the recursive calls of \pcode{eval}. Moving it to the implicit parameter list makes the code cleaner in \autoref{code:eewt2}.
+
+\begin{lstlisting}[caption={Expression evaluator without typeclasses}, label={code:eewt2}, language=Scala, escapechar=|]
+trait NumberLike[A] { ... }
+
+object Evaluator {
+ 
+  def eval[A](expr: Expr)(implicit N: NumberLike[A]): A = expr match {
+    case Plus(l, r) => N.plus(eval(l), eval(r))
+    ...
+    case Const(a: A) => a
+  }
+
+}
+
+object EvaluatorMain extends App {
+  import Expr._
+  import Evaluator._
+  
+  val expr = 5 plus 10
+  eval(expr)(new NumberLike[Int] {...}) | $\rvert$ evaluates to |15|.|
+
+}
+\end{lstlisting}
+
+This is an improvement, though it is still annoying to have to explicitly specify the value of the \pcode{numberLike} parameter in the implicit (sic!) parameter list in \pcode{EvaluatorMain}. The Scala compiler is able to find the implicit value, if one is available in the implicit scope; all that remains to be done is to provide an \emph{instance of the \pcode{NumberLike} typeclass for the type \pcode{Int}}, and any other required types. (Viz \autoref{code:eewt3}.)
+
+\begin{lstlisting}[caption={Expression evaluator without typeclasses}, label={code:eewt3}, language=Scala, escapechar=|]
+trait NumberLike[A] { ... }
+
+object EvaluatorMain extends App {
+  import Expr._
+  import Evaluator._
+
+  implicit object IntNumberLike extends NumberLike[Int] {
+    def plus(x: Int, y: Int): Int = x + y
+    ...
+  }
+  
+  |Complex numbers are numbers too!|
+  case object Complex {
+    val e: Complex = ...
+    val pi: Complex = ...
+    val i: Complex = ...
+  }
+  case class Complex(re: Double, im: Double) {
+    def +(rhs: Complex): Complex = ...
+    def ^(rhs: Complex): Complex = ...
+  }
+  implicit object ComplexNumberLike extends NumberLike[Complex] {
+    def plus(x: Complex, y: Complex): Complex = x + y
+    ...
+  }
+  
+  |And now the evaluator works for any type |A| that lies in the |NumberLike| typeclass; i.e. where there is an in-scope|
+  |way to create instances of |NumberLike[A]|.|
+  eval[Int](5 plus 10)        | $\rvert$ evaluates to |15|.|
+  eval[Complex](e ^ (pi * i)) | $\rvert$ evaluates to |-1|.|
+
+}
+\end{lstlisting}
+
 
 \begin{example}[Exercise: Flexible evaluator]
-Allow the expression evaluator to operate on any number-like types, not just \pcode{Int}s. Instead of relying on inheritance, forcing all users of the evaluator to evaluate values conforming to some trait (with the number-crunching methods \pcode{+, -, *, /}), use parametric polymorphism and type classes. The \pcode{Const} data constructor will need to take any type instead of \pcode{Int}; \pcode{RichInt} implicit class will need to pimp any type, not just \pcode{Int}; the \pcode{eval} method will also need to be generic, but will need to (implicitly) require a typeclass \pcode{Fractional} for the generic type. (The Scala standard library defines \pcode{Fractional} and \pcode{Integral} type classes, which contain the division operation whereas \pcode{Numeric} typeclass does not. Pick one, the limitation that not all types are fractional or integral. Dotty will unify this!)
+Allow the expression evaluator to operate on any number-like types, not just \pcode{Int}s. Instead of relying on inheritance, forcing all users of the evaluator to evaluate values conforming to some trait (with the number-crunching methods \pcode{+, -, *, /}), use parametric polymorphism and type classes. The \pcode{Const} data constructor will need to take any type instead of \pcode{Int}; \pcode{RichInt} implicit class will need to pimp any type, not just \pcode{Int}; the \pcode{eval} method will also need to be generic, but will need to (implicitly) require a typeclass: use the \pcode{Fractional} provided by the standard library, or define your own \pcode{NumberLike} typeclass. (The Scala standard library defines \pcode{Fractional} and \pcode{Integral} type classes, which contain the division operation whereas \pcode{Numeric} typeclass does not. Pick one, the limitation that not all types are fractional or integral. ``Dotty will fix this!'')
 
 Hints: \begin{itemize}
   \item it is not necessary to constrain the type of the \pcode{Const} data constructor; it can be ``forall A.'' \pcode{Const[A]}.
@@ -421,6 +522,49 @@ object EvaluatorMain extends App {
   ...
 }
 \end{lstlisting}
+\end{example}
+
+\subparagraph{A remark on Haskell.} Scala's take on typeclasses should clarify Haskellers' usual statement that ``typeclasses are not like OOP classes, they are more like interfaces.'' Quite: a typeclass is an interface with a type parameter that defines behaviour for the type. Its implementations specify a concrete type and implement the behaviour. Typeclass instances are then regular values (remember the singletons from the Scala code?) that implement the typeclass interface.
+
+\begin{lstlisting}[language=Scala, escapechar=|]
+|Require the type |A| to have an instance of the |NumberLike| trait available for it.|
+|Compiler will supply the value in the parameter |N| of the implicit parameter list.|
+def eval[A](expr: Expr)(implicit N: NumberLike[A]): A = expr match {
+  |Call the typeclass's methods using the standard method call notation.|
+  case Plus(l, r) => N.plus(l, r)
+  ...
+}
+\end{lstlisting}
+\begin{lstlisting}[language=Haskell, escapechar=|]
+|Define the typeclass |NumberLike| for type |a| with methods like |plus|, ... .|
+class NumberLike a where
+  plus :: a -> a -> a
+  ...
+
+|Provide an instance of |NumberLike| for the type |Int|.|
+instance NumberLike Int where
+  plus x y = x + y
+  ...
+
+|Provide an instance of |NumberLike| for the type |Complex|.|
+instance NumberLike Complex where
+  ...
+
+|Just like the Scala version, |eval| requires the type |a| to lie in the |NumberLike| typeclass;|
+|that is, that there is an instance of |NumberLike| for that |a|.|
+eval :: (NumberLike a) => Expr -> a
+
+|However, the typeclass instance does not get a name in the function. Instead, all its functions|
+plus|, ... are available in the function without any additional notation.|
+eval (Plus l r) = plus l r
+                  |$\uparrow$|
+                  |In Scala, this would be |N.plus(l, r)
+\end{lstlisting}
+
+\subsection{Rich type system.}
+
+\begin{example}[Exercise: Flexible evaluator with errors]
+
 
 Extra work: \begin{itemize}
   \item explore and explain the difference in just adding the generic parameter to the \pcode{Const} data constructor (leaving \pcode{sealed trait Expr} intact), or letting \pcode{Expr} become \pcode{sealed trait Expr[A]}.
@@ -428,13 +572,6 @@ Extra work: \begin{itemize}
   \item try the same thing in Haskell.
 \end{itemize}
 
-\end{example}
-
-
-
-\subsection{Rich type system.}
-
-\begin{example}[Exercise: Flexible evaluator with errors]
 
 \begin{lstlisting}[caption={Flexible evaluator (with DSL)}, label={code:eepm4}, language=Scala, escapechar=|]
 object EvaluatorMain extends App {
