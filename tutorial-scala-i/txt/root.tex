@@ -400,6 +400,8 @@ Hints: \begin{itemize}
 If you are feeling inventive or perhaps mischievous, pick Unicode identifiers for the boring ASCII method names in the DSL. Resurrect APL by using ÷ instead of \pcode{div}!
 \end{example}
 
+There are other languages that offer similar functionality. Swift's extensions, particularly with type constraints, certainly feel like typeclasses.
+
 \paragraph{Type classes.} Type class is a concept from Haskell\cite{haskell}; it is a definition of methods that can be implemented for some type. A type class is therefore an interface parametrized by a type; the implementations are instances of this interface for some types. Suppose the expression evaluator needs to be able to evaluate not just \pcode{Int}s, but also other number-like values. The only change to its structure is an interface that implements the addition, subtraction, multiplication, and division for \emph{some} number-like type; see \autoref{code:eewt1}.
 
 \begin{lstlisting}[caption={Expression evaluator without typeclasses}, label={code:eewt1}, language=Scala, escapechar=|]
