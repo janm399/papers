@@ -1,5 +1,7 @@
 package com.acme
 
+import java.util.Optional
+
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
@@ -40,6 +42,7 @@ object Evaluator {
 }
 
 object EvaluatorMain extends App {
+
   implicit class RichDouble(d: Double) {
     def ^(y: Double): Double = math.pow(x, y)
   }

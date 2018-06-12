@@ -83,6 +83,8 @@ List(1, 2, 3, ...).map(x => 2 * x)
 List(1, 2, 3, ...).map(2 * _)
 \end{lstlisting}
 
+The last form \pcode{2 * _} is somewhat unusual and worth exploring further. The Scala compiler mechanically translates the each underscore in the function body into a parameter (and ``replaces'' the underscore with that parameter); \pcode{2 * _} is translated into \pcode{p_0 => 2 * p_0}. Now, exploring the functions on type \pcode{Int}, the type of the function \pcode{*} is \pcode{Int => Int}. (It is defined as \pcode{def *(that: Int): Int}). The type of \pcode{2 *} is therefore \pcode{Int => Int}, just like the type of \pcode{2 * _}, or \pcode{_ * 2}, or \pcode{x => x * 2}--assuming the parameter can be inferred to be \pcode{Int}. Consequently, it is possible to leave out the underscore in the \pcode{map} function and only write \pcode{List(1, 2, 3, ...).map(2 *)}\footnote{This might be somewhat familiar to Java 8 programmers with method references with the double colons}.
+
 Finally, fields (and variables) use the keywords \pcode{val} and \pcode{var}. The first declares an immutable variable (and a getter if field), the second declares a mutable variable (and a getter and setter if field); see \autoref{code:syntax-fv}.
 
 \begin{lstlisting}[caption={Fields \& variables}, label={code:syntax-fv}, language=Scala, escapechar=|]
@@ -180,9 +182,9 @@ object PersonMain extends App {
 
 Case classes are also called \emph{product} types. The word product refers to the possible number of values that a case class can hold. Take \pcode{case class ABC(a: Boolean, b: Boolean, c: Boolean)}: there are eight possible values: \pcode{ABC(false, false, false)}, ..., \pcode{ABC(true, true, true)}. The value $8$ is the result of \emph{multiplying} the possible values of all parameters. \pcode{Boolean}s have two values; three \pcode{Boolean} values yield $2 \times 2 \times 2$ possible values of the \pcode{ABC} type. Similarly, \pcode{case class IB(i: Int, b: Boolean)} has $4294967295 \times 2$ possible values. 
 
-Imagine, for a moment, that \pcode{Boolean} is not a built-in primitive. It would be defined as \emph{sum} type: \pcode{sealed trait Boolean; case object True extends Boolean; case object False extends Boolean}. The case instances \pcode{True} and \pcode{False} have exactly one value; consequently, the sum type \pcode{Boolean} has $1 + 1$ possible values. Languages like Haskell\cite{haskell}, F\#\cite{fsharp}, and others have convenient syntax for sum types; see \autoref{code:haskell}.
+Imagine, for a moment, that \pcode{Boolean} is not a built-in primitive. It would be defined as the \emph{sum} of two [degenerate] products of 1 value: \pcode{sealed trait Boolean; case object True extends Boolean; case object False extends Boolean}. The products \pcode{True} and \pcode{False} have exactly one value; consequently, the sum type \pcode{Boolean} has $1 + 1$ possible values. Languages like Haskell\cite{haskell}, F\#\cite{fsharp}, and others have convenient syntax for sum types; see \autoref{code:sum-scala}.
 
-\begin{lstlisting}[caption={Taxonomy as sum type}, label={code:haskell}, language=Haskell, escapechar=@]
+\begin{lstlisting}[label={code:sum-haskell}, language=Haskell, escapechar=@]
 @Defines the data type @Boolean@ as a sum of two products, but each product only has one value.@
 data Boolean = True   
              | False
@@ -192,8 +194,19 @@ data Boolean = True
 data Subscription = OneOff Date 
                   | Recurring Date Period
 \end{lstlisting}
+\begin{lstlisting}[caption={Sum types}, label={code:sum-scala}, language=Scala, escapechar=|]
+sealed trait Boolean
+case object True extends Boolean
+case object False extends Boolean
 
-Sum types are very useful way to express alternatives that might not have anything in common other than being of the given type, without clumsy \pcode{instanceof} checks with pattern matching.
+sealed trait Subscription
+case class OneOff(endDate: Date) extends Subscription
+case class Recurring(startDate: Date, period: Period) extends Subscription
+\end{lstlisting}
+
+Finally, using the keyword \pcode{sealed} specifies that the trait cannot be extended outside the current source file. This allows the Scala compiler to verify that pattern matches (using the \pcode{match ... case} construct) cover every possible case, reporting a warning if a case is missed.
+
+Sums of products are very useful way to express alternatives that might not have anything in common other than being of the given type, without clumsy \pcode{instanceof} checks with pattern matching.
 
 \subsection{Patten matching.} 
 A pattern match is a way to check that a value has the right ``shape'', and to pull out some or all values from that shape. Think of the simplest pattern matching expression as Java's \pcode{switch} statement in \autoref{code:pm1}.
@@ -260,6 +273,7 @@ object Evaluator {
   
   |Hint: you will need to pattern-match on the different |Expr|s.|
   def eval(expr: Expr): Int = expr match {
+    case Const(x) => x
     ...
   }
 
@@ -274,7 +288,7 @@ object EvaluatorMain extends App {
 \end{lstlisting}
 \end{example}
 
-\begin{example}[Exercise: logical expression simplifier]
+\begin{example}[Exercise (extra): logical expression simplifier]
 Build a logical expression simplifier that reduces the number of logical operations to be performed, and can spot tautologies and contraditions. For example, $(a \land b) \lor (a \land b)$ should simplify to just $a \land b$; $(a \lor \lnot{a})$ should simplify to $\top$ (tautology; always true); $(a \lor \lnot{a}) \land (a \oplus a)$ should simplify to $\bot$ (contradiction; always false).
 
 \begin{lstlisting}[caption={Logical expression simplifier}, label={code:ls}, language=Scala, escapechar=|]
@@ -309,21 +323,23 @@ object SimplifierMain extends App {
 
 }
 \end{lstlisting}
-
 \end{example}
+
+\subsection{For comprehensions}
+TODO
  
-\subsection{Implicits.} 
-Implicits are one of the key features of Scala. As the word suggests, implicit parameter values are supplied ``automatically'' by looking the appropriate values in the current \emph{implicit scope}\footnote{The implicit scope is somewhat complex; for now, it will be sufficient to remember that implicit scoping is similar to regular visibility scoping}. The look-up ignores the parameter names, it only cares about the types. Implicits also apply when the compiler encounters an identifier on a value of some type that the type does not implement. In that case, the compiler will follow the same implicit scoping rules to find an implicit conversion that turns the given type into another type that contains the identifier. 
+\subsection{Implicits} 
+Implicits are one of the key features of Scala. As the word suggests, implicit parameter values are supplied ``automatically'' by the compiler looking for the appropriate values in the current \emph{implicit scope}\footnote{The implicit scope is somewhat complex; for now, it will be sufficient to remember that implicit scoping is similar to regular visibility scoping}. The look-up ignores the parameter names, it only cares about the types. Implicits also apply when the compiler encounters an identifier on a value of some type that the type does not implement. In that case, the compiler will follow the same implicit scoping rules to find an implicit conversion that turns the given type into another type that contains the identifier. 
 
 \begin{lstlisting}[caption={Simple implicits}, label={code:implicits1}, language=Scala, escapechar=|]
 object SimpleImplicitsMain extends App {
-  |Defines an implicit conversion from a |String| into |LoudString|, which adds the method |bangBang|.|
+  |Defines an implicit conversion from a |String| into |LoudString|, which adds the method |LOUD|.|
   implicit class LoudString(s: String) {
-    def bangBang: String = s + "!!"
+    def LOUD: String = s.toUpperCase() + "!!"
   }
 
-  |Define the implicit value of type |String|.; notice the implicit application of the |LoudString.bangBang|.|
-  implicit val completelyArbitraryName: String = "Hello, world".bangBang
+  |Define the implicit value of type |String|.; notice the implicit application of the |LoudString.LOUD|.|
+  implicit val completelyArbitraryName: String = "Hello, world".LOUD
 
   |The |sayHello1| method has single implicit parameter list, with one parameter of type |String|.|
   def sayHello1(implicit greeting: String): Unit = println(greeting)
@@ -336,7 +352,7 @@ object SimpleImplicitsMain extends App {
 }
 \end{lstlisting}
 
-Defining implicit \pcode{String}s demonstrates the principle, but it is rather useless because values of type \pcode{String} is so ubiquitous in typical programs. Different types are sometimes more useful; consider a \pcode{javax.sql.Connection} which might be passed implicitly to various data access code to avoid having to do too much typing. The ability to turn values into values that contain identifiers that are not available on the original types are also quite useful. The real power, though, comes from the fact that the implicit resolution does not stop at the first step. The compiler follows all possible paths, using as many conversions as necessary, to get the code to compile. 
+Defining implicit \pcode{String}s demonstrates the principle, but it is rather useless because values of type \pcode{String} are so ubiquitous in typical programs. Different types are sometimes more useful; consider a \pcode{javax.sql.Connection} which might be passed implicitly to various data access code to avoid having to do too much typing. The ability to turn values into values that contain identifiers that are not available on the original types are also quite useful. The real power, though, comes from the fact that the implicit resolution does not stop at the first step. The compiler follows all possible paths, using as many conversions as necessary, to get the code to compile. 
 
 \paragraph{Pimp my library.} Providing implicit conversions from existing types to other types that contain useful or convenient identifiers is called \emph{pimp my library}. It is a fancy name for the adapter pattern\cite{adapter-pattern}, but implicits provide the convenience to avoid having to create instances of the adapters manually. It is a useful way to construct domain-specific languages, particularly when combined with Scala's ability to call single parameter method without dots and braces, as though it were an operator.
 
@@ -352,17 +368,20 @@ x ^ 2 | $\rvert$ Computes the second power of |x| by essentially doing |new Rich
 \begin{example}[Exercise: Pimp my library]
 Build a DSL that allows the expression evaluator to be written using natural-looking Scala code--though sadly not using the standard \pcode{+, -, *, /} operators, but using our own \pcode{plus, minus, mult, div} instead. The expression \pcode{5 plus 10} should evaluate to \pcode{Plus(Const(5), Const(10))}. The type \pcode{Int} and \pcode{Expr} do not contain the methods \pcode{plus}, ..., \pcode{div}; it will be necessary to implement implicit conversions (use \pcode{implicit class} for convenience) that contains those methods. 
 
-Hints: \begin{itemize}
-  \item because the methods \pcode{plus(r: Expr): Expr}, ..., \pcode{div(r: Expr): Expr} would be the same, consider defining them in a trait (\pcode{trait ExprOps} would be a jolly good name!) that is then mixed into the implicit classes, where the trait defines abstract member \pcode{self: Expr}, which is then used as the left-hand side in the \pcode{Expr} data constructors; the right-hand side coming from the parameter of the method.
-  \item implementing a class that adds the methods \pcode{plus}, ..., \pcode{div} to \pcode{Int} will allow for code such as \pcode{10 plus Const(5)}, but it will not compile \pcode{10 plus 5}, because there is no function \pcode{plus}, ..., \pcode{div} that takes an \pcode{Int}. The preferred option is to add those over implicit conversion from \pcode{Int} to \pcode{Expr}: \pcode{implicit def intToExpr(i: Int): Expr} is generally frowned-upon because it allows silent and potentially very powerful conversions.
-\end{itemize}
-
 \begin{lstlisting}[caption={Expression evaluator}, label={code:eepm}, language=Scala, escapechar=|]
 |It will be useful to package the PML conversions in their own module.|
 object Expr {
-  |Two conversions will be necessary: |Int -> Expr|, |Expr -> RichExpr|.|
-  implicit class RichInt ...
-  implicit class RichExpr ...
+  |Two conversions will be necessary: |Int -> Expr|, |Expr -> RichExpr|. The two P.M.L. implicit classes|
+  |will contain the same functions; the only exception is that the one for |Int| will need to box the given|
+  Int| into |Const|.|
+  implicit class RichInt(x: Int) {
+    def plus(that: Expr): Expr = Plus(Const(x), that)
+    ...
+  }
+  implicit class RichExpr(x: Expr) {
+    def plus(that: Expr): Expr = Plus(x, that)
+    ...
+  }
 
 }
 
@@ -372,6 +391,11 @@ object EvaluatorMain extends App {
   println(e)
 }
 \end{lstlisting}
+
+Hints: \begin{itemize}
+  \item because the methods \pcode{plus(r: Expr): Expr}, ..., \pcode{div(r: Expr): Expr} would be the same, consider defining them in a trait (\pcode{trait ExprOps} would be a jolly good name!) that is then mixed into the implicit classes, where the trait defines abstract member \pcode{self: Expr}, which is then used as the left-hand side in the \pcode{Expr} data constructors; the right-hand side coming from the parameter of the method.
+  \item implementing a class that adds the methods \pcode{plus}, ..., \pcode{div} to \pcode{Int} will allow for code such as \pcode{10 plus Const(5)}, but it will not compile \pcode{10 plus 5}, because there is no function \pcode{plus}, ..., \pcode{div} that takes an \pcode{Int}. The preferred option is to add those over implicit conversion from \pcode{Int} to \pcode{Expr}: \pcode{implicit def intToExpr(i: Int): Expr} is generally frowned-upon because it allows silent and potentially very powerful conversions.
+\end{itemize}
 
 If you are feeling inventive or perhaps mischievous, pick Unicode identifiers for the boring ASCII method names in the DSL. Resurrect APL by using ÷ instead of \pcode{div}!
 \end{example}
@@ -418,7 +442,7 @@ object EvaluatorMain extends App {
 
 This is rather tedious to write, especially all the points where the \pcode{numberLike} instance has to be passed around to the recursive calls of \pcode{eval}. Moving it to the implicit parameter list makes the code cleaner in \autoref{code:eewt2}.
 
-\begin{lstlisting}[caption={Expression evaluator without typeclasses}, label={code:eewt2}, language=Scala, escapechar=|]
+\begin{lstlisting}[caption={Expression evaluator with typeclasses-ish}, label={code:eewt2}, language=Scala, escapechar=|]
 trait NumberLike[A] { ... }
 
 object Evaluator {
@@ -443,7 +467,7 @@ object EvaluatorMain extends App {
 
 This is an improvement, though it is still annoying to have to explicitly specify the value of the \pcode{numberLike} parameter in the implicit (sic!) parameter list in \pcode{EvaluatorMain}. The Scala compiler is able to find the implicit value, if one is available in the implicit scope; all that remains to be done is to provide an \emph{instance of the \pcode{NumberLike} typeclass for the type \pcode{Int}}, and any other required types. (Viz \autoref{code:eewt3}.)
 
-\begin{lstlisting}[caption={Expression evaluator without typeclasses}, label={code:eewt3}, language=Scala, escapechar=|]
+\begin{lstlisting}[caption={Expression evaluator with typeclasses}, label={code:eewt3}, language=Scala, escapechar=|]
 trait NumberLike[A] { ... }
 
 object EvaluatorMain extends App {
@@ -471,7 +495,7 @@ object EvaluatorMain extends App {
   }
   
   |And now the evaluator works for any type |A| that lies in the |NumberLike| typeclass; i.e. where there is an in-scope|
-  |way to create instances of |NumberLike[A]|.|
+  |way to access or follow steps to create instances of |NumberLike[A]|.|
   eval[Int](5 plus 10)        | $\rvert$ evaluates to |15|.|
   eval[Complex](e ^ (pi * i)) | $\rvert$ evaluates to |-1|.|
 
@@ -482,13 +506,7 @@ object EvaluatorMain extends App {
 \begin{example}[Exercise: Flexible evaluator]
 Allow the expression evaluator to operate on any number-like types, not just \pcode{Int}s. Instead of relying on inheritance, forcing all users of the evaluator to evaluate values conforming to some trait (with the number-crunching methods \pcode{+, -, *, /}), use parametric polymorphism and type classes. The \pcode{Const} data constructor will need to take any type instead of \pcode{Int}; \pcode{RichInt} implicit class will need to pimp any type, not just \pcode{Int}; the \pcode{eval} method will also need to be generic, but will need to (implicitly) require a typeclass: use the \pcode{Fractional} provided by the standard library, or define your own \pcode{NumberLike} typeclass. (The Scala standard library defines \pcode{Fractional} and \pcode{Integral} type classes, which contain the division operation whereas \pcode{Numeric} typeclass does not. Pick one, the limitation that not all types are fractional or integral. ``Dotty will fix this!'')
 
-Hints: \begin{itemize}
-  \item it is not necessary to constrain the type of the \pcode{Const} data constructor; it can be ``forall A.'' \pcode{Const[A]}.
-  \item it will be convenient to use the full implicit syntax in the \pcode{eval} method: \pcode{def eval[A](expr: Expr)(implicit N: Fractional[A]): A} instead of \pcode{def eval[A : Fractional](expr: Expr): A}
-  \item the type information for the generic type \pcode{A} will be erased, causing compiler warning in the pattern match. It is possible to eliminate the warning by using another type class. Look for \emph{Scala type tags and manifests}.
-\end{itemize}
-
-\begin{lstlisting}[caption={Flexible evaluator (with DSL)}, label={code:eepm3}, language=Scala, escapechar=|]
+\begin{lstlisting}[caption={Flexible evaluator with DSL and typeclasses}, label={code:eepm3}, language=Scala, escapechar=|]
 object Expr {
 
   trait ExprOps {
@@ -522,7 +540,60 @@ object EvaluatorMain extends App {
   ...
 }
 \end{lstlisting}
+
+Hints: \begin{itemize}
+  \item it is not necessary to constrain the type of the \pcode{Const} data constructor; it can be ``forall A.'' \pcode{Const[A]}.
+  \item it will be convenient to use the full implicit syntax in the \pcode{eval} method: \pcode{def eval[A](expr: Expr)(implicit N: Fractional[A]): A} instead of \pcode{def eval[A : Fractional](expr: Expr): A}
+  \item the type information for the generic type \pcode{A} will be erased, causing compiler warning in the pattern match. It is possible to eliminate the warning by using another type class. Look for \emph{Scala type tags and manifests}.
+\end{itemize}
+
 \end{example}
+
+Unlike subtype polymorphism, typeclasses bring \emph{parametric polymorphism}. Parametric polymorphism is a different way of requiring values to contain specified behaviour. Subtype polymorphism for the evaluator would require the values in the \pcode{Const} data constructor to be some supertype of all numbers. That does not sound so bad until one realises that the methods \pcode{plus}, ..., \pcode{div} in this supertype would have to return that supertype. Imagine in \autoref{code:num} that it is possible to extend the types in \pcode{scala.lang}, like \pcode{Int}.
+
+\begin{lstlisting}[caption={Exploring the Num supertype}, label={code:num}, language=Scala, escapechar=|]
+trait Num {
+  def plus(that: Num): Num
+  def minus(that: Num): Num
+  ...
+}
+
+|This isn't actually allowed, but humour the author.|
+class MyInt extends Int with Num {
+  |Attempts to implement the |Num| trait won't be successful...|
+  def plus(that: Num): Num = this + that 
+                                  |$\uparrow$ this doesn't quite work: can't add |Int| and |Num|.|
+
+  |Or the implementation won't at all be satisfying.|
+  def plus(that: Num): Num = that match {
+    case x: MyInt => this + x
+    case _ => 
+         |$\uparrow$ now what? throw exception?; add |toInt()| method to |Num|?|
+  }
+}
+
+|This is Scala's common approach to static |of|-like methods in Java. Recall |Optional.of| and similar.|
+object MyInt {
+  def apply(i: Int): MyInt = new MyInt(i)
+}
+
+|But never mind all above, the show must go on.|
+case class Const(a: Num) extends Expr
+
+def eval(expr: Expr): Num = expr match {
+  case Plus(l, r) => eval(l).plus(eval(r))
+  ...
+}
+
+|I allowed |Int| to be extended; requiring integer literals to be instances of |MyInt| is too much!|
+|Using the |object MyInt.apply| allows us to avoid the |new| keyword in this case.|
+val e = Evaluator.eval(MyInt(5) plus MyInt(3) minus MyInt(1))
+    |$\uparrow$ the type of |e| is |Num|, even though |MyInt| was used.|
+\end{lstlisting}
+
+The code in \autoref{code:num} is bad enough \emph{now}, but it has the potential to become much \emph{worse} if it becomes widely used. The authors of the code were able to implement sensible inheritance structure for \pcode{MyInt}s, \pcode{MyDouble}s, even \pcode{MyBigDecimal}s and shipped the JAR. Then someone else decided to use the expression evaluator for complex numbers; but even with the implementation of \pcode{class Complex extends Num \{...\}}, it is still possible to call \pcode{MyInt(5).plus(Complex(1, 4))}. The class \pcode{MyInt} has no knowledge about the \pcode{Complex} class! (Exactly what happens in that call depends on the implementation of the \pcode{MyInt.plus} method, but it won't be pretty.)
+
+Parametric polymorphism, as demonstrated in your own work on the Flexible evaluator exercise, presents a neat solution. It is possible to use typeclasses to add behaviour for concrete types without losing the concreteness.
 
 \subparagraph{A remark on Haskell.} Scala's take on typeclasses should clarify Haskellers' usual statement that ``typeclasses are not like OOP classes, they are more like interfaces.'' Quite: a typeclass is an interface with a type parameter that defines behaviour for the type. Its implementations specify a concrete type and implement the behaviour. Typeclass instances are then regular values (remember the singletons from the Scala code?) that implement the typeclass interface.
 
@@ -535,6 +606,7 @@ def eval[A](expr: Expr)(implicit N: NumberLike[A]): A = expr match {
   ...
 }
 \end{lstlisting}
+
 \begin{lstlisting}[language=Haskell, escapechar=|]
 |Define the typeclass |NumberLike| for type |a| with methods like |plus|, ... .|
 class NumberLike a where
@@ -543,7 +615,7 @@ class NumberLike a where
 
 |Provide an instance of |NumberLike| for the type |Int|.|
 instance NumberLike Int where
-  plus x y = x + y
+  plus x y = `addl %rdx, %rax` | $\rvert$ Hoping that we have fastcall convention and the parameters are in |%rax| and |%rdx|.|
   ...
 
 |Provide an instance of |NumberLike| for the type |Complex|.|
@@ -556,32 +628,21 @@ eval :: (NumberLike a) => Expr -> a
 
 |However, the typeclass instance does not get a name in the function. Instead, all its functions|
 plus|, ... are available in the function without any additional notation.|
-eval (Plus l r) = plus l r
+eval (Plus l r) = plus (eval l) (eval r)
                   |$\uparrow$|
-                  |In Scala, this would be |N.plus(l, r)
+                  |In Scala, this would be |N.plus(eval(l), eval(r))
 \end{lstlisting}
 
+
 \subsection{Rich type system.}
+Variance. Kinds \& Type constructors. Higher-kinded types.
 
-\begin{example}[Exercise: Flexible evaluator with errors]
+\begin{example}[Exercise: Flexible evaluator II]
+Explore and explain the difference in just adding the generic parameter to the \pcode{Const} data constructor (leaving \pcode{sealed trait Expr} intact), or letting \pcode{Expr} become \pcode{sealed trait Expr[A]}. Explain the effects of covariant type parameter in \pcode{sealed trait Expr[+A]}. (Try \pcode{val e: BigDecimal = Evaluator.eval(Const(4))} with invariant \pcode{Expr} and then with covariant \pcode{Expr} to get started.)
 
-
-Extra work: \begin{itemize}
-  \item explore and explain the difference in just adding the generic parameter to the \pcode{Const} data constructor (leaving \pcode{sealed trait Expr} intact), or letting \pcode{Expr} become \pcode{sealed trait Expr[A]}.
-  \item explain the effects of covariant type parameter in \pcode{sealed trait Expr[+A]}. (Try \pcode{val e: BigDecimal = Evaluator.eval(Const(4))}, with invariant \pcode{Expr} and then with covariant \pcode{Expr} to get started.)
-  \item try the same thing in Haskell.
-\end{itemize}
+\begin{lstlisting}[caption={Variance}, label={code:variance}, language=Scala, escapechar=|]
 
 
-\begin{lstlisting}[caption={Flexible evaluator (with DSL)}, label={code:eepm4}, language=Scala, escapechar=|]
-object EvaluatorMain extends App {
-  import Expr._
-  Evaluator.eval[Double, Option](4 div 0) | $\rvert$ |None|.|
-  Evaluator.eval[Double, Id](4 div 0) | $\rvert$ |RuntimeException("Division by zero")|.|
-  Evaluator.eval[Double, ({type L[A] = Either[String, A]})#L](4 div 0) | $\rvert$ |Left("Division by zero")|.|
-  ...
-  Evaluator.eval[Double, ({type L[A] = Either[String, A]})#L](4 div 1) | $\rvert$ |Right(4.0)|.|
-}
 \end{lstlisting}
 \end{example}
 
