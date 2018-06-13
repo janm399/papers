@@ -398,8 +398,86 @@ object SimplifierMain extends App {
 \end{example}
 
 \subsection{For comprehensions}
-TODO
- 
+The \pcode{for} keyword in Scala can be used in the familiar ``for loop'' style, but it is actually much more powerful construct. Java has two styles of the \pcode{for} loop: the old-school one with \pcode{for (init; condition; step) \{ body \}} as well as the ``for-each'' style \pcode{for (element : iterable) body}. Apart from the convenience of the for-each version, both loops ultimately express only iteration. Scala also has two basic styles of the \pcode{for} expression.
+
+\begin{itemize}
+  \item \pcode{for (element <- iterable) body}. This style of the for expression evaluates iterates over all elements in the given \pcode{iterable}, and applies \pcode{body} to each element; each element is accessible using the name \pcode{element} in the \pcode{body}. It is the same as writing \pcode{iterable.foreach(element => body(element))}.
+  \item \pcode{for (element <- iterable) yield body}. This style's value has the same type as \pcode{iterable}, but the elements of the evaluated \pcode{iterable} are the results of applying \pcode{expression} to each one. It is the same as writing \pcode{iterable.map(element => body(element))}
+\end{itemize}
+
+Writing \pcode{for (x <- List(1, 2, 3, ...)) yield x * 2} might be more natural way to write \pcode{List(1, 2, 3, ...).map(x => x * 2)}; in simple expressions it can be left largely to one's taste. The real power of Scala's for expressions comes from the fact that it is possible to combine, flatten, map, and filter multiple iterables together. 
+
+The rule to be able to decipher and write for expressions in Scala is to remember that:
+
+\begin{itemize}
+  \item the first expression inside \pcode{for} has to be \pcode{element <- iterable},
+  \item subsequent \pcode{<-} operation means map and flatten; also known as \pcode{flatMap},
+  \item subsequent \pcode{=} operation means \pcode{map},
+  \item subsequent \pcode{if} statement means \pcode{filter}
+\end{itemize}
+
+This is indeed much so that it inspired a meme in \autoref{fig:lesiterables} and code in \autoref{code:for} with examples of different styles of \pcode{for}.
+
+\fig{lesiterables.jpg}{lesiterables}{Les Itérables}
+
+\begin{lstlisting}[caption={Various for expessions}, label={code:for}, language=Scala, escapechar=|]
+val listOfTen = List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+
+|$\downarrow$ types to |Unit|, because this is the variant without |yield body|.|
+for {
+ x <- listOfTen
+ y <- listOfTen
+} println(x, y)  | $\rvert$ \Printer{ }the Cartesian product of the two lists: |(1, 1), (1, 2), ..., (1, 10), ..., (10, 9), (10, 10)
+
+|$\downarrow$ types to |List[(Int, Int)]|, because the original iterable was |List|, and the |yield body| evaluates to type |(Int, Int)|; contains 100 elements.|
+for {
+  x <- listOfTen
+  y <- listOfTen
+} yield (x, y)
+
+|$\downarrow$ types to |List[(Int, Int)]| ; contains 50 elements because of the |if| filter.|
+for {
+  x <- listOfTen
+  if x % 2 == 0
+  y <- listOfTen
+} yield (x, y)
+
+
+|$\downarrow$ types to |List[(Int, List[Int])]|; contains only 10 elements.|
+for {
+  x <- listOfTen
+  y = listOfTen
+} yield (x, y)
+\end{lstlisting}
+
+The \pcode{for} expression requires the input to be iterable, and to contain the functions \pcode{map}, \pcode{flatMap}, and \pcode{filter}, because \emph{it is only syntactic sugar} that translates \pcode{<-} to \pcode{flatMap}, \pcode{=} to \pcode{map}, and \pcode{if} to \pcode{filter}\footnote{Actually--and for efficiency--the de-sugaring prefers to use \pcode{withFilter} instead of \pcode{filter}, which avoids having to create intermediate iterables.}. This means that the \pcode{for} expression can be used on values such as \pcode{Option}, \pcode{Either}, ..., even your own types, as long as the requirements for mapping, mapping \& flattening, and filtering are satisfied. Even better, the compiler only checks that the requirements are satisfied as they are needed. 
+
+\paragraph{Option and Either.} 
+XXX
+
+\begin{example}[Exercise: Error reporting for the evaluator]
+Improve the evaluator so it doesn't throw exception on division by zero. Instead of relying on exceptions, use \pcode{Either} as the returned type. Use plain \pcode{String} for the error type, keep \pcode{Int} as the evaluated type. In other words, the \pcode{eval} function will return \pcode{Left(e)} (where \pcode{e}'s type is \pcode{Error}) in case of errors; and \pcode{Right(x)} (where \pcode{x}'s type is \pcode{Int}). Make the most of the \pcode{for} expression.
+
+\begin{lstlisting}[caption={Expression evaluator}, label={code:eepm}, language=Scala, escapechar=|]
+|It will be useful to package the PML conversions in their own module.|
+object Expr {
+  |The type alias makes the return type of |eval| even more expressive.|
+  type Error = String
+
+  def eval(expr: Expr): Either[Error, Int] = {
+    case Div(l, r) =>
+      for {
+        l <- eval(l)
+        r <- eval(r) 
+        |$\uparrow$ this doesn't quite solve it; the value of |r| can still be |Right(0)|. Look up and use |Either.filterOrElse|.|
+      } yield l / r
+    ...
+  }
+
+}
+\end{lstlisting}
+\end{example}
+
 \subsection{Implicits} 
 Implicits are one of the key features of Scala. As the word suggests, implicit parameter values are supplied ``automatically'' by the compiler looking for the appropriate values in the current \emph{implicit scope}\footnote{The implicit scope is somewhat complex; for now, it will be sufficient to remember that implicit scoping is similar to regular visibility scoping}. The look-up ignores the parameter names, it only cares about the types. Implicits also apply when the compiler encounters an identifier on a value of some type that the type does not implement. In that case, the compiler will follow the same implicit scoping rules to find an implicit conversion that turns the given type into another type that contains the identifier. 
 
@@ -490,8 +568,9 @@ case class Const[A](a: A) extends Expr
 object Evaluator {
  
   |The |eval| function now needs to take the interface that implements the number-like behaviour for type |A|.| 
-  def eval[A](expr: Expr, numberLike: NumberLike[A]): A = expr match {
-    case Plus(l, r) => numberLike.plus(eval(l, numberLike), eval(r, numberLike))
+  def eval[A](expr: Expr, numberLike: NumberLike[A]): Either[Error, A] = expr match {
+    case Plus(l, r) => 
+      for { l <- eval(l, numberLike); r <- eval(r, numberLike) } yield numberLike.plus(l, r)
     ...
     case Const(a: A) => a
   }
@@ -507,7 +586,7 @@ object EvaluatorMain extends App {
     def plus(x: Int, y: Int): Int = x + y
     ...
     def div(x: Int, y: Int): Int = x / y
-  }) | $\rvert$ evaluates to |15|.|
+  }) | $\rvert$ evaluates to |Right(15)|.|
 
 }
 \end{lstlisting}
@@ -519,8 +598,8 @@ trait NumberLike[A] { ... }
 
 object Evaluator {
  
-  def eval[A](expr: Expr)(implicit N: NumberLike[A]): A = expr match {
-    case Plus(l, r) => N.plus(eval(l), eval(r))
+  def eval[A](expr: Expr)(implicit N: NumberLike[A]): Either[Error, A] = expr match {
+    case Plus(l, r) => for { l <- eval(l); r <- eval(r) } yield N.plus(l, r)
     ...
     case Const(a: A) => a
   }
@@ -532,7 +611,7 @@ object EvaluatorMain extends App {
   import Evaluator._
   
   val expr = 5 plus 10
-  eval(expr)(new NumberLike[Int] {...}) | $\rvert$ evaluates to |15|.|
+  eval(expr)(new NumberLike[Int] {...}) | $\rvert$ evaluates to |Right(15)|.|
 
 }
 \end{lstlisting}
@@ -568,8 +647,8 @@ object EvaluatorMain extends App {
   
   |And now the evaluator works for any type |A| that lies in the |NumberLike| typeclass; i.e. where there is an in-scope|
   |way to access or follow steps to create instances of |NumberLike[A]|.|
-  eval[Int](5 plus 10)        | $\rvert$ evaluates to |15|.|
-  eval[Complex](e ^ (pi * i)) | $\rvert$ evaluates to |-1|.|
+  eval[Int](5 plus 10)        | $\rvert$ evaluates to |Right(15)|.|
+  eval[Complex](e ^ (pi * i)) | $\rvert$ evaluates to |Right(-1)|.|
 
 }
 \end{lstlisting}
@@ -599,7 +678,7 @@ case class Const... |This will need to take generic type |A|.|
 object Evaluator {
 
   |It will be convenient to use the full implicit syntax here|
-  def eval[A](expr: Expr)...: A = expr match {
+  def eval[A](expr: Expr)...: Either[Error, A] = expr match {
     ...
   }
 
@@ -652,8 +731,8 @@ object MyInt {
 |But never mind all above, the show must go on.|
 case class Const(a: Num) extends Expr
 
-def eval(expr: Expr): Num = expr match {
-  case Plus(l, r) => eval(l).plus(eval(r))
+def eval(expr: Expr): Either[Error, Num] = expr match {
+  case Plus(l, r) => for { l <- eval(l); r <- eval(r) } yield l.plus(r)
   ...
 }
 

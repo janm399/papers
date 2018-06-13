@@ -1,7 +1,5 @@
 package com.acme
 
-import java.util.Optional
-
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
@@ -31,29 +29,30 @@ case class Div[A](left: Expr[A], right: Expr[A]) extends Expr[A]
 case class Const[A : ClassTag](const: A) extends Expr[A]
 
 object Evaluator {
+  type Error = String
 
-  def eval[A : ClassTag](expr: Expr[A])(implicit N: Fractional[A]): A = expr match {
-    case Plus(l, r) ⇒ N.plus(eval(l), eval(r))
-    case Minus(l, r) ⇒ N.minus(eval(l), eval(r))
-    case Div(l, r) ⇒ N.div(eval(l), eval(r))
-    case Const(c: A) ⇒ c
+  def eval[A : ClassTag](expr: Expr[A])(implicit N: Fractional[A]): Either[Error, A] = expr match {
+    case Plus(l, r) ⇒ for { l ← eval(l); r ← eval(r) } yield N.plus(l, r)
+    case Minus(l, r) ⇒ for { l ← eval(l); r ← eval(r) } yield N.minus(l, r)
+    case Div(l, r) ⇒
+      for {
+        l ← eval(l)
+        r ← eval(r).filterOrElse(_ != N.zero, s"$l / $r, but $r evaluates to 0.")
+      } yield N.div(l, r)
+    case Const(c: A) ⇒ Right(c)
   }
 
 }
 
 object EvaluatorMain extends App {
 
-  implicit class RichDouble(d: Double) {
-    def ^(y: Double): Double = math.pow(x, y)
-  }
-
-  val x: Double = 42
-  x ^ 2
-
   import Expr._
 
-  val e: BigDecimal = Evaluator.eval(Const(4))
+  val Right(e) = Evaluator.eval[BigDecimal](Const(4))
   println(e)
+
+  val x = Evaluator.eval((5.4 plus math.Pi) div (math.Pi minus math.Pi))
+  println(x)
 
   val ee = Evaluator.eval((5.4 plus math.Pi) minus 8.8)
   println(ee)
