@@ -79,11 +79,15 @@ List(1, 2, 3, ...).map { x => 2 * x }
 |An alternative syntax uses paretheses in place of brackets|
 List(1, 2, 3, ...).map(x => 2 * x)
 
-|It is possible to avoid having to declare the parameter |x|, and use |_| instead. Scala compiler replaces the every occurrence of |_| with a fresh parameter declaration.|
+|It is possible to avoid having to declare the parameter |x|, and use |_| instead. Scala compiler replaces the every occurrence of |_
+|with a fresh parameter declaration.|
 List(1, 2, 3, ...).map(2 * _)
+
+|Finally, the ``shape'' of the function |*| in the |Int| instance has the right type, so it can be used directly.|
+List(1, 2, 3, ...).map(2.*)
 \end{lstlisting}
 
-The last form \pcode{2 * _} is somewhat unusual and worth exploring further. The Scala compiler mechanically translates each underscore in the function body into a parameter (and ``replaces'' the underscore with that parameter); \pcode{2 * _} is translated into \pcode{p_0 => 2 * p_0}. Now, exploring the functions on type \pcode{Int}, the type of the function \pcode{*} is \pcode{Int => Int} because it is defined as \pcode{def *(that: Int): Int}. The type of \pcode{2.*} is therefore \pcode{Int => Int}, just like the type of \pcode{2 * _}, or \pcode{_ * 2}, or \pcode{x => x * 2}--assuming the parameter can be inferred to be \pcode{Int}. Consequently, it is possible to leave out the underscore in the \pcode{map} function and only write \pcode{List(1, 2, 3, ...).map(2.*)}\footnote{This might be somewhat familiar to Java 8 programmers with method references with the double colons}.
+The last forms \pcode{2 * _} and \pcode{2.*} are somewhat unusual and worthy of further explanation. The Scala compiler mechanically translates each underscore in the function body into a parameter (and ``replaces'' the underscore with that parameter); \pcode{2 * _} is translated into \pcode{p_0 => 2 * p_0}, and this satisfies the type that the \pcode{map} function expects. The type of the function \pcode{*} in the \pcode{Int} type is \pcode{Int => Int} because it is defined as \pcode{def *(that: Int): Int}: one can read this as ``when applied to a value of type \pcode{Int}, a value of type \pcode{Int} remains''. The type of \pcode{2.*} is therefore \pcode{Int => Int}, just like the type of \pcode{2 * _}, or \pcode{_ * 2}, or \pcode{x => x * 2}--assuming the parameter can be inferred to be \pcode{Int}. Consequently, it is possible to leave out the underscore in the \pcode{map} function and only write \pcode{List(1, 2, 3, ...).map(2.*)}\footnote{This might be somewhat familiar to Java 8 programmers with method references with the double colons}.
 
 Finally, fields (and variables) use the keywords \pcode{val} and \pcode{var}. The first declares an immutable variable (and a getter if field), the second declares a mutable variable (and a getter and setter if field); see \autoref{code:syntax-fv}.
 
