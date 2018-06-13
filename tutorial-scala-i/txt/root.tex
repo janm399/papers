@@ -41,7 +41,7 @@ new MyClass("foo", 42)
   .execute(List(1, 2, 3))
 \end{lstlisting}
 
-Most of this syntax is familiar and unsurprising; the only thing that might feel odd is the square bracket for ``generics'' in \pcode{List[Int]}: in Java, this would be written as \pcode{List<Int>}. This is part of Scala's legacy. A long, long time ago, XML was very exciting; and Scala allows XML literals. These XML literals use the angle brackets. This meant that a different symbol had to be used for type parameters. Because the square bracket is used for type parameters, array indexing is also done using regular parentheses\footnote{I know, it looks like VisualBasic or Fortran (formerly FORTRAN)!}.
+Most of this syntax is familiar and unsurprising; the only thing that might feel odd is the square bracket for ``generics'' in \pcode{List[Int]}: in Java, this would be written as \pcode{List<Int>}. This is part of Scala's legacy. A long, long time ago, XML was very exciting; and Scala allowed (and still allows!) XML literals. These XML literals use the angle brackets. This meant that a different symbol had to be used for type parameters. Because the square bracket is used for type parameters, array indexing is also done using regular parentheses\footnote{I know, it looks like VisualBasic or Fortran (formerly FORTRAN)!}.
 
 Interfaces use the \pcode{trait} keyword in Scala; their usage and features are similar to \pcode{interface} in Java (particularly Java 8 which adds default implementations). It is possible to make anonymous implementations of a \pcode{trait}, as well as to implement it in ordinary \pcode{class}es. (Viz \autoref{code:syntax-trait}.)
 
@@ -83,7 +83,7 @@ List(1, 2, 3, ...).map(x => 2 * x)
 List(1, 2, 3, ...).map(2 * _)
 \end{lstlisting}
 
-The last form \pcode{2 * _} is somewhat unusual and worth exploring further. The Scala compiler mechanically translates the each underscore in the function body into a parameter (and ``replaces'' the underscore with that parameter); \pcode{2 * _} is translated into \pcode{p_0 => 2 * p_0}. Now, exploring the functions on type \pcode{Int}, the type of the function \pcode{*} is \pcode{Int => Int}. (It is defined as \pcode{def *(that: Int): Int}). The type of \pcode{2 *} is therefore \pcode{Int => Int}, just like the type of \pcode{2 * _}, or \pcode{_ * 2}, or \pcode{x => x * 2}--assuming the parameter can be inferred to be \pcode{Int}. Consequently, it is possible to leave out the underscore in the \pcode{map} function and only write \pcode{List(1, 2, 3, ...).map(2 *)}\footnote{This might be somewhat familiar to Java 8 programmers with method references with the double colons}.
+The last form \pcode{2 * _} is somewhat unusual and worth exploring further. The Scala compiler mechanically translates each underscore in the function body into a parameter (and ``replaces'' the underscore with that parameter); \pcode{2 * _} is translated into \pcode{p_0 => 2 * p_0}. Now, exploring the functions on type \pcode{Int}, the type of the function \pcode{*} is \pcode{Int => Int}. (It is defined as \pcode{def *(that: Int): Int}). The type of \pcode{2 *} is therefore \pcode{Int => Int}, just like the type of \pcode{2 * _}, or \pcode{_ * 2}, or \pcode{x => x * 2}--assuming the parameter can be inferred to be \pcode{Int}. Consequently, it is possible to leave out the underscore in the \pcode{map} function and only write \pcode{List(1, 2, 3, ...).map(2 *)}\footnote{This might be somewhat familiar to Java 8 programmers with method references with the double colons}.
 
 Finally, fields (and variables) use the keywords \pcode{val} and \pcode{var}. The first declares an immutable variable (and a getter if field), the second declares a mutable variable (and a getter and setter if field); see \autoref{code:syntax-fv}.
 
@@ -117,7 +117,7 @@ user.dob = ...
 While syntactically valid code, it is very confusing. The \pcode{user} variable is declared immutable, yet it is possible to invoke its setters. The equivalent Java code would declare the \pcode{user} variable \pcode{final}, but then still use the setters to mutate it.
 
 \section{Killer features}
-The syntax (and its application) so far looks just like Java with less typing. There must be something else that makes it worth leaving the creature comforts of Java. 
+The syntax (and its application) so far looks just like Java with less typing. There must be something else that makes it worth leaving the creature comforts of Java. The following points are also the code that is most likely to be encountered in typical Scala codebases. Typical here refers to code that \emph{uses} Scala and its ecosystem of libraries; it does not refer to the code that might be found in the bowels of the libraries themselves.
 
 \begin{itemize}
   \item everything is an expression
@@ -129,7 +129,75 @@ The syntax (and its application) so far looks just like Java with less typing. T
 \end{itemize}
 
 \subsection{Everything is an expression.} 
-In Java, C, and similar languages, there are statements and expressions. Statements do not have value, they are typical control-flow constructs. For example, in Java, \pcode{if (a == b) X else Y} cannot be assigned to a variable, because \pcode{if-then-else} is a statement. In Scala, everything yields a value that can be assigned to a variable. 
+In Java, C, and similar languages, there are statements and expressions. Statements do not have value, they are typical control-flow constructs. For example, in Java, \pcode{if (a == b) X else Y} cannot be assigned to a variable, because \pcode{if-then-else} is a statement. In Scala, everything except definitions of identifiers (i.e. variables, functions, classes, etc.) yields a value that can be assigned to a variable. There are languages where ``the value of a function is the value of the last evaluated statement,'' and that's a good starting point for thinking about expressions and their values in Scala. \autoref{code:expr} shows a very Java-esque implementation of a method that checks whether a date is the user's birthday. 
+
+\begin{lstlisting}[caption={Expressions}, label={code:expr}, language=Scala, escapechar=|]
+class User {
+  var dob: Date = _
+
+  |This is a very Java-style implementation; though to make it a bit more interesting, the |asOf| parameter|
+  |has a default value set to ``now''.|
+  def hasBirthday(asOf: Date = new Date()): Boolean = {
+    if (dob != null && asOf != null) {
+      val c1 = Calendar.getInstance()
+      val c2 = Calendar.getInstance()
+      c1.setTime(dob)
+      c2.setTime(asOf)
+      if (c2.get(Calendar.MONTH) == c1.get(Calendar.MONTH)) {
+        c2.get(Calendar.DAY_OF_MONTH) == c1.get(Calendar.DAY_OF_MONTH)
+      } else false
+    } else false
+  }
+
+}
+\end{lstlisting}
+
+The \pcode{java.util.Date} code\footnote{This project \emph{refuses} to include \pcode{DateUtils}!} muddies the explanation; removing it yields code in \autoref{code:expr2}.
+
+\begin{lstlisting}[caption={Expressions}, label={code:expr2}, language=Scala, escapechar=|]
+class User {
+  var dob: Date = _
+
+  def hasBirthday(asOf: Date = new Date()): Boolean = {
+    if (|$cond_1$|) {
+      val c1 = Calendar.getInstance()
+      val _ = c1.setTime(dob)
+          |$\uparrow$ imagine that the compiler creates a variable for every expression that isn't the last one in a block.|
+      ...
+      if (|$cond_2$|) { |Expression that evaluates to |Boolean } else { |Expression that evaluates to |Boolean }
+      |$\uparrow$ because both then and else branches yield |Boolean|, the value of the entire |if| expression is |Boolean|.|
+    } else false
+    |$\uparrow$ because both then and else branches yield |Boolean|, the value of the entire |if| expression is |Boolean|.|
+    |{  } consequently, the value of |hasBirthday| is whatever the outer |if| expression evaluates to.|
+  }
+
+}
+\end{lstlisting}
+
+Notice the pattern where everything that follows the \pcode{=} sign can be and is evaluated. This applies to variable declarations \pcode{val x: Tpe = ...}; \pcode{def x(): Tpe = ...}. Simple expressions do not have to be surrounded by curly braces. It is not surprising that \pcode{val x = 3; val msg = if (x \% 2 == 0) "Even" else "Odd"} results in the declaration of a variable \pcode{msg} of type \pcode{String}, whose value is \pcode{"Odd"}, because the value of \pcode{x} is \pcode{3}. It might be somewhat surprising that the same syntax applies to methods: \pcode{def m(x: Int): String = if (x \% 2 == 0) "Even" else "Odd"} is just as legal Scala code.
+
+\begin{example}[Exercise: Fizz Buzz]
+Create the ``Fizz Buzz'' function that takes an \pcode{Int} and evaluates to a \pcode{String} such that 
+\begin{itemize}
+  \item if the input is divisible by \pcode{3}, the output is \pcode{"Fizz"}
+  \item if the input is divisible by \pcode{5}, the output is \pcode{"Buzz"}
+  \item if the input is divisible by \pcode{3} and \pcode{5}, the output is \pcode{"FizzBuzz"}
+  \item for all other input values, the output is the \pcode{String} representation of the input
+\end{itemize}
+
+In \pcode{src/main/scala}, in the \pcode{com.acme} package, create a new class \pcode{FizzBuzzMain} and complete the body of the \pcode{fizzBuzz} function.
+
+\begin{lstlisting}[caption={Fizz Buzz}, label={code:fb}, language=Scala, escapechar=|]
+object FizzBuzzMain extends App {
+  def fizzBuzz(i: Int): String = ...
+  
+  println(fizzBuzz(1))  | \Printer | "1"
+  println(fizzBuzz(3))  | \Printer | "Fizz"
+  println(fizzBuzz(30)) | \Printer | "FizzBuzz"
+
+}
+\end{lstlisting}
+\end{example}
 
 \subsection{Case classes.} A case class is just like a class in that it is a container for data and methods, but the fields it contains only have getters. (Immutability only goes as far as immutability of the references. Even in Scala, immutability without any additional code is equivalent to using \pcode{final} in Java.) Nevertheless, case classes are fantastically convenient to define data structures. Consider the \pcode{Person} case class defined in \autoref{code:cc1}.
 
@@ -400,8 +468,6 @@ Hints: \begin{itemize}
 If you are feeling inventive or perhaps mischievous, pick Unicode identifiers for the boring ASCII method names in the DSL. Resurrect APL by using ÷ instead of \pcode{div}!
 \end{example}
 
-There are other languages that offer similar functionality. Swift's extensions, particularly with type constraints, certainly feel like typeclasses.
-
 \paragraph{Type classes.} Type class is a concept from Haskell\cite{haskell}; it is a definition of methods that can be implemented for some type. A type class is therefore an interface parametrized by a type; the implementations are instances of this interface for some types. Suppose the expression evaluator needs to be able to evaluate not just \pcode{Int}s, but also other number-like values. The only change to its structure is an interface that implements the addition, subtraction, multiplication, and division for \emph{some} number-like type; see \autoref{code:eewt1}.
 
 \begin{lstlisting}[caption={Expression evaluator without typeclasses}, label={code:eewt1}, language=Scala, escapechar=|]
@@ -597,7 +663,7 @@ The code in \autoref{code:num} is bad enough \emph{now}, but it has the potentia
 
 Parametric polymorphism, as demonstrated in your own work on the Flexible evaluator exercise, presents a neat solution. It is possible to use typeclasses to add behaviour for concrete types without losing the concreteness.
 
-\subparagraph{A remark on Haskell.} Scala's take on typeclasses should clarify Haskellers' usual statement that ``typeclasses are not like OOP classes, they are more like interfaces.'' Quite: a typeclass is an interface with a type parameter that defines behaviour for the type. Its implementations specify a concrete type and implement the behaviour. Typeclass instances are then regular values (remember the singletons from the Scala code?) that implement the typeclass interface.
+\subparagraph{Parametric polymorphism in other languages.} Scala's take on typeclasses should clarify Haskellers' usual statement that ``typeclasses are not like OOP classes, they are more like interfaces.'' Quite: a typeclass is an interface with a type parameter that defines behaviour for the type. Its implementations specify a concrete type and implement the behaviour. Typeclass instances are then regular values (remember the singletons from the Scala code?) that implement the typeclass interface.
 
 \begin{lstlisting}[language=Scala, escapechar=|]
 |Require the type |A| to have an instance of the |NumberLike| trait available for it.|
@@ -635,6 +701,41 @@ eval (Plus l r) = plus (eval l) (eval r)
                   |In Scala, this would be |N.plus(eval(l), eval(r))
 \end{lstlisting}
 
+There are other languages with what might be considered parametric polymorphism. For example, Swift's protocol conformance and extension methods, particularly with type constraints, certainly feel like typeclasses. Consider adding equality to arrays: two arrays can be \pcode{Equatable} of their elements are \pcode{Equatable} and what that might look like using parametric polymorphism in \autoref{code:tcs}.
+
+\begin{lstlisting}[language=Swift, escapechar=|]
+protocol Equatable {
+    static func == (Self, Self) -> Bool
+}
+
+|An array is |Equatable| if its elements lie in the |Equatable| typeclass. No, wait, that's not what Swift programmers say.|
+|They say ``an array is equatable if its elements conform to the |Equatable| protocol''.|
+extension Array : Equatable where Element : Equatable {
+    
+    static func ==(lhs: Array<Element>, rhs: Array<Element>) -> Bool {
+        if lhs.count != rhs.count { return false }
+        for i in lhs.indices {
+            if lhs[i] != rhs[i] { return false }
+        }
+        return true
+    }
+}
+\end{lstlisting}
+\begin{lstlisting}[caption={Extension methods and protocol conformance}, label={code:tcs}, language=Scala, escapechar=|]
+trait Equatable[A] {
+  def ==(lhs: A, rhs: A): Boolean
+}
+
+|The Scala compiler can create an instance of |Equatable| for |Array| of elements of type |A| as long as the type |A
+|lies in the |Equatable| typeclass.|
+def arrayEquatable[A](implicit elementEquatable: Equatable[A]): Equatable[Array[A]] = 
+  new Equatable[Array[A]] {
+    def ==(lhs: Array[A], rhs: Array[A]) {
+      if (lhs.length != rhs.length) false 
+      else !lhs.indices.exists(i => lhs(i) != rhs(i))
+    }
+  }
+\end{lstlisting}
 
 \subsection{Rich type system.}
 Variance. Kinds \& Type constructors. Higher-kinded types.
