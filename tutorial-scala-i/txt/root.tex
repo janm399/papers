@@ -83,7 +83,7 @@ List(1, 2, 3, ...).map(x => 2 * x)
 List(1, 2, 3, ...).map(2 * _)
 \end{lstlisting}
 
-The last form \pcode{2 * _} is somewhat unusual and worth exploring further. The Scala compiler mechanically translates each underscore in the function body into a parameter (and ``replaces'' the underscore with that parameter); \pcode{2 * _} is translated into \pcode{p_0 => 2 * p_0}. Now, exploring the functions on type \pcode{Int}, the type of the function \pcode{*} is \pcode{Int => Int}. (It is defined as \pcode{def *(that: Int): Int}). The type of \pcode{2 *} is therefore \pcode{Int => Int}, just like the type of \pcode{2 * _}, or \pcode{_ * 2}, or \pcode{x => x * 2}--assuming the parameter can be inferred to be \pcode{Int}. Consequently, it is possible to leave out the underscore in the \pcode{map} function and only write \pcode{List(1, 2, 3, ...).map(2 *)}\footnote{This might be somewhat familiar to Java 8 programmers with method references with the double colons}.
+The last form \pcode{2 * _} is somewhat unusual and worth exploring further. The Scala compiler mechanically translates each underscore in the function body into a parameter (and ``replaces'' the underscore with that parameter); \pcode{2 * _} is translated into \pcode{p_0 => 2 * p_0}. Now, exploring the functions on type \pcode{Int}, the type of the function \pcode{*} is \pcode{Int => Int} because it is defined as \pcode{def *(that: Int): Int}. The type of \pcode{2.*} is therefore \pcode{Int => Int}, just like the type of \pcode{2 * _}, or \pcode{_ * 2}, or \pcode{x => x * 2}--assuming the parameter can be inferred to be \pcode{Int}. Consequently, it is possible to leave out the underscore in the \pcode{map} function and only write \pcode{List(1, 2, 3, ...).map(2.*)}\footnote{This might be somewhat familiar to Java 8 programmers with method references with the double colons}.
 
 Finally, fields (and variables) use the keywords \pcode{val} and \pcode{var}. The first declares an immutable variable (and a getter if field), the second declares a mutable variable (and a getter and setter if field); see \autoref{code:syntax-fv}.
 
@@ -683,7 +683,7 @@ class NumberLike a where
 
 |Provide an instance of |NumberLike| for the type |Int|.|
 instance NumberLike Int where
-  plus x y = `addl %rdx, %rax` | $\rvert$ Hoping that we have fastcall convention and the parameters are in |%rax| and |%rdx|.|
+  plus x y = x + y |$\equiv$| addl %rdx, %rax| $\rvert$ Hoping that we have fastcall convention and the parameters are in |%rax| and |%rdx|.|
   ...
 
 |Provide an instance of |NumberLike| for the type |Complex|.|
@@ -697,11 +697,10 @@ eval :: (NumberLike a) => Expr -> a
 |However, the typeclass instance does not get a name in the function. Instead, all its functions|
 plus|, ... are available in the function without any additional notation.|
 eval (Plus l r) = plus (eval l) (eval r)
-                  |$\uparrow$|
-                  |In Scala, this would be |N.plus(eval(l), eval(r))
+                  |$\uparrow$ In Scala, this would be |N.plus(eval(l), eval(r))
 \end{lstlisting}
 
-There are other languages with what might be considered parametric polymorphism. For example, Swift's protocol conformance and extension methods, particularly with type constraints, certainly feel like typeclasses. Consider adding equality to arrays: two arrays can be \pcode{Equatable} of their elements are \pcode{Equatable} and what that might look like using parametric polymorphism in \autoref{code:tcs}.
+There are other languages that include features that may considered to be parametric polymorphism. For example, Swift's protocol conformance and extension methods, particularly with type constraints, certainly feel like typeclasses. Consider adding equality to arrays: two arrays can be \pcode{Equatable} of their elements are \pcode{Equatable} and what that might look like using parametric polymorphism in \autoref{code:tcs}.
 
 \begin{lstlisting}[language=Swift, escapechar=|]
 protocol Equatable {
@@ -728,11 +727,11 @@ trait Equatable[A] {
 
 |The Scala compiler can create an instance of |Equatable| for |Array| of elements of type |A| as long as the type |A
 |lies in the |Equatable| typeclass.|
-def arrayEquatable[A](implicit elementEquatable: Equatable[A]): Equatable[Array[A]] = 
+def arrayEquatable[A](implicit E: Equatable[A]): Equatable[Array[A]] = 
   new Equatable[Array[A]] {
     def ==(lhs: Array[A], rhs: Array[A]) {
       if (lhs.length != rhs.length) false 
-      else !lhs.indices.exists(i => lhs(i) != rhs(i))
+      else lhs.indices.forall(i => E.==(lhs(i), rhs(i)))
     }
   }
 \end{lstlisting}

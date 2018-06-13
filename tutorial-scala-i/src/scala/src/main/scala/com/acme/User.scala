@@ -7,7 +7,7 @@ class User {
 
   def x(): Unit = {
     val x = Array(1, 2, 3)
-    !x.indices.exists(idx ⇒ x(idx) != x(idx))
+    x.indices.forall(idx ⇒ x(idx) != x(idx))
   }
 
   def hasBirthday(asOf: Date = new Date()): Boolean = {
