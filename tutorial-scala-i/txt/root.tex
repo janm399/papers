@@ -867,6 +867,8 @@ def arrayEquatable[A](implicit E: Equatable[A]): Equatable[Array[A]] =
 \end{lstlisting}
 
 \subsection{Rich type system.}
+The type parameters encountered so far look like generics; a bit more powerful, but generics nonetheless. However, Scala's type system is much more powerful than just generics. Of course, the type parameters are translated into generics, and they look like generics. \pcode{List[A]}, \pcode{Option[A]} certainly look just like their Java counterparts \pcode{Optional<A>}, \pcode{List<A>}. Unfortunately, generics become rather complicated in the presence of subtype polymorphism. It is obvious that \pcode{Number} is a supertype of \pcode{Integer}, and that \pcode{List[Number]} is exactly the same as \pcode{List[Number]}. But what is the typing position of \pcode{List[Number]} and \pcode{List[Integer]}; what is the typing position of \pcode{OutputStream[Number]} and \pcode{OutputStream[Integer]}? 
+
 Variance. Kinds \& Type constructors. Higher-kinded types.
 
 \begin{example}[Exercise: Flexible evaluator II]
