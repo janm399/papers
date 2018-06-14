@@ -867,19 +867,46 @@ def arrayEquatable[A](implicit E: Equatable[A]): Equatable[Array[A]] =
 \end{lstlisting}
 
 \subsection{Rich type system.}
-The type parameters encountered so far look like generics; a bit more powerful, but generics nonetheless. However, Scala's type system is much more powerful than just generics. Of course, the type parameters are translated into generics, and they look like generics. \pcode{List[A]}, \pcode{Option[A]} certainly look just like their Java counterparts \pcode{Optional<A>}, \pcode{List<A>}. Unfortunately, generics become rather complicated in the presence of subtype polymorphism. It is obvious that \pcode{Number} is a supertype of \pcode{Integer}, and that \pcode{List[Number]} is exactly the same as \pcode{List[Number]}. But what is the typing position of \pcode{List[Number]} and \pcode{List[Integer]}; what is the typing position of \pcode{OutputStream[Number]} and \pcode{OutputStream[Integer]}? 
+The type parameters encountered so far look like generics; a bit more powerful, but generics nonetheless. However, Scala's type system is much more powerful than just generics. Of course, the type parameters are translated into generics, and they look like generics. \pcode{List[A]}, \pcode{Option[A]} certainly look just like their Java counterparts \pcode{Optional<A>}, \pcode{List<A>}. Unfortunately, generics become rather complicated in the presence of subtype polymorphism. 
 
-Variance. Kinds \& Type constructors. Higher-kinded types.
+To help with the following explanation, imagine there are two types \pcode{Reader[A]} and \pcode{Writer[A]}, and the infamous OOP structure shown in \autoref{code:rw}. (The \emph{dog-people} amongst the readers will forgive.)
 
-\begin{example}[Exercise: Flexible evaluator II]
-Explore and explain the difference in just adding the generic parameter to the \pcode{Const} data constructor (leaving \pcode{sealed trait Expr} intact), or letting \pcode{Expr} become \pcode{sealed trait Expr[A]}. Explain the effects of covariant type parameter in \pcode{sealed trait Expr[+A]}. (Try \pcode{val e: BigDecimal = Evaluator.eval(Const(4))} with invariant \pcode{Expr} and then with covariant \pcode{Expr} to get started.)
+\begin{lstlisting}[caption={Reader and Writer}, label={code:rw}, language=Scala, escapechar=|]
+class Animal
+class Cat extends Animal
+class AngryCat extends Cat
 
-\begin{lstlisting}[caption={Variance}, label={code:variance}, language=Scala, escapechar=|]
+trait Reader[A] {
+  def read: A
+}
 
-
+trait Writer[A] {
+  def write(value: A): Unit
+}
 \end{lstlisting}
+
+The substitution rule in subtype polymorphism says that a subtype can be used wherever its supertype is expected; \pcode{val x: Animal = new Cat} is valid, but \pcode{val x: AngryCat = new Cat} is not. Following the substitution principle, \pcode{val x: Reader[Animal] = new Reader[Cat] ...} should also be valid, although \pcode{val x: Reader[AngryCat] = new Reader[Cat] ...} should not be valid. When one holds a \pcode{Reader[Cat]}, its \pcode{read} function returns a value of type that \emph{is} or can be \emph{used in place of} \pcode{Cat}; the code inside the \pcode{Reader[AngryCat].read} method contains all the machinery to read \pcode{AngryCat} values; an \pcode{AngryCat} value can certainly stand in place of a \pcode{Cat} value. So, a value of type \pcode{Reader[AngryCat]} can be used in place of \pcode{Reader[Cat]}, as well as \pcode{Reader[Animal]}. Applying the same substitution rule reveals that \pcode{val w: Writer[Cat] = new Writer[AngryCat] ...} should not be valid: the code inside \pcode{Writer[AngryCat].write(value: AngryCat)} has all the code to handle writing \pcode{AngryCat}s (the value given to the \pcode{write} method must be \emph{at least} \pcode{AngryCat}); an instance of \pcode{Writer[AngryCat]} cannot be substituted for a value of type \pcode{Writer[Cat]}, never mind \pcode{Writer[Animal]}. 
+
+More generally, whenever \pcode{Thing[AngryCat]} can be used in place of \pcode{Thing[Cat]} or \pcode{Thing[Animal]}, the generic parameter of \pcode{Thing} is \emph{covariant}, and written as \pcode{Thing[+A]}. When a \pcode{Thing[Animal]} can be used in place of \pcode{Thing[Cat]} or \pcode{Thing[AngryCat]}, the generic parameter of \pcode{Thing} is \emph{contravariant}, and written as \pcode{Thing[-A]}. When no substitutions are acceptable, the generic parameter is invariant, and does not have \pcode{+} or \pcode{-}. 
+
+The names \pcode{Reader} and \pcode{Writer} aren't entirely accidental: a rule of thumb is that when the type contains functionality that ``reads'' values of some type \pcode{A} it should be covariant with respect to \pcode{A}, when a type contains functionality that ``writes'' values of type \pcode{A} it should be contravariant with respect to \pcode{A}. The code from \autoref{code:rw} should really be \autoref{code:rw2}.
+
+\begin{lstlisting}[caption={Reader and Writer with proper variance}, label={code:rw2}, language=Scala, escapechar=|]
+trait Reader[+A] {
+  def read: A
+}
+
+trait Writer[-A] {
+  def write(value: A): Unit
+}
+\end{lstlisting}
+
+\begin{example}[Exercise: Flexible evaluator with variance]
+Explore and explain the difference in just adding the generic parameter to the \pcode{Const} data constructor (leaving \pcode{sealed trait Expr} intact), or letting \pcode{Expr} become \pcode{sealed trait Expr[A]}. Explain the effects of covariant type parameter in \pcode{sealed trait Expr[+A]}. Try \pcode{val e: BigDecimal = Evaluator.eval(Const(4))} with invariant \pcode{Expr} and then with covariant \pcode{Expr} to get started.
 \end{example}
 
+
+Kinds \& Type constructors. Higher-kinded types.
 
 \section{The standard library}
 The Scala standard library defines many standard structures in case classes. Picking the two most useful ones, \pcode{Option} and \pcode{Either} are defined as case classes. This means that it is possible to pattern match on their values.
