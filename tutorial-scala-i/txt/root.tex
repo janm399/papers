@@ -405,18 +405,20 @@ The \pcode{for} keyword in Scala can be used in the familiar ``for loop'' style,
   \item \pcode{for (element <- iterable) yield body}. This style's value has the same type as \pcode{iterable}, but the elements of the evaluated \pcode{iterable} are the results of applying \pcode{expression} to each one. It is the same as writing \pcode{iterable.map(element => body(element))}
 \end{itemize}
 
-Writing \pcode{for (x <- List(1, 2, 3, ...)) yield x * 2} might be more natural way to write \pcode{List(1, 2, 3, ...).map(x => x * 2)}; in simple expressions it can be left largely to one's taste. The real power of Scala's for expressions comes from the fact that it is possible to combine, flatten, map, and filter multiple iterables together. 
+Writing \pcode{for (x <- List(1, 2, 3, ...)) yield x * 2} might be more natural way to write \pcode{List(1, 2, 3, ...).map(x => x * 2)}; and in simple expressions, the choice between using the \pcode{map}, \pcode{flatMap}, and \pcode{filter} versus using the \pcode{for} expression can be left to one's taste (or the project's code-style). The real power of Scala's for expressions comes from the fact that it is possible to map \& flatten, map, and filter multiple values together. 
 
 The rule to be able to decipher and write for expressions in Scala is to remember that:
 
 \begin{itemize}
-  \item the first expression inside \pcode{for} has to be \pcode{element <- iterable},
-  \item subsequent \pcode{<-} operation means map and flatten; also known as \pcode{flatMap},
+  \item the first expression inside \pcode{for} has to be \pcode{element <- value}, where \pcode{value} contains the method \pcode{flatMap},
+  \item subsequent \pcode{<-} operation also means \pcode{flatMap},
   \item subsequent \pcode{=} operation means \pcode{map},
-  \item subsequent \pcode{if} statement means \pcode{filter}
+  \item subsequent \pcode{if} statement means \pcode{filter},
+  \item if the expression ends with \pcode{yield body}, the value of the \pcode{for} expression is the value of the \pcode{yield body}represented in the same type as the first value on the right of \pcode{<-},
+  \item if the expression does not end with \pcode{yield} but just \pcode{body}, the value of the \pcode{for} expression is \pcode{Unit}.
 \end{itemize}
 
-This is indeed much so that it inspired a meme in \autoref{fig:lesiterables} and code in \autoref{code:for} with examples of different styles of \pcode{for}.
+This is indeed so much power that it inspired a meme in \autoref{fig:lesiterables} and code in \autoref{code:for} with examples of different styles of \pcode{for}.
 
 \fig{lesiterables.jpg}{lesiterables}{Les Itérables}
 
@@ -450,10 +452,52 @@ for {
 } yield (x, y)
 \end{lstlisting}
 
-The \pcode{for} expression requires the input to be iterable, and to contain the functions \pcode{map}, \pcode{flatMap}, and \pcode{filter}, because \emph{it is only syntactic sugar} that translates \pcode{<-} to \pcode{flatMap}, \pcode{=} to \pcode{map}, and \pcode{if} to \pcode{filter}\footnote{Actually--and for efficiency--the de-sugaring prefers to use \pcode{withFilter} instead of \pcode{filter}, which avoids having to create intermediate iterables.}. This means that the \pcode{for} expression can be used on values such as \pcode{Option}, \pcode{Either}, ..., even your own types, as long as the requirements for mapping, mapping \& flattening, and filtering are satisfied. Even better, the compiler only checks that the requirements are satisfied as they are needed. 
+In fact, the word \pcode{iterable} is somewhat misleading; the values used in the \pcode{for} expression only have to contain the functions \pcode{map}, \pcode{flatMap}, and \pcode{filter}. The \pcode{for} expression is actually a \emph{syntactic sugar} that translates \pcode{<-} to \pcode{flatMap}, \pcode{=} to \pcode{map}, and \pcode{if} to \pcode{filter}\footnote{Actually--and for efficiency--the de-sugaring prefers to use \pcode{withFilter} instead of \pcode{filter}, which avoids having to create intermediate iterables.}. This means that the \pcode{for} expression can be used on values such as \pcode{Option}, \pcode{Either}, ..., even your own types, as long as the requirements for mapping, mapping \& flattening, and filtering are satisfied. Even better, the compiler only checks that the requirements are satisfied as they are needed. 
 
-\paragraph{Option and Either.} 
-XXX
+\paragraph{Option and Either.} The types \pcode{Option}\footnote{Java includes \pcode{Optional}, C++ \pcode{std::optional}, Swift \pcode{Optional}; the only sore thumb is Haskell with \pcode{Maybe}. Nevertheless, all languages include the concept of \pcode{flatMap}, \pcode{map}, and \pcode{filter} on optionals.} and \pcode{Either} are a part of the Scala standard library; they are used to pack ``one or none'' value (\pcode{Option}) and ``exclusive or of two values'' (\pcode{Either}). The type \pcode{Optional[A]} is a sum of two products: \pcode{Some[A](value: A)} and \pcode{None}; what these values represent is self-evident. The type \pcode{Either[L, R]} is a sum of two products: \pcode{Left[L](value: L)} and \pcode{Right[R](value: R)}. By convention, the value \pcode{Right[R]} is used to indicate ``the right value--success'', and the value \pcode{Left[L]} is used to indicate failure. Unlike \pcode{None}, which carries no further information other than ``missing'', the value \pcode{Left[L](value: L)} carries a value; this value is typically some kind of error message.
+Crucially, both \pcode{Option} and \pcode{Either} include the \pcode{flatMap} functions, which means that they can be used in the \pcode{for} expression. \autoref{tbl:map-flatmap} outlines the behaviour of the \pcode{map} and \pcode{flatMap} in \pcode{Option} and \pcode{Either}. 
+
+\begin{table}[h]
+    \begin{tabular}{llll}
+        \toprule
+                             & \pcode{map}                     & \pcode{flatMap}                & \pcode{filter} \\
+        \midrule
+                             & \pcode{f: A => B}               & \pcode{f: A => Option[B]}      & \pcode{f: A => Boolean} \\
+        \pcode{Option[A]}    & \pcode{Some(a) => Some(f(a))}   & \pcode{Some(a) => f(a)}        & \pcode{Some(a) if f(a) => Some(a)} \\  
+                             & \pcode{None => None}            & \pcode{None => None}           & \pcode{_ => None} \\
+   
+        \midrule
+                             & \pcode{f: R1 => R2}             & \pcode{f: R1 => Either[L, R2]} & -- \\
+        \pcode{Either[L, R]} & \pcode{Right(r) => Right(f(r))} & \pcode{Right(r) => f(r)}       & -- \\
+                             & \pcode{Left(l) => Left(l)}      & \pcode{Left(l)  => Left(l)}    & -- \\
+
+        \bottomrule
+    \end{tabular}
+    \caption{map and flatMap}
+    \label{tbl:map-flatmap}
+\end{table}
+
+% \begin{table}[h]
+%     \begin{tabular}{llll}
+%         \toprule
+%         & map & flatMap & filter \\
+%         \midrule
+%                              & \pcode{f: A => B}               & \pcode{f: A => Option[B]}      & \pcode{f: A => Boolean} \\
+%         \pcode{Option[A]}    & \pcode{Some(a) => Some(f(a))}   & \pcode{Some(a) => f(a)}        & \pcode{Some(a) if f(a) => Some(a)} \\  
+%                              & \pcode{None => None}            & \pcode{None => None}           & \pcode{_ => None} \\
+   
+%         \midrule
+%                              & \pcode{f: R1 => R2}             & \pcode{f: R1 => Either[L, R2]} & -- \\
+%         \pcode{Either[L, R]} & \pcode{Right(r) => Right(f(r))} & \pcode{Right(r) => f(r)}       & -- \\
+%                              & \pcode{Left(l) => Left(l)}      & \pcode{Left(l)  => Left(l)}    & -- \\
+
+%         \bottomrule
+%     \end{tabular}
+%     \caption{map and flatMap}
+%     \label{tbl:map-flatmap}
+% \end{table}
+
+Putting it simply once \pcode{Option} becomes \pcode{None} it stays \pcode{None}; once \pcode{Either} becomes \pcode{Left} it stays \pcode{Left}. Thanks to \pcode{None} not carrying any value, \pcode{Option} can implement the \pcode{filter} method; because \pcode{Left} contains a value it cannot contain the \pcode{filter} method. (In case the filtering function returned \pcode{false}, what would the \emph{value} on the \pcode{Left} be?) Nevertheless, the concept of filtering is useful, it only needs to be extended a little; so \pcode{Either[L, R]} contains the \pcode{filterOrElse(predicate: R => Boolean, zero: L)} function. If the predicate returns \pcode{false}, the function evaluates to \pcode{Left} carrying the value of the \pcode{zero} parameter. 
 
 \begin{example}[Exercise: Error reporting for the evaluator]
 Improve the evaluator so it doesn't throw exception on division by zero. Instead of relying on exceptions, use \pcode{Either} as the returned type. Use plain \pcode{String} for the error type, keep \pcode{Int} as the evaluated type. In other words, the \pcode{eval} function will return \pcode{Left(e)} (where \pcode{e}'s type is \pcode{Error}) in case of errors; and \pcode{Right(x)} (where \pcode{x}'s type is \pcode{Int}). Make the most of the \pcode{for} expression.
@@ -469,13 +513,16 @@ object Expr {
       for {
         l <- eval(l)
         r <- eval(r) 
-        |$\uparrow$ this doesn't quite solve it; the value of |r| can still be |Right(0)|. Look up and use |Either.filterOrElse|.|
+        |$\uparrow$ this doesn't quite solve it; the value of |r| can still be |Right(0)|.| 
       } yield l / r
     ...
   }
 
 }
 \end{lstlisting}
+
+Hint: recall the \pcode{Either.filterOrElse} function; it applies the predicate on values on the right; if the predicate fails, it returns the value of the second parameter on the left. For example, \pcode{Right(5).filterOrElse(_ < 5, "Should be more than 5")} evaluates to \pcode{Left("Should be more than 5")}.
+
 \end{example}
 
 \subsection{Implicits} 
@@ -518,7 +565,7 @@ x ^ 2 | $\rvert$ Computes the second power of |x| by essentially doing |new Rich
 \begin{example}[Exercise: Pimp my library]
 Build a DSL that allows the expression evaluator to be written using natural-looking Scala code--though sadly not using the standard \pcode{+, -, *, /} operators, but using our own \pcode{plus, minus, mult, div} instead. The expression \pcode{5 plus 10} should evaluate to \pcode{Plus(Const(5), Const(10))}. The type \pcode{Int} and \pcode{Expr} do not contain the methods \pcode{plus}, ..., \pcode{div}; it will be necessary to implement implicit conversions (use \pcode{implicit class} for convenience) that contains those methods. 
 
-\begin{lstlisting}[caption={Expression evaluator}, label={code:eepm}, language=Scala, escapechar=|]
+\begin{lstlisting}[caption={Expression evaluator}, label={code:eepm2}, language=Scala, escapechar=|]
 |It will be useful to package the PML conversions in their own module.|
 object Expr {
   |Two conversions will be necessary: |Int -> Expr|, |Expr -> RichExpr|. The two P.M.L. implicit classes|

@@ -29,6 +29,7 @@ case class Div[A](left: Expr[A], right: Expr[A]) extends Expr[A]
 case class Const[A : ClassTag](const: A) extends Expr[A]
 
 object Evaluator {
+
   type Error = String
 
   def eval[A : ClassTag](expr: Expr[A])(implicit N: Fractional[A]): Either[Error, A] = expr match {
@@ -44,7 +45,15 @@ object Evaluator {
 
 }
 
+case class FC[A](a: A) {
+  def map[B](f: A ⇒ B): FC[B] = FC(f(a))
+  def flatMap[B](f: A ⇒ FC[B]): FC[B] = f(a)
+}
+
+
 object EvaluatorMain extends App {
+
+  FC("b").flatMap(x ⇒ FC(x))
 
   import Expr._
 
