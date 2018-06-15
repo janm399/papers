@@ -9,10 +9,13 @@
 
 \title{Scala Tutorial}
 
+\author{Jan Macháček | jan.machacek@bamtechmedia.com | @jmachacek}
+
 \begin{document}
 
 \maketitle
-\bigskip
+
+\newpage
 
 \section{Syntax crash-course}
 Scala's syntax follows the syntax of other C-like languages, though--like Pascal--the type specification follows an identifier. Scala's \pcode{class} behaves exactly like Java's \pcode{class}, and its syntax is not wildly different. (See \autoref{code:syntax-class}.)
@@ -23,17 +26,13 @@ Scala's syntax follows the syntax of other C-like languages, though--like Pascal
 class MyClass(constructorParam1: String, constuctorParam2: Int) {
   
   |Methods begin with the keyword |def|, followed by name and parameters. The return type follows similar pattern; |Unit| means |void.
-  |The body of the method follows the equals sign.|
-  def execute(methodParam1: List[Int]): Unit = {
-
-  }
+  def execute(methodParam1: List[Int]): Unit = { |The body of the method follows the equals sign.| }
 
 }
 
-|Constructing instances uses the typical |new| keyword...|
-new MyClass("foo", 42)
-  |Method invocation is exactly like Java's|
-  .execute(List(1, 2, 3))
+|$\downarrow$ Constructing instances uses the typical |new| keyword...|
+new MyClass("foo", 42).execute(List(1, 2, 3))
+                      |$\uparrow$ Method invocation is exactly like Java's|  
 \end{lstlisting}
 
 Most of this syntax is familiar and unsurprising; the only thing that might feel odd is the square bracket for ``generics'' in \pcode{List[Int]}: in Java, this would be written as \pcode{List<Int>}. This is part of Scala's legacy. A long, long time ago, XML was very exciting; and Scala allowed (and still allows!) XML literals. These XML literals use the angle brackets. This meant that a different symbol had to be used for type parameters. Because the square bracket is used for type parameters, array indexing is also done using regular parentheses\footnote{I know, it looks like VisualBasic or Fortran (formerly FORTRAN)!}.
@@ -115,6 +114,7 @@ user.dob = ...
 
 While syntactically valid code, it is very confusing. The \pcode{user} variable is declared immutable, yet it is possible to invoke its setters. The equivalent Java code would declare the \pcode{user} variable \pcode{final}, but then still use the setters to mutate it.
 
+\newpage
 \section{Killer features}
 The syntax (and its application) so far looks just like Java with less typing. There must be something else that makes it worth leaving the creature comforts of Java. The following points are also the code that is most likely to be encountered in typical Scala codebases. Typical here refers to code that \emph{uses} Scala and its ecosystem of libraries; it does not refer to the code that might be found in the bowels of the libraries themselves.
 
@@ -279,7 +279,7 @@ Finally, using the keyword \pcode{sealed} specifies that the trait cannot be ext
 Sums of products are very useful way to express alternatives that might not have anything in common other than being of the given type, without clumsy \pcode{instanceof} checks with pattern matching.
 
 \subsection{Patten matching.} 
-A pattern match is a way to check that a value has the right ``shape'', and to pull out some or all values from that shape. Think of the simplest pattern matching expression as Java's \pcode{switch} statement in \autoref{code:pm1}.
+A pattern match is a way to check that a value has the right ``shape'', and to pull out some or all values from that shape. Think of the simplest pattern matching expression as Java's \pcode{switch} statement in \autoref{code:pm1} that can compare arbitrary values against ``templates''; and if there is a match, be able to pull out elements of the matched expression.
 
 \begin{lstlisting}[caption={Pattern matching}, label={code:pm1}, language=Scala, escapechar=$]
 $This is the equivalent of Java's $switch$ statement, with multi-case and a default case.$
@@ -327,7 +327,6 @@ val Person(`first`, _, _) = Person("Fooz", "Bar", 99)
 
 The pattern match that raises an exception if it fails is often convenient to use in tests. 
 
-TODO
 
 \begin{example}[Exercise: Using case classes and pattern matching]
 Build an numerical expression evaluator; the evaluator should support binary operators $+, -, \times, /$ and support arbitrary nesting. It should be able to evaluate, for example $4+3(5/(12-7))$. To make things simpler, it is not necessary to include error reporting (division by zero, for example), and it is not necessary to provide a way to turn a \pcode{String} into an expression.
@@ -342,20 +341,16 @@ case class Const(const: Int) extends Expr
 
 |It will be convenient to package our evaluator in its own module.|
 object Evaluator {
-  
   |Hint: you will need to pattern-match on the different |Expr|s.|
   def eval(expr: Expr): Int = expr match {
     case Const(x) => x
     ...
   }
-
 }
 
 object EvaluatorMain extends App {
-
   val e = Evaluator.eval(Plus(Plus(Const(4), Const(5)), Const(3)))
   println(e) | $\rvert$ \Printer{ }|12
-
 }
 \end{lstlisting}
 \end{example}
@@ -375,16 +370,13 @@ case class Var(named: String) extends LExpr
 
 |Just like the evaluator, package the simplifier in its own module.|
 object Simplifier {
-    
   |Hint: you will need to pattern-match on the different |LExpr|s.|
   def simplify(expr: LExpr): LExpr = expr match {
     ...
   }
-
 }
 
 object SimplifierMain extends App {
-
   val se = Simplifier.simplify(
     LAnd(
       LOr(Var("a"), LNot(Var("a"))),
@@ -392,7 +384,6 @@ object SimplifierMain extends App {
     )
   )
   println(se) | $\rvert$ \Printer{ }|"Contradition"
-
 }
 \end{lstlisting}
 \end{example}
@@ -562,6 +553,7 @@ val x: Double = 42
 x ^ 2 | $\rvert$ Computes the second power of |x| by essentially doing |new RichDouble(x).^(2)|.|
 \end{lstlisting}
 
+\newpage
 \begin{example}[Exercise: Pimp my library]
 Build a DSL that allows the expression evaluator to be written using natural-looking Scala code--though sadly not using the standard \pcode{+, -, *, /} operators, but using our own \pcode{plus, minus, mult, div} instead. The expression \pcode{5 plus 10} should evaluate to \pcode{Plus(Const(5), Const(10))}. The type \pcode{Int} and \pcode{Expr} do not contain the methods \pcode{plus}, ..., \pcode{div}; it will be necessary to implement implicit conversions (use \pcode{implicit class} for convenience) that contains those methods. 
 
@@ -656,10 +648,8 @@ object Evaluator {
 object EvaluatorMain extends App {
   import Expr._
   import Evaluator._
-  
   val expr = 5 plus 10
   eval(expr)(new NumberLike[Int] {...}) | $\rvert$ evaluates to |Right(15)|.|
-
 }
 \end{lstlisting}
 
@@ -885,7 +875,7 @@ trait Writer[A] {
 }
 \end{lstlisting}
 
-The substitution rule in subtype polymorphism says that a subtype can be used wherever its supertype is expected; \pcode{val x: Animal = new Cat} is valid, but \pcode{val x: AngryCat = new Cat} is not. Following the substitution principle, \pcode{val x: Reader[Animal] = new Reader[Cat] ...} should also be valid, although \pcode{val x: Reader[AngryCat] = new Reader[Cat] ...} should not be valid. When one holds a \pcode{Reader[Cat]}, its \pcode{read} function returns a value of type that \emph{is} or can be \emph{used in place of} \pcode{Cat}; the code inside the \pcode{Reader[AngryCat].read} method contains all the machinery to read \pcode{AngryCat} values; an \pcode{AngryCat} value can certainly stand in place of a \pcode{Cat} value. So, a value of type \pcode{Reader[AngryCat]} can be used in place of \pcode{Reader[Cat]}, as well as \pcode{Reader[Animal]}. Applying the same substitution rule reveals that \pcode{val w: Writer[Cat] = new Writer[AngryCat] ...} should not be valid: the code inside \pcode{Writer[AngryCat].write(value: AngryCat)} has all the code to handle writing \pcode{AngryCat}s (the value given to the \pcode{write} method must be \emph{at least} \pcode{AngryCat}); an instance of \pcode{Writer[AngryCat]} cannot be substituted for a value of type \pcode{Writer[Cat]}, never mind \pcode{Writer[Animal]}. 
+The substitution rule in subtype polymorphism says that a subtype can be used wherever its supertype is expected; \pcode{val x: Animal = new Cat} is valid, but \pcode{val x: AngryCat = new Cat} is not. Following the substitution principle and the behaviour of \pcode{Reader[A]}, \pcode{val x: Reader[Animal] = new Reader[Cat] ...} should be valid, but \pcode{val x: Reader[AngryCat] = new Reader[Cat] ...} should not be valid. The type of the \pcode{read} method in \pcode{Reader[Cat]} returns a value of type that \emph{is} or can be \emph{used in place of} \pcode{Cat}; the code inside the \break \pcode{Reader[AngryCat].read} method contains all the machinery to read \pcode{AngryCat} values; an \pcode{AngryCat} value can certainly stand in place of a \pcode{Cat} value. A value of type \pcode{Reader[AngryCat]} can be used in place of \pcode{Reader[Cat]} as well as \pcode{Reader[Animal]}. Applying the same substitution rule reveals that \pcode{val w: Writer[Cat] = new Writer[AngryCat] ...} should not be valid: the code in \pcode{Writer[AngryCat].write(value: AngryCat)} operates on \pcode{AngryCat}s (the \pcode{write} function must be given \emph{at least} \pcode{AngryCat} as its parameter); an instance of \pcode{Writer[AngryCat]} cannot be substituted for a value of type \pcode{Writer[Cat]}, never mind \break \pcode{Writer[Animal]}. 
 
 More generally, whenever \pcode{Thing[AngryCat]} can be used in place of \pcode{Thing[Cat]} or \pcode{Thing[Animal]}, the generic parameter of \pcode{Thing} is \emph{covariant}, and written as \pcode{Thing[+A]}. When a \pcode{Thing[Animal]} can be used in place of \pcode{Thing[Cat]} or \pcode{Thing[AngryCat]}, the generic parameter of \pcode{Thing} is \emph{contravariant}, and written as \pcode{Thing[-A]}. When no substitutions are acceptable, the generic parameter is invariant, and does not have \pcode{+} or \pcode{-}. 
 
@@ -911,7 +901,7 @@ Scala uses square brackets to apply types to type constructors; given the type c
 
 Just like values have types, types have kinds. Take the type constructor \pcode{List[_]} (or just \pcode{List}): it is not a concrete type (list of what? \pcode{String}s? \pcode{Int}s, \pcode{StormTrooper}s?), it is a type constructor that needs one more type to produce a concrete type. Type constructors are sometimes described using a simple type arity syntax. The arity syntax only specifies the number (and structure) of types that need to be applied in order to arrive at a concrete type. In this syntax, the kind of the \pcode{List} type constructor is \pcode{* -> *}. It looks like a [type-level] function that when applied to one type produces a type. The \pcode{Either} type constructor's arity syntax is \pcode{(*, *) -> *}. (Recall that \pcode{Either} takes a pair of type parameters.) The arity syntax is accurate for type constructors that place no constraints on their type parameters; it isn't that accurate (in Scala) for type constructors that constrain their type parameters. Nevertheless, it is usually sufficient.
 
-The expression writer implemented earlier hides the fact that it is not a pure function: it \emph{writes} something somewhere, it returns \pcode{Unit}, but its intent (and implementation) reveals that it cannot be simply substituted for any other \pcode{()} value. This is not surprising: after years of exposure to most languages, programmers know that \emph{some} operations aren't useful for their return value, but for the side-effects they perform on the world. The expectation for the \pcode{Writer.write} function is that it is not called for the \pcode{()} it returns, but for the \emph{effect of writing the value}. This is a useful abstraction, and in the case of a \pcode{Writer} that sends a textual representation of the value to the standard output the level of abstraction is sufficient: there are only few error scenarios that need to be handled (and maybe errors can be ignored altogether). The abstraction might not be sufficient for \pcode{Writer} that performs a REST call to another service to submit the value: what if the service is unavailable?; what if it is too slow to respond?; what if the caller is capable of performing asynchronous, non-blocking calls easily? In case of failures, one could consider throwing exceptions (and not forgetting to document those!); in the non-blocking case, the value \pcode{()} is simply not sufficient. The source of a lot of subtle and not-so-subtle bugs in programs stem from leaky abstractions. The abstraction hides something for convenience (like returning just \pcode{()} from the \pcode{write} function, allowing the callers to pretend that ``everything is fine''); the more complex the abstraction, the more complex its configuration and behaviour becomes. Unfortunately, the more complex its potential unexpected behaviours become, too.
+The expression writer implemented earlier hides the fact that it is not a pure function: it \emph{writes} something somewhere, it returns \pcode{Unit}, but its intent (and implementation) reveals that it cannot be simply substituted for any other \pcode{()} value. This is not surprising: after years of exposure to most languages, programmers know that \emph{some} operations aren't useful for their return value, but for the side-effects they perform on the world. The expectation for the \pcode{Writer.write} function is that it is not called for the \pcode{()} it returns, but for the \emph{effect of writing the value}. This is a useful abstraction, and in the case of a \pcode{Writer} that sends a textual representation of the value to the standard output the level of abstraction is sufficient: there are only few error scenarios that need to be handled (and maybe errors can be ignored altogether). The abstraction might not be sufficient for \pcode{Writer} that performs a REST call to another service to submit the value: what if the service is unavailable?; what if it is too slow to respond?; what if the caller is capable of performing asynchronous, non-blocking calls easily? In case of failures, one could consider throwing exceptions (and not forgetting to document those!); in the non-blocking case, the value \pcode{()} is simply not sufficient. The source of a lot of subtle and not-so-subtle bugs in programs stem from leaky abstractions. The abstraction hides something for convenience (like returning just \pcode{()} from the \pcode{write} function, allowing the callers to pretend that ``everything is fine''); the more complex the abstraction, the more complex its configuration and behaviour becomes; unfortunately, its unexpected behaviours become more complex, too.
 
 Back to our \pcode{Writer}. Another level of abstraction is needed: the \pcode{Writer.write} function needs to return the \pcode{()} ``boxed'' in another value. To make this box useful in most programs, it will be necessary for it to lie in a typeclass that contains functions for transforming the value contained in it, and unpacking the value and combining with other boxes. In other words, it will need the \pcode{map} and \pcode{flatMap} functions. (This will make it useful in \pcode{for} expressions, how neat!) At the point of defining the \pcode{Writer} trait, the shape of this box is not known; all that is known is that it will be some type that takes another type. Scala uses identifiers in square brackets to define type parameters (recall \pcode{def eval[A](...): A}), the identifier \pcode{A} refers to a concrete type. An identifier that represents a type constructor that needs one more type to make it concrete is simply \pcode{A[_]}. Applying this to the \pcode{Writer} trait yields code in \autoref{code:hk1}.
 
@@ -923,7 +913,7 @@ trait Writer[-A] {
 
 Unfortunately, this definition would make it somewhat difficult to implement the trait: there would be no way to construct instances of \pcode{M[_]}. The implementation of the \pcode{write} function needs to receive a typeclass instance that allows it to construct a value of type \pcode{M[_]}; and the constructed \pcode{M[_]} should be sequenceable. It should lie in the $\mathfrak{MONAD}$ typeclass. 
 
-\begin{example}[Exercise: Flexible expression writer]
+\begin{example}[Exercise: Flexible writers]
 And so it has come to this: implement the expression writer to be usable in caller-defined contexts by requiring its higher-kinded type parameter \pcode{M} to lie in the \pcode{Monad} typeclass.
 
 \begin{lstlisting}[caption={Reader and Writer with proper variance}, label={code:rw2}, language=Scala, escapechar=|]
@@ -942,8 +932,8 @@ object RichTypesMain extends App {
   import scala.concurrent.ExecutionContext.Implicits.global
   import scalaz.std.scalaFuture.futureInstance
 
-  Writer[Subscription]().write[Future](OneOff(new Date())).foreach(_ => println("Done"))
-  Writer[Subscription]().write[IO](OneOff(new Date())).unsafePerformIO()
+  Writer[Animal]().write[Future](new AngryCat()).foreach(_ => println("Done"))
+  Writer[Animal]().write[IO](new Cat()).unsafePerformIO()
 
   |This is needed to give the |Future| time to be scheduled and executed.|
   Thread.sleep(1000)
@@ -1081,6 +1071,7 @@ object RichTypesMain extends App {
 
 %  As it stands, its type is \pcode{() => Unit}, 
 
+\newpage
 \printbibliography
 
 \end{document}
