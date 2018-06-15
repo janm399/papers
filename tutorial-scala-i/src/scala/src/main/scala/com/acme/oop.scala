@@ -1,7 +1,5 @@
 package com.acme
 
-import scala.util.Random
-
 trait ReportGenerator {
   def generate(user: String): Array[Byte]
 }
@@ -24,14 +22,5 @@ object Main extends App {
 
   val rs = new ReportService(new ReportGeneratorImpl)
   rs.reportAll()
-
-
-  List(1, 2, 3).map(2 * _)
-
-  Random.nextInt(10) match {
-    case 0|1|2|3 ⇒
-    case 6 ⇒
-    case _ ⇒
-  }
 
 }
