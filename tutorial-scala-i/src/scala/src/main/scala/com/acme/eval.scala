@@ -1,5 +1,9 @@
 package com.acme
 
+import scalaz.Monad
+import scalaz.effect.IO
+
+import scala.concurrent.Future
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
@@ -45,15 +49,30 @@ object Evaluator {
 
 }
 
-case class FC[A](a: A) {
-  def map[B](f: A ⇒ B): FC[B] = FC(f(a))
-  def flatMap[B](f: A ⇒ FC[B]): FC[B] = f(a)
+
+trait Reader[+A] {
+  def read: A
+}
+object Reader {
+  def apply[A](): Reader[A] = new Reader[A] {
+    override def read: A = ???
+  }
 }
 
+import language.higherKinds
+
+trait Writer[-A] {
+  def write[M[_]: Monad](value: A): M[Unit]
+}
+object Writer {
+  def apply[A](): Writer[A] = new Writer[A] {
+    override def write[M[_]](value: A)(implicit M: Monad[M]): M[Unit] = {
+      M.pure(println(value))
+    }
+  }
+}
 
 object EvaluatorMain extends App {
-
-  FC("b").flatMap(x ⇒ FC(x))
 
   import Expr._
 
@@ -65,4 +84,9 @@ object EvaluatorMain extends App {
 
   val ee = Evaluator.eval((5.4 plus math.Pi) minus 8.8)
   println(ee)
+
+  import scala.concurrent.ExecutionContext.Implicits.global
+  import scalaz.std.scalaFuture.futureInstance
+  Writer().write[Future](1 plus 3).foreach(_ => println("Done"))
+  Writer().write[IO](1 plus 3).unsafePerformIO()
 }

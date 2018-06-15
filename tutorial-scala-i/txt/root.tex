@@ -928,12 +928,14 @@ object Writer {
   }
 }
 
-object RichTypesMain extends App {
+object EvaluatorMain extends App {
+  ...
+  
   import scala.concurrent.ExecutionContext.Implicits.global
   import scalaz.std.scalaFuture.futureInstance
 
-  Writer[Animal]().write[Future](new AngryCat()).foreach(_ => println("Done"))
-  Writer[Animal]().write[IO](new Cat()).unsafePerformIO()
+  Writer().write[Future](1 plus 3).foreach(_ => println("Done"))
+  Writer().write[IO](1 plus 3).unsafePerformIO()
 
   |This is needed to give the |Future| time to be scheduled and executed.|
   Thread.sleep(1000)
