@@ -17,6 +17,8 @@ object Expr {
     def div(right: A)(implicit ev: ClassTag[A]): Expr[A] = Div(self, Const(right))
     def minus(right: Expr[A]): Expr[A] = Minus(self, right)
     def minus(right: A)(implicit ev: ClassTag[A]): Expr[A] = Minus(self, Const(right))
+    def mult(right: A)(implicit ev: ClassTag[A]): Expr[A] = Mult(self, Const(right))
+    def mult(right: Expr[A]): Expr[A] = Mult(self, right)
   }
 
   implicit class RichA[A : ClassTag](const: A) extends ExprOps[A] {
@@ -30,6 +32,7 @@ sealed trait Expr[+A]
 case class Plus[A](left: Expr[A], right: Expr[A]) extends Expr[A]
 case class Minus[A](left: Expr[A], right: Expr[A]) extends Expr[A]
 case class Div[A](left: Expr[A], right: Expr[A]) extends Expr[A]
+case class Mult[A](left: Expr[A], right: Expr[A]) extends Expr[A]
 case class Const[A : ClassTag](const: A) extends Expr[A]
 
 object Evaluator {
@@ -39,6 +42,7 @@ object Evaluator {
   def eval[A : ClassTag](expr: Expr[A])(implicit N: Fractional[A]): Either[Error, A] = expr match {
     case Plus(l, r) ⇒ for { l ← eval(l); r ← eval(r) } yield N.plus(l, r)
     case Minus(l, r) ⇒ for { l ← eval(l); r ← eval(r) } yield N.minus(l, r)
+    case Mult(l, r) ⇒ for { l ← eval(l); r ← eval(r) } yield N.times(l, r)
     case Div(l, r) ⇒
       for {
         l ← eval(l)
@@ -52,11 +56,6 @@ object Evaluator {
 
 trait Reader[+A] {
   def read: A
-}
-object Reader {
-  def apply[A](): Reader[A] = new Reader[A] {
-    override def read: A = ???
-  }
 }
 
 import language.higherKinds
