@@ -26,54 +26,8 @@
 \section{Stateful distributed systems}
 Systems whose components run on multiple nodes are difficult to design without obvious errors, difficult to build, difficult to run, and difficult to maintain; the reasons that justify this complexity are resilience and performance. Resilience refers to the system's ability to continue to operate even if some of its components are failing; informally, performance refers to the system's ability to handle large incoming workload quickly. The exact definitions for ``large'' and ``quickly'' <- TODO.
 
-\autoref{tbl:ll-latency}\cite{fommil-netlib} shows typical latencies in a computer system translated to human timescales; it demonstrates that ``the further the CPU has to go, the longer it takes''.
-
-\begin{table}[h]
-    \begin{tabular}{p{3cm}lp{3.5cm}}
-        \toprule
-        Computer & Human & Analogy \\
-        \midrule
-L1 cache reference & \SI{0.5}{\second} & One heart beat \\
-Branch mispredict  & \SI{5}{\second} & Yawn \\
-L2 cache reference & \SI{7}{\second} & Long yawn \\
-Mutex lock/unlock  & \SI{25}{\second} & Making a cup of tea \\
-        \midrule
-Main memory reference & \SI{100}{\second} &  Brushing one's teeth \\
-Compress \SI{1}{\kibi\byte} with Zippy & \SI{50}{\minute} & Build Scala \\
-Send \SI{2}{\kibi\byte} over \SI{1}{\giga\bit\per\second} network & \SI{5.5}{\hour} & London to Edinburgh \\
-        \midrule
-SSD random read & \SI{1.7}{\day} & Weekend \\
-Read \SI{1}{\mebi\byte} sequentially from memory & \SI{2.9}{\day} & Long weekend \\
-Round trip within same datacentre & \SI{5.8}{\day} & Short holiday \\
-Read \SI{1}{\mebi\byte} sequentially from SSD & \SI{11.6}{\day} & Holiday \\
-        \midrule
-Disk seek & \SI{16.5}{w} & Term of university \\
-Read \SI{1}{\mebi\byte} sequentially from disk & \SI{7.8}{m} & Fully paid maternity in Norway \\
-Send packet CA $\rightarrow$ Netherlands $\rightarrow$ CA & \SI{4.8}{y} & Government's term \\
-        \bottomrule
-    \end{tabular}
-    \caption{Low-level latency}
-    \label{tbl:ll-latency}
-\end{table}
-
-XXX
-
-\begin{table}[h]
-    \begin{tabular}{lrrrrrr}
-        \toprule
-        Program           & \multicolumn{6}{c}{Implementation \& Runtime} \\
-        \cmidrule(r){2-7} & Scala  & Go  & C++ & Haskell & Python & JavaScript \\
-        \midrule
-        Simple            1.00   & 3.84    & 1.86  & 3.97   & 0 & 0 \\
-        Some exceptions   5.16   & 8.02    & 2.26  & 3.93   & 0 & 0 \\
-        All exceptions    42.51  & 66.00   & 4.12  & 3.93   & 0 & 0 \\
-        Enterprise        3.00   & 25.12   & 2.24  & 3.92   & 0 & 0 \\
-        Bad async         868.50 & 959.99  & 44.30 & 615.51 & 0 & 0 \\
-        \bottomrule
-    \end{tabular}
-    \caption{Runtime}
-    \label{tbl:code-style-impact}
-\end{table}
+\subsection{Why?}
+The main reason for building distributed systems
 
 \begin{figure}[h]
   \begin{tikzpicture}
@@ -134,10 +88,17 @@ XXX
   \label{plot:simple-computation}
 \end{figure}
 
-\twocolumn[
-\begin{@twocolumnfalse}
-\begin{figure}[h]
+\begin{figure*}[h]
   \begin{tikzpicture}
+    \draw[pink,   -,fill=pink   ] (0, 0)    rectangle (16, 1.35); \node[draw] at (14.5, 0.7) {AAA};
+
+    \draw[blue!20,-,fill=blue!20] (0, 1.35) rectangle (16, 2.8);
+    \draw[pink,   -,fill=pink   ] (0, 2.8)  rectangle (16, 4.3);
+    \draw[blue!20,-,fill=blue!20] (0, 4.3)  rectangle (16, 6);
+    \draw[pink,   -,fill=pink   ] (0, 6)    rectangle (16, 7.3);
+    \draw[blue!20,-,fill=blue!20] (0, 7.3)  rectangle (16, 8.5);
+    \draw[pink,   -,fill=pink   ] (0, 12)   rectangle (16, 13.4);
+
     \begin{axis}[
       height=15cm, 
       width=15cm, 
@@ -211,7 +172,6 @@ XXX
       \addlegendentry{Haskell}
     \end{axis}
   \end{tikzpicture}
-  Where 
   \begin{enumerate}[i]
     \item Simple
     \item Some ex.
@@ -226,9 +186,7 @@ XXX
   \end{enumerate}
   \caption{Simple computation}
   \label{plot:simple-computation}
-\end{figure}
-\end{@twocolumnfalse}
-]
+\end{figure*}
 
 \section{State in distributed system}
 Imagine two systems that need to share information; a good starting point may be an endpoint where one system can request the state of the other system. If the first system needs to keep ``in sync'' with the second system, it needs to periodically query the endpoint to obtain the state from the second system. This keeps the two systems independent and decoupled, but it means that the systems might miss important state changes that happen between the two polls, and it makes both systems do needless work by querying the endpoints, even if the state remains the same.
