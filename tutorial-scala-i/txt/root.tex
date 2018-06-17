@@ -70,7 +70,7 @@ List(1, 2, 3, ...).map { (x: Int) => 2 * x }
 |Scala can infer the type of |x|, so there's no need to specify it|
 List(1, 2, 3, ...).map { x => 2 * x }
 
-|An alternative syntax uses paretheses in place of brackets|
+|An alternative syntax uses parentheses in place of brackets|
 List(1, 2, 3, ...).map(x => 2 * x)
 
 |It is possible to avoid having to declare the parameter |x|, and use |_| instead. Scala compiler replaces the every occurrence of |_
@@ -184,7 +184,7 @@ Create the ``Fizz Buzz'' function that takes an \pcode{Int} and evaluates to a \
   \item for all other input values, the output is the \pcode{String} representation of the input
 \end{itemize}
 
-In \pcode{src/main/scala}, in the \pcode{com.acme} package, create a new class \pcode{FizzBuzzMain} and complete the body of the \pcode{fizzBuzz} function.
+In \pcode{src/main/scala}, in the \pcode{com.acme} package, open \pcode{fizzbuzz.scala} containing the \pcode{FizzBuzzMain} and complete the body of the \pcode{fizzBuzz} function.
 
 \begin{lstlisting}[caption={Fizz Buzz}, label={code:fb}, language=Scala, escapechar=|]
 object FizzBuzzMain extends App {
@@ -227,10 +227,10 @@ Person("Foo", "Quux", 42) == fq  | $\rvert$ |true|, even though they are \emph{d
 fq == Person("Foo", "Quux", 42)  | $\rvert$ |true|, even though they are \emph{different} instances.|
 \end{lstlisting}
 
-The consciseness of Scala's syntax is beginning to show. It would have been much more cumbersome to implement all this (including correct \pcode{hashCode}, \pcode{equals}, and reasonable \pcode{toString}) in Java. Even with correct implementations, it would not have been possible to use \pcode{==} to test for instance equality. 
+The conciseness of Scala's syntax is beginning to show. It would have been much more cumbersome to implement all this (including correct \pcode{hashCode}, \pcode{equals}, and reasonable \pcode{toString}) in Java. Even with correct implementations, it would not have been possible to use \pcode{==} to test for instance equality. 
 
 \begin{example}[Exercise: Using case classes and functions]
-Create a new case class \pcode{Person} file in \pcode{src/main/scala/com.acme} from \autoref{code:cc1}. Then use \pcode{List.fill(N)(Person(...))} and useful methods in \pcode{scala.util.Random} to generate $N$ random \pcode{Person} instances. Assign those to a variable.
+Create a new case class \pcode{Person} file in \pcode{src/main/scala/com.acme/person.scala} from \autoref{code:cc1}. Then use \pcode{List.fill(N)(Person(...))} and useful methods in \pcode{scala.util.Random} to generate $N$ random \pcode{Person} instances. Assign those to a variable.
 \begin{itemize}
   \item find the oldest person in the list. (Hint: use \pcode{map}, \pcode{max}, and \pcode{find} functions on the \pcode{List[Person]}.)
   \item find the 10 youngest people in the list. (Hint: use \pcode{sortBy} or \pcode{sortWith}, followed by \pcode{take}.)
@@ -329,7 +329,7 @@ The pattern match that raises an exception if it fails is often convenient to us
 
 
 \begin{example}[Exercise: Using case classes and pattern matching]
-Build an numerical expression evaluator; the evaluator should support binary operators $+, -, \times, /$ and support arbitrary nesting. It should be able to evaluate, for example $4+3(5/(12-7))$. To make things simpler, it is not necessary to include error reporting (division by zero, for example), and it is not necessary to provide a way to turn a \pcode{String} into an expression.
+Build an numerical expression evaluator; the evaluator should support binary operators $+, -, \times, /$ and support arbitrary nesting. It should be able to evaluate, for example $4+3(5/(12-7))$. To make things simpler, it is not necessary to include error reporting (division by zero, for example), and it is not necessary to provide a way to turn a \pcode{String} into an expression. The skeleton is in \pcode{.../eval.scala}.
 
 \begin{lstlisting}[caption={Expression evaluator}, label={code:ee}, language=Scala, escapechar=|]
 |The sum type Expr's subtypes define the ``operations'' we support.|
@@ -356,7 +356,7 @@ object EvaluatorMain extends App {
 \end{example}
 
 \begin{example}[Exercise (extra): logical expression simplifier]
-Build a logical expression simplifier that reduces the number of logical operations to be performed, and can spot tautologies and contraditions. For example, $(a \land b) \lor (a \land b)$ should simplify to just $a \land b$; $(a \lor \lnot{a})$ should simplify to $\top$ (tautology; always true); $(a \lor \lnot{a}) \land (a \oplus a)$ should simplify to $\bot$ (contradiction; always false).
+Build a logical expression simplifier that reduces the number of logical operations to be performed, and can spot tautologies and contradictions. For example, $(a \land b) \lor (a \land b)$ should simplify to just $a \land b$; $(a \lor \lnot{a})$ should simplify to $\top$ (tautology; always true); $(a \lor \lnot{a}) \land (a \oplus a)$ should simplify to $\bot$ (contradiction; always false). There is no skeleton code, it will be necessary to create a file in the \pcode{com.acme} package.
 
 \begin{lstlisting}[caption={Logical expression simplifier}, label={code:ls}, language=Scala, escapechar=|]
 |The sum type LExpr defines the different logical expressions we support.|
@@ -383,7 +383,7 @@ object SimplifierMain extends App {
       LXor(Var("a"), Var("a"))
     )
   )
-  println(se) | $\rvert$ \Printer{ }|"Contradition"
+  println(se) | $\rvert$ \Printer{ }|"Contradiction"
 }
 \end{lstlisting}
 \end{example}
@@ -443,7 +443,7 @@ for {
 } yield (x, y)
 \end{lstlisting}
 
-In fact, the word \pcode{iterable} is somewhat misleading; the values used in the \pcode{for} expression only have to contain the functions \pcode{map}, \pcode{flatMap}, and \pcode{filter}. The \pcode{for} expression is actually a \emph{syntactic sugar} that translates \pcode{<-} to \pcode{flatMap}, \pcode{=} to \pcode{map}, and \pcode{if} to \pcode{filter}\footnote{Actually--and for efficiency--the de-sugaring prefers to use \pcode{withFilter} instead of \pcode{filter}, which avoids having to create intermediate iterables.}. This means that the \pcode{for} expression can be used on values such as \pcode{Option}, \pcode{Either}, ..., even your own types, as long as the requirements for mapping, mapping \& flattening, and filtering are satisfied. Even better, the compiler only checks that the requirements are satisfied as they are needed. 
+In fact, the word \pcode{iterable} is somewhat misleading; the values used in the \pcode{for} expression only have to contain the functions \pcode{map}, \pcode{flatMap}, and \pcode{filter}. The \pcode{for} expression is actually a \emph{syntactic sugar} that translates \pcode{<-} to \pcode{flatMap}, \pcode{=} to \pcode{map}, and \pcode{if} to \pcode{filter}\footnote{Actually--and for efficiency--the de-sugaring prefers to use \pcode{withFilter} instead of \pcode{filter}, which avoids having to create intermediate values.}. This means that the \pcode{for} expression can be used on values such as \pcode{Option}, \pcode{Either}, ..., even your own types, as long as the requirements for mapping, mapping \& flattening, and filtering are satisfied. Even better, the compiler only checks that the requirements are satisfied as they are needed. 
 
 \paragraph{Option and Either.} The types \pcode{Option}\footnote{Java includes \pcode{Optional}, C++ \pcode{std::optional}, Swift \pcode{Optional}; the only sore thumb is Haskell with \pcode{Maybe}. Nevertheless, all languages include the concept of \pcode{flatMap}, \pcode{map}, and \pcode{filter} on optionals.} and \pcode{Either} are a part of the Scala standard library; they are used to pack ``one or none'' value (\pcode{Option}) and ``exclusive or of two values'' (\pcode{Either}). The type \pcode{Option[A]} is a sum of two products: \pcode{Some[A](value: A)} and \pcode{None}; what these values represent is self-evident. The type \pcode{Either[L, R]} is a sum of two products: \pcode{Left[L](value: L)} and \pcode{Right[R](value: R)}. By convention, the value \pcode{Right[R]} is used to indicate ``the right value--success'', and the value \pcode{Left[L]} is used to indicate failure. Unlike \pcode{None}, which carries no further information other than ``missing'', the value \pcode{Left[L](value: L)} carries a value; this value is typically some kind of error message.
 Crucially, both \pcode{Option} and \pcode{Either} include the \pcode{flatMap} functions, which means that they can be used in a \pcode{for} expression. \autoref{tbl:map-flatmap} outlines the behaviour of the \pcode{map} and \pcode{flatMap} in \pcode{Option} and \pcode{Either}. 
@@ -467,26 +467,6 @@ Crucially, both \pcode{Option} and \pcode{Either} include the \pcode{flatMap} fu
     \caption{map and flatMap}
     \label{tbl:map-flatmap}
 \end{table}
-
-% \begin{table}[h]
-%     \begin{tabular}{llll}
-%         \toprule
-%         & map & flatMap & filter \\
-%         \midrule
-%                              & \pcode{f: A => B}               & \pcode{f: A => Option[B]}      & \pcode{f: A => Boolean} \\
-%         \pcode{Option[A]}    & \pcode{Some(a) => Some(f(a))}   & \pcode{Some(a) => f(a)}        & \pcode{Some(a) if f(a) => Some(a)} \\  
-%                              & \pcode{None => None}            & \pcode{None => None}           & \pcode{_ => None} \\
-   
-%         \midrule
-%                              & \pcode{f: R1 => R2}             & \pcode{f: R1 => Either[L, R2]} & -- \\
-%         \pcode{Either[L, R]} & \pcode{Right(r) => Right(f(r))} & \pcode{Right(r) => f(r)}       & -- \\
-%                              & \pcode{Left(l) => Left(l)}      & \pcode{Left(l)  => Left(l)}    & -- \\
-
-%         \bottomrule
-%     \end{tabular}
-%     \caption{map and flatMap}
-%     \label{tbl:map-flatmap}
-% \end{table}
 
 Putting it simply once \pcode{Option} becomes \pcode{None} it stays \pcode{None}; once \pcode{Either} becomes \pcode{Left} it stays \pcode{Left}. Thanks to \pcode{None} not carrying any value, \pcode{Option} can implement the \pcode{filter} method; because \pcode{Left} contains a value it cannot contain the \pcode{filter} method. (In case the filtering function returned \pcode{false}, what would the \emph{value} on the \pcode{Left} be?) Nevertheless, the concept of filtering is useful, it only needs to be extended a little; so \pcode{Either[L, R]} contains the \pcode{filterOrElse(predicate: R => Boolean, zero: L)} function. If the predicate returns \pcode{false}, the function evaluates to \pcode{Left} carrying the value of the \pcode{zero} parameter. 
 
@@ -692,7 +672,7 @@ object EvaluatorMain extends App {
 
 
 \begin{example}[Exercise: Flexible evaluator]
-Allow the expression evaluator to operate on any number-like types, not just \pcode{Int}s. Instead of relying on inheritance, forcing all users of the evaluator to evaluate values conforming to some trait (with the number-crunching methods \pcode{+, -, *, /}), use parametric polymorphism and type classes. The \pcode{Const} data constructor will need to take any type instead of \pcode{Int}; \pcode{RichInt} implicit class will need to pimp any type, not just \pcode{Int}; the \pcode{eval} method will also need to be generic, but will need to (implicitly) require a typeclass: use the \pcode{Fractional} provided by the standard library, or define your own \pcode{NumberLike} typeclass. (The Scala standard library defines \pcode{Fractional} and \pcode{Integral} type classes, which contain the division operation whereas \pcode{Numeric} typeclass does not. Pick one, the limitation that not all types are fractional or integral. ``Dotty will fix this!'')
+Allow the expression evaluator to operate on any number-like types, not just \pcode{Int}s. Instead of relying on inheritance, forcing all users of the evaluator to evaluate values conforming to some trait (with the number-crunching methods \pcode{+, -, *, /}), use parametric polymorphism and type classes. The \pcode{Const} data constructor will need to take any type instead of \pcode{Int}; \pcode{RichInt} implicit class will need to pimp any type, not just \pcode{Int}; the \pcode{eval} method will also need to be generic, but will need to (implicitly) require a typeclass: use the \pcode{Fractional} provided by the standard library, or define your own \pcode{NumberLike} typeclass. (The Scala standard library defines \pcode{Fractional} and \pcode{Integral} type classes, which contain the division operation whereas \pcode{Numeric} typeclass does not. Pick one, the limitation that not all types are fractional or integral. The reasoning is that values that lie in the \pcode{Integral} typeclass include the \pcode{div} integer division; the values that lie in the \pcode{Fractional} typeclass include the ``full-fat'' division operation. In Scala, both are written as \pcode{/}, adding to the confusion.)
 
 \begin{lstlisting}[caption={Flexible evaluator with DSL and typeclasses}, label={code:eepm3}, language=Scala, escapechar=|]
 object Expr {
@@ -796,9 +776,16 @@ def eval[A](expr: Expr)(implicit N: NumberLike[A]): A = expr match {
 \end{lstlisting}
 
 \begin{lstlisting}[language=Haskell, escapechar=|]
+|The data type syntax is somewhat nicer...|
+data Expr a = Const a
+            | Plus (Expr a) (Expr a)
+            | Minus (Expr a) (Expr a)
+            ...
+
 |Define the typeclass |NumberLike| for type |a| with methods like |plus|, ... .|
 class NumberLike a where
   plus :: a -> a -> a
+  minus :: a -> a -> a
   ...
 
 |Provide an instance of |NumberLike| for the type |Int|.|
@@ -812,12 +799,14 @@ instance NumberLike Complex where
 
 |Just like the Scala version, |eval| requires the type |a| to lie in the |NumberLike| typeclass;|
 |that is, that there is an instance of |NumberLike| for that |a|.|
-eval :: (NumberLike a) => Expr -> a
+eval :: (NumberLike a) => Expr a -> a
 
 |However, the typeclass instance does not get a name in the function. Instead, all its functions|
 plus|, ... are available in the function without any additional notation.|
 eval (Plus l r) = plus (eval l) (eval r)
                   |$\uparrow$ In Scala, this would be |N.plus(eval(l), eval(r))
+|The implementation is written as pattern match.|
+eval (Minus l r) = minus (eval l) (eval r)                  
 \end{lstlisting}
 
 There are other languages that include features that may considered to be parametric polymorphism. For example, Swift's protocol conformance and extension methods, particularly with type constraints, certainly feel like typeclasses. Consider adding equality to arrays: two arrays can be \pcode{Equatable} of their elements are \pcode{Equatable} and what that might look like using parametric polymorphism in \autoref{code:tcs}.
@@ -903,7 +892,7 @@ Just like values have types, types have kinds. Take the type constructor \pcode{
 
 The expression writer implemented earlier hides the fact that it is not a pure function: it \emph{writes} something somewhere, it returns \pcode{Unit}, but its intent (and implementation) reveals that it cannot be simply substituted for any other \pcode{()} value. This is not surprising: after years of exposure to most languages, programmers know that \emph{some} operations aren't useful for their return value, but for the side-effects they perform on the world. The expectation for the \pcode{Writer.write} function is that it is not called for the \pcode{()} it returns, but for the \emph{effect of writing the value}. This is a useful abstraction, and in the case of a \pcode{Writer} that sends a textual representation of the value to the standard output the level of abstraction is sufficient: there are only few error scenarios that need to be handled (and maybe errors can be ignored altogether). The abstraction might not be sufficient for \pcode{Writer} that performs a REST call to another service to submit the value: what if the service is unavailable?; what if it is too slow to respond?; what if the caller is capable of performing asynchronous, non-blocking calls easily? In case of failures, one could consider throwing exceptions (and not forgetting to document those!); in the non-blocking case, the value \pcode{()} is simply not sufficient. The source of a lot of subtle and not-so-subtle bugs in programs stem from leaky abstractions. The abstraction hides something for convenience (like returning just \pcode{()} from the \pcode{write} function, allowing the callers to pretend that ``everything is fine''); the more complex the abstraction, the more complex its configuration and behaviour becomes; unfortunately, its unexpected behaviours become more complex, too.
 
-Back to our \pcode{Writer}. Another level of abstraction is needed: the \pcode{Writer.write} function needs to return the \pcode{()} ``boxed'' in another value. To make this box useful in most programs, it will be necessary for it to lie in a typeclass that contains functions for transforming the value contained in it, and unpacking the value and combining with other boxes. In other words, it will need the \pcode{map} and \pcode{flatMap} functions. (This will make it useful in \pcode{for} expressions, how neat!) At the point of defining the \pcode{Writer} trait, the shape of this box is not known; all that is known is that it will be some type that takes another type. Scala uses identifiers in square brackets to define type parameters (recall \pcode{def eval[A](...): A}), the identifier \pcode{A} refers to a concrete type. An identifier that represents a type constructor that needs one more type to make it concrete is simply \pcode{A[_]}. Applying this to the \pcode{Writer} trait yields code in \autoref{code:hk1}.
+Back to our \pcode{Writer}. Another level of abstraction is needed: the \pcode{Writer.write} function needs to return the \pcode{()} ``boxed'' in another value. To make this box useful in most programs, it will be necessary for it to lie in a typeclass that contains functions for transforming the value contained in it, and unpacking the value and combining with other boxes. In other words, it will need the \pcode{map} and \pcode{flatMap} functions. (This will make it useful in \pcode{for} expressions, how neat!) At the point of defining the \pcode{Writer} trait, the shape of this box is not known; all that is known is that it will be some type that takes another type. Scala uses identifiers in square brackets to define type parameters (recall \pcode{def eval[A](...): A}), the identifier \pcode{A} refers to a concrete type. An identifier that represents a type constructor that needs one more type to make it concrete type is written as \pcode{A[_]}. Applying this to the \pcode{Writer} trait yields code in \autoref{code:hk1}.
 
 \begin{lstlisting}[caption={Defining and using higher-kinded types}, label={code:hk1}, language=Scala, escapechar=|]
 trait Writer[-A] {
@@ -911,10 +900,12 @@ trait Writer[-A] {
 }
 \end{lstlisting}
 
-Unfortunately, this definition would make it somewhat difficult to implement the trait: there would be no way to construct instances of \pcode{M[_]}. The implementation of the \pcode{write} function needs to receive a typeclass instance that allows it to construct a value of type \pcode{M[_]}; and the constructed \pcode{M[_]} should be sequenceable. It should lie in the $\mathfrak{MONAD}$ typeclass. 
+Unfortunately, this definition would make it somewhat difficult to implement the trait: there would be no way to construct instances of \pcode{M[_]}. The implementation of the \pcode{write} function needs to receive a typeclass instance that allows it to construct a value of type \pcode{M[_]}; and the constructed \pcode{M[_]} should be sequenceable. It should lie in the $\mathfrak{MONAD}$ typeclass. Everyone has heard that ``monad is a simply monoid in the category of endofunctors, so that should make everything absolutely clear,'' together with ``monad is a structure with natural transformations \textmu{} and \texteta{} such that the following diagram commutes.'' What a wonderful way to teach the concept, especially when the task at hand is to implement the \pcode{Writer} that does something useful!\footnote{Monads aren't any more complex than \pcode{AbstractBeanFactoryPostProcessor}; if it's possible to understand \emph{that}, then monads are just as understandable.} 
+
+Monad only describes structure and behaviour of a value; it has nothing as such to do with typeclasses. The structure defines the functions that must be available; behaviour defines how the behaviour behaves when composed with other monads. As a result, many values are monads: \pcode{Option} is a monad, \pcode{List} is a monad, etc. This is where the typeclasses come in: rather than forcing \pcode{Option}, \pcode{List}, etc. to implement some \pcode{Monad} trait (and even if there were such an implementation, how would one go about constructing concrete values given just this interface?), it is better to require there to be an instance of the \pcode{Monad} typeclass for \pcode{Option}, \pcode{List}, but also \pcode{Future}, \pcode{IO}. Ooh!--this is quite useful now.
 
 \begin{example}[Exercise: Flexible writers]
-And so it has come to this: implement the expression writer to be usable in caller-defined contexts by requiring its higher-kinded type parameter \pcode{M} to lie in the \pcode{Monad} typeclass.
+And so it has come to this: implement the expression writer to be usable in caller-defined contexts by requiring its higher-kinded type parameter \pcode{M} to lie in the \pcode{Monad} typeclass. Find a method in the \pcode{Monad} typeclass that can pack a plain value into the monad. 
 
 \begin{lstlisting}[caption={Reader and Writer with proper variance}, label={code:rw2}, language=Scala, escapechar=|]
 trait Writer[-A] {
