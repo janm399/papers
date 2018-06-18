@@ -1,0 +1,35 @@
+name: expr-evaluator
+
+# tests:
+#   spec:
+#     main: Spec.hs
+#     ghc-options:
+#       - -fprint-potential-instances
+#     source-dirs:
+#       - test
+#     dependencies:
+#       - hspec
+#       - system-alpha
+#       - statistics
+#       - vector
+#       - random
+#       - uuid
+#       - http-types
+
+executables:  
+  expr-evaluator:
+    ghc-options: 
+      - -Wall
+      - -O2
+      - -threaded 
+      - -rtsopts
+      - -with-rtsopts=-N30 
+      - -fprint-potential-instances
+    main: exe/Main.hs
+    dependencies:
+      - mtl
+
+dependencies:
+  - base
+  - transformers
+

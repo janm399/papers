@@ -1,0 +1,21 @@
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 4f3c3eb23c3c71fb153954f3aa11465cf65822d4763797a559a423588ca29143
+
+name:           expr-evaluator
+version:        0.0.0
+build-type:     Simple
+cabal-version:  >= 1.10
+
+executable expr-evaluator
+  main-is: exe/Main.hs
+  other-modules:
+      Paths_expr_evaluator
+  ghc-options: -Wall -O2 -threaded -rtsopts -with-rtsopts=-N30 -fprint-potential-instances
+  build-depends:
+      base
+    , mtl
+    , transformers
+  default-language: Haskell2010
