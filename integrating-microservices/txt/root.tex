@@ -27,7 +27,9 @@
 Systems whose components run on multiple nodes are difficult to design without obvious errors, difficult to build, difficult to run, and difficult to maintain; the reasons that justify this complexity are resilience and performance. Resilience refers to the system's ability to continue to operate even if some of its components are failing; informally, performance refers to the system's ability to handle large incoming workload quickly. The exact definitions for ``large'' and ``quickly'' <- TODO.
 
 \subsection{Why?}
-The main reason for building distributed systems
+A system is spread over multiple nodes because it is too big for just one node, or because the risk of node failure taking down the entire system is unacceptable. The size of the benefit of distributing the system over mulitple noes depends on the system's workload and architecture. The best-case scenario is a system whose work units fit entirely on one node, and do not need to communicate with any other nodes. Consider a system that can perform independent image classification where the image to be classified fits into one input message, the classifier does not need any further input to perform the classification, and the result can be delivered in a single output message. Such a system is completely stateless and so very simple to distribute: the increase the system's throughput, one just needs to add nodes.
+
+It might need to store too much data to fit on the built-in disks, it might need to do too much computation for the CPU to handle, it might need to keep too much data to keep in RAM, etc. This reasoning assumes that all these local resources (CPU, RAM, disk) are 
 
 \begin{figure}[h]
   \begin{tikzpicture}
@@ -90,13 +92,13 @@ The main reason for building distributed systems
 
 \begin{figure*}[h]
   \begin{tikzpicture}
-    \draw[pink,   -,fill=pink   ] (0, 0)    rectangle (16, 1.35); \node[draw] at (14.5, 0.7) {heart beat};
-    \draw[blue!20,-,fill=blue!20] (0, 1.35) rectangle (16, 2.8);  \node[draw] at (14.5, 0.7) {drink a cup of tea};
-    \draw[pink,   -,fill=pink   ] (0, 2.8)  rectangle (16, 4.3);  \node[draw] at (14.5, 0.7) {average commute};
-    \draw[blue!20,-,fill=blue!20] (0, 4.3)  rectangle (16, 6);    \node[draw] at (14.5, 0.7) {blockbuster film};
-    \draw[pink,   -,fill=pink   ] (0, 6)    rectangle (16, 7.3);  \node[draw] at (14.5, 0.7) {flight between continents};
-    \draw[blue!20,-,fill=blue!20] (0, 7.3)  rectangle (16, 8.5);  \node[draw] at (14.5, 0.7) {holiday};
-    \draw[pink,   -,fill=pink   ] (0, 12)   rectangle (16, 13.4); \node[draw] at (14.5, 0.7) {entire history of USA};
+    \draw[pink,   -,fill=pink   ] (0, 0)    rectangle (17, 1.35); \node[right] at (13.8, 0.7) {heart beat};
+    \draw[blue!20,-,fill=blue!20] (0, 1.35) rectangle (17, 2.8);  \node[right] at (13.8, 2.0) {drink a cup of tea};
+    \draw[pink,   -,fill=pink   ] (0, 2.8)  rectangle (17, 4.3);  \node[right] at (13.8, 3.6) {average commute};
+    \draw[blue!20,-,fill=blue!20] (0, 4.3)  rectangle (17, 6);    \node[right] at (13.8, 5.1) {blockbuster film};
+    \draw[pink,   -,fill=pink   ] (0, 6)    rectangle (17, 7.3);  \node[right] at (13.8, 6.7) {MAN $\rightarrow$ SFO};
+    \draw[blue!20,-,fill=blue!20] (0, 7.3)  rectangle (17, 8.5);  \node[right] at (13.8, 7.7) {holiday};
+    \draw[pink,   -,fill=pink   ] (0, 12)   rectangle (17, 13.4); \node[right] at (13.8, 12.7) {history of USA};
 
     \begin{axis}[
       height=15cm, 
@@ -184,7 +186,7 @@ The main reason for building distributed systems
     \item REST API call with \numprint{0.00001} error rate + \SI{10}{\milli\second} latency
   \end{enumerate}
   \caption{Simple computation}
-  \label{plot:simple-computation}
+  \label{plot:simple-computation-xl}
 \end{figure*}
 
 \section{State in distributed system}

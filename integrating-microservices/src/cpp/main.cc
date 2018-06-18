@@ -52,7 +52,7 @@ public:
 
 const string fb3(const int i) noexcept {
     using cc = condition_checker<int>;
-    using scc = shared_ptr<cc>;
+    //using scc = shared_ptr<cc>;
     class fizz_cc : public cc {
     public:
         bool check(int t) override {
@@ -67,22 +67,22 @@ const string fb3(const int i) noexcept {
     };
     class fizzbuzz_cc : public cc {
     private:
-        scc is_fizz;
-        scc is_buzz;
+        cc &is_fizz;
+        cc &is_buzz;
     public:
-        fizzbuzz_cc(scc a_is_fizz, scc a_is_buzz) : is_fizz(a_is_fizz), is_buzz(a_is_buzz) {}
+        fizzbuzz_cc(cc &a_is_fizz, cc &a_is_buzz) : is_fizz(a_is_fizz), is_buzz(a_is_buzz) {}
 
         bool check(int t) override {
-            return is_fizz->check(t) && is_buzz->check(t);
+            return is_fizz.check(t) && is_buzz.check(t);
         }
     };
-    auto fizz = make_shared<fizz_cc>();
-    auto buzz = make_shared<buzz_cc>();
+    auto fizz = fizz_cc();//make_shared<fizz_cc>();
+    auto buzz = buzz_cc();//make_shared<buzz_cc>();
     auto fizz_buzz = fizzbuzz_cc(fizz, buzz);
 
     if (fizz_buzz.check(i)) return "FizzBuzz";
-    else if (fizz->check(i)) return "Fizz";
-    else if (buzz->check(i)) return "Buzz";
+    else if (fizz.check(i)) return "Fizz";
+    else if (buzz.check(i)) return "Buzz";
     else return std::to_string(i);
 }
 
@@ -135,7 +135,6 @@ long run(F f) {
 
 int main() {
     for (int i = 0; i < 10; i++) {
-        run(withHttp(fb1));
         run(fb1);
         run(fb2a);
         run(fb2b);
@@ -143,6 +142,7 @@ int main() {
         run(fb4);
         run(withIO("/dev/zero", fb1));
         run(withIO("/tmp/zeros", fb1));
+        run(withHttp(fb1));
         cout << endl << endl;
     }
 }
