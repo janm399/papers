@@ -24,10 +24,18 @@
 ]
 
 \section{Stateful distributed systems}
-Systems whose components run on multiple nodes are difficult to design without obvious errors, difficult to build, difficult to run, and difficult to maintain; the reasons that justify this complexity are resilience and performance. Resilience refers to the system's ability to continue to operate even if some of its components are failing; informally, performance refers to the system's ability to handle large incoming workload quickly. The exact definitions for ``large'' and ``quickly'' <- TODO.
+Systems whose components run on multiple nodes are difficult to design without obvious errors, difficult to build, difficult to run, and difficult to maintain; the reasons that justify this complexity are resilience and performance. Resilience refers to the system's ability to continue to operate even if some of its components are failing; informally, performance refers to the system's ability to handle large incoming workload quickly. The precise definitions of ``large'' and ``quickly'' depend on the details of system being built. Availability is the ratio of the system's uptime over the time the system is able to serve clients. Intuitively, systems with high resilience and high ability to handle workloads result in high availability. 
+
+\subsection{CAP}
+The CAP theorem says that out of the three properties (consistency, availability, and partition tolerance), a system can satisfy only two at the same time; a \emph{distributed system} needs to include partition tolerance in order to be able to cope with the reality of running on nodes that might become disconnected through hardware or software failure. This leaves only one of consistency and availability. There are many levels of consistency and availability; these levels can be set differently for each of the system's components. Moreover, consistency and availability aren't binary: it is possibe to select a very loose consistency level, leaving lots of room for good availability.
+
+\begin{example}[CAP intuition]
+A good way to think about CAP is to consider a database that is to be consistent and partition-tolerant, and that spreads its data on multiple nodes. The command \pcode{truncate table X} can be considered to succeed if all nodes that make up the system can all agree that they have completed their part of the work. If just one node cannot confirm the completion (because it crashed, because it took too long to reply, ...), the system's only choice is to stop accepting further work. It is configured to be consistent, but it cannot verify this; it can switch to a ``recovery'' or ``maintenance'' mode until it becomes consistent again (automatically or by some kind of administrative intervention).
+\end{example}
 
 \subsection{Why?}
 A system is spread over multiple nodes because it is too big for just one node, or because the risk of node failure taking down the entire system is unacceptable. The size of the benefit of distributing the system over mulitple noes depends on the system's workload and architecture. The best-case scenario is a system whose work units fit entirely on one node, and do not need to communicate with any other nodes. Consider a system that can perform independent image classification where the image to be classified fits into one input message, the classifier does not need any further input to perform the classification, and the result can be delivered in a single output message. Such a system is completely stateless and so very simple to distribute: the increase the system's throughput, one just needs to add nodes.
+In order to benefit from the increased processing power that more nodes bring, there must be a way to distribute the workload to the worker nodes. This requires some form of load balancer that maintains a set of available nodes and routes requests to them, or a workload repository that the nodes can query to obtain the next work item. Both the load balancer or the workload repository need to be distributed systems themselves so that they don't become the single point of failure for the distributed system. The load balancer maintains the set of available worker nodes; the workload repository spreads the workload over its nodes: this introduces state and forces the configuration of the load balancer or the work repository to consider the CA balance.
 
 It might need to store too much data to fit on the built-in disks, it might need to do too much computation for the CPU to handle, it might need to keep too much data to keep in RAM, etc. This reasoning assumes that all these local resources (CPU, RAM, disk) are 
 
@@ -192,9 +200,40 @@ It might need to store too much data to fit on the built-in disks, it might need
 \section{State in distributed system}
 Imagine two systems that need to share information; a good starting point may be an endpoint where one system can request the state of the other system. If the first system needs to keep ``in sync'' with the second system, it needs to periodically query the endpoint to obtain the state from the second system. This keeps the two systems independent and decoupled, but it means that the systems might miss important state changes that happen between the two polls, and it makes both systems do needless work by querying the endpoints, even if the state remains the same.
 
-This inefficiency, the complexity of building reliable and easy-to-use endpoints, the reasoning that both systems are views on the same underlying data, the possible time-pressures to deliver working integration, leads to the \emph{database as integration layer} anti-pattern\cite{eip}. Never mind the \emph{anti} in anti-pattern: what would happen if the systems actually decided to use a shared database? As the database spreads over multiple networked nodes, which introduces unreliability and delay, and means that the database administrators now need to choose the two of the C$\cdot$A$\cdot$P (C stands for consistency, A for availability, and P for partition-tolerance)--as long as one of the choices is P. This leaves the DBAs with a decision between A and C. A database that keeps its state on multiple nodes may keep them ``in sync'' by sending the nodes messages that describe the state transitions to be applied to the state. The state that the database (in the sense of all its nodes) keeps is then simply a reliable playback of all the messages. The state is a snapshot of the stream of messages at a given point in time. However, the decision between C and A still remains. If the choice is C, then all nodes have to agree that they have indeed received and applied all messages up to some point in time; in case the messages aren't received, or if there is no agreement, the database must become unavailable. If the choice is A, then there is the risk that a node that is being queried has not yet received all update messages; querying another node may yield different result; repeating the same query on the original node later may yield different result.
+This inefficiency, the complexity of building reliable and easy-to-use endpoints, the reasoning that both systems are views on the same underlying data, the possible time-pressures to deliver working integration, leads to the \emph{database as integration layer} anti-pattern\cite{eip}. Never mind the \emph{anti} in anti-pattern: what would happen if the systems actually decided to use a shared database? As the database spreads over multiple networked nodes, which introduces unreliability and delay, and means that the database administrators now need to choose the two of the C$\cdot$A$\cdot$P--as long as one of the choices is P. This leaves the DBAs with a decision between A and C. A database that keeps its state on multiple nodes may keep them ``in sync'' by sending the nodes messages that describe the state transitions to be applied to the state. The state that the database (in the sense of all its nodes) keeps is then simply a reliable playback of all the messages. The state is a snapshot of the stream of messages at a given point in time. However, the decision between C and A still remains. If the choice is C, then all nodes have to agree that they have indeed received and applied all messages up to some point in time; in case the messages aren't received, or if there is no agreement, the database must become unavailable. If the choice is A, then there is the risk that a node that is being queried has not yet received all update messages; querying another node may yield different result; repeating the same query on the original node later may yield different result.
 
 Using a database as an integration layer does not make the difficult choices of a distributed system go away, yet it keeps all the disadvantages of the anti-pattern. It forces shared data model, which may couple two (multiple!) systems together in the same release cycle; it is also a recipe for slowly-growing monolith, where one of the systems gains more and more functionality (the one with the largest number of developers); the other systems become lighter--after all, they are just views on the same shared state. The shared data model also means that two (multiple!) systems have to agree on usable data models for each.
+
+Using messaging 
+
+\subsection{Notification}
+Notification sent from one system to indicate that ``something's up'' are a useful way to reduce the busy polls. Think of the notifications as interrupts that only indicate that now is a good time to make a more detailed query. \autoref{fig:es-notification} shows the flow where system \circled{A} emits a notification that carries some simple playload. System \circled{B} consumes the notification, examines the payload and makes a request to query for more details.
+
+\fig{es-notification.png}{es-notification}{Notification}
+
+The contents of the notification sent from \circled{A} to \circled{B} is small: an identifier of the entity that has changed, a range of entities that have changed, and similar. It is the responsibility of \circled{B} to make the appropriate queries back to \circled{A}. 
+
+\subsection{State transfer}
+
+\subsection{Event-sourcing}
+
+\subsection{CQRS/ES}
+
+\begin{table}[h]
+    \begin{tabular}{lcccc}
+        \toprule
+        & \rot{Reduces busy polls} & \rot{Maintains consistency} & \rot{Does not increase availability} & \rot{CQRS/ES} \\
+        \midrule
+        Notification     & x & x & x & x \\
+        State transfer   & x & - & - & x \\
+        Event-sourcing   & x & - & x & x \\
+        CQRS/ES          & - & - & x & x \\
+        \bottomrule
+    \end{tabular}
+    \caption{Bit damage}
+    \label{tbl:bit-damage}
+\end{table}
+
 
 \section{Message-driven systems}
 If the systems that are to be integrated are event-driven--each system publishes messages as it proceeds with its operation, and if each system accepts messages at any time without previously initiating a request--then the integration can take advantage of this transfer of information. Relying entirely on [persistent] messaging can be burdensome; it is reasonable to rely on snapshots to remove the need to replay the messages from the beginning of time at start-up. 
