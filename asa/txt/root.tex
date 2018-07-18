@@ -1,0 +1,126 @@
+\documentclass[10 pt, twocolumn]{article}
+\input{../../common.tex}
+
+\usepackage[OT1]{fontenc}
+\newcommand*\eiadfamily{\fontencoding{OT1}\fontfamily{eiad}\selectfont}
+
+\addbibresource{root.bib}
+
+\title{Nice and naughty systems in production}
+
+\author{Jan Macháček, Anirvan Chakraborty, Christian Villoslada}
+
+\begin{document}
+
+\twocolumn[
+  \begin{@twocolumnfalse}
+    \maketitle
+    \begin{abstract}
+        \normalsize
+        This paper presents the result and analysis of a survey of developers in a large organisation. The aim of the survey was to find out what aspects of a software system contribute the most to the system's operation. 
+    \end{abstract}
+    \bigskip
+  \end{@twocolumnfalse}
+]
+
+\section{The first survey}
+The first survey asked \emph{teams} to answer very specific questions about the code, testing, dependencies, deployment, and infrastructure. Across 31 teams, the average number of ``fields'' in the answers was 150. \autoref{code:survey-1} shows a small portion of the first survey; the answers were merged from pull requests to a single GitHub repository. 
+
+\begin{lstlisting}[caption={Survey example}, label={code:survey-1}, language=yaml, escapechar=|]
+redundancy:
+  is_load_balanced: true
+  num_of_azs: 3
+  num_of_regions: 3
+|...|
+testing:
+  unit:
+    is_used: true 
+    is_automated: true
+    tracks_coverage: false
+  |And similar for |integration|, |functional|, |performance|, |chaos|.|
+|...|
+\end{lstlisting}
+
+Anecdotally, the review process during the pull requests' merge process was helped the teams clarify their answers and improve the shared understanding of some of the answers: the teams now understand, for example, what constitutes good performance testing (read the value \pcode{true} in the response). 
+
+
+\section{The second survey}
+The large number of questions, together with evolving understanding of the meaning of (some of) the answers meant that the data collected did not reveal any useful patterns. 
+
+Hence a second survey was planned. The survey asked \emph{every engineer} fewer questions, specifically:
+
+\begin{itemize}
+  \item what are 10 most important properties of reliable systems
+  \item how do you rate your system (scale $\interval[open]{1}{10}$) in each of the features
+  \item how easy is it for a new starter to be productive (scale $\interval[open]{1}{10}$)
+  \item how ``painful'' is it to support the system (scale $\interval[open]{1}{10}$)
+  \item if you could re-implement the system, how much would you change (scale $\interval[open]{1}{10}$)
+\end{itemize}
+
+Finally, the infrastructure team added their own 2 classes: \emph{nice} and \emph{naughty}. The classification selected 5 of the most frequent properties, and added properties from the first survey that were considered important. A parallel coordinates plot in \autoref{fig:all-a} of the collected data shows how the features \textbf{A}-\textbf{I} map to the final class in \textbf{J}.
+
+\fig{all-a.png}{all-a}{All responses}
+
+Colouring the \emph{naughty} class blue and changing the opacity of the parallel coordinate lines to indicate the count of values reveals the properties that appear in the naughty class the most number of times. (See \autoref{fig:all-l} and \autoref{fig:all-la}.)
+
+\fig{all-l.png}{all-l}{Highlighted naughty class}
+\fig{all-la.png}{all-la}{Contributions to the naughty class}
+
+\section{The three properties}
+The top 3 properties of naughty systems are \emph{X}, \emph{Y}, and \emph{Z}; the top 3 properties of nice systems are \emph{X'}, \emph{Y'}, and \emph{Z'}!
+
+\section{Automated classification}
+The three properties can be used to build automated tools that can predict the type of the system during its continuous integration. 
+
+\fig{dim-1.png}{dim-1}{Separation along the first feature}
+\fig{dim-2.png}{dim-2}{Separation along the second feature}
+\fig{dim-3.png}{dim-3}{Separation along the third feature}
+
+\section{Perfect vs. pragmatic}
+The survey analysis results provided 3 areas that need to be ``perfect'' if the goal is to achieve resilient and painless operation. The results also provide useful approach to the age-old debate of perfection vs. business value. The data from an incident repository show that sloppy code in these aspects result in
+
+\begin{itemize}
+\item missing early problem indications, resulting in service failures
+\item long time-to-diagnosis
+\item long time-to-root-cause 
+\item dismissing some underlying problem as ``one-off''
+\end{itemize}
+
+\subsection{Back-pressure or circuit-breakers}
+XXX
+
+\subsection{Structured \& centralised logging}
+Logging is one of the key tools that helps to locate the cause of a problem. I don't always do logging, but when I do, it looks like \autoref{code:structured-logging}.
+
+\begin{lstlisting}[caption={Structured logging}, label={code:structured-logging}, language=Scala, escapechar=|]
+def logClientError[A: IWrites](
+  e: TranscodeClientError,
+  job: A,
+  blockedOnCall: Boolean)
+  (implicit lc: LoggingContext, 
+            ls: LoggingScope): 
+  StateT[IO, AggregatorFailuresState[A], Unit] =
+  StateT.liftF(
+    IO(
+      SLogging.logWarn(
+        Seq[KV](
+          failedSentsKey -> e,
+          jobKey -> job,
+          blockedOnCallKey -> blockedOnCall
+        )
+      )
+    )
+  )
+\end{lstlisting}
+
+\subsection{Performance testing}
+XXX
+
+\section{Further work}
+Automation: is it possible to build a tool that automatically detects the proper application of the top 3 items? (Yes; one way is to use ``internal OSS'' that implements the top 3 and scan for its usage in the code, I'm sure there are other ways.)
+
+Continued learning: once the top 3 have been resolved, other top 3 will emerge. It will be necessary to keep applying the approach in this paper forever.
+
+\printbibliography
+
+\end{document}
