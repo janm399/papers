@@ -1,0 +1,8 @@
+#!/bin/sh
+
+DIR=$1
+
+PE=`egrep --include=\*.{scala,java} -rn $DIR -e "log\.error\(\w+, \"" | wc -l`
+OE=`egrep --include=\*.{scala,java} -rn $DIR -e "log\.error\(s?\"" | wc -l`
+
+echo "$PE $OE"
