@@ -1,18 +1,27 @@
 package com.acme
 
-import java.io.{File, FilenameFilter}
+import java.io.File
 
-class Directory(path: String) {
+trait Directory {
+  def findAll(extensions: String*): List[File]
+}
 
-  private def find(filter: FilenameFilter)(dir: File): Array[File] = {
-    if (dir.isDirectory) {
-      val files = dir.listFiles(filter)
-      files ++ files.filter(_.isDirectory).flatMap(find(filter))
-    } else Array.empty
-  }
+object Directory {
 
-  def findAll(extensions: String*): Array[File] = {
-    find((_, name) ⇒ extensions.exists(ext ⇒ name.endsWith(ext)))(new File(path))
+  def apply(path: String, excludes: List[String] = List("target")): Directory = new Directory {
+
+    private def find(extensions: Seq[String])(dir: File): Array[File] = {
+      if (dir.isDirectory && !excludes.contains(dir.getName)) {
+        val files = dir.listFiles()
+        files.filter(f ⇒ f.isFile && extensions.exists(ext ⇒ f.getName.endsWith(ext))) ++
+          files.filter(_.isDirectory).flatMap(find(extensions))
+      } else Array.empty
+    }
+
+    override def findAll(extensions: String*): List[File] = {
+      find(extensions)(new File(path)).toList
+    }
+
   }
 
 }
