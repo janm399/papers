@@ -35,7 +35,7 @@ object ExampleLoader {
   }
 
   object Row {
-    val fmt = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss")
+    val fmt = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
     def apply(map: java.util.Map[String, String]): Row = {
       val vcs = map.get("ViewCount")
       val vc = if (vcs.isEmpty) 0 else vcs.toInt
@@ -61,9 +61,18 @@ object ExampleLoader {
     }
   }
 
-//  def main(array: Array[String]): Unit = {
-//    val y = loadLabels().filter(_.isTagged("akka")).map(_.sourceCodes())
-//    println(y)
-//  }
+}
 
+object X {
+  import ExampleLoader._
+
+  def main(args: Array[String]): Unit = {
+    val dir = Directory("/Users/janmachacek/Downloads/so")
+    val y = loadLabels(dir).filter(_.isTagged("akka"))
+    y.foreach { r ⇒
+      if (r.body.contains("bad")) {
+        println(s"*** bad: ${r.body}")
+      }
+    }
+  }
 }
