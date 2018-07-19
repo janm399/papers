@@ -32,7 +32,7 @@ object SourceClassifier {
       "logging", "monitoring"
     )
     val stopwords = Set("<-", "←", "<:", "<%", "=", "=>", "⇒", ">:", "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final", "finally", "for", "forSome", "if", "implicit", "import", "lazy", "match", "new", "null", "object", "override", "package", "private", "protected", "return", "sealed", "super", "this", "throw", "trait", "true", "try", "type", "val", "var", "while", "with", "yield")
-    val config = LiblinearConfig(cost = 1.0, eps = 0.01, solverType = SolverType.L2R_LR_DUAL, showDebug = true)
+    val config = LiblinearConfig(cost = 10.0, eps = 0.01, solverType = SolverType.L2R_LR_DUAL, showDebug = true)
     val featurizer = new BowFeaturizer(stopwords)
     val trainingExamples = classes.flatMap { cls ⇒
       val t = sources.filter(_.isTagged(cls))
@@ -75,7 +75,7 @@ object SourceClassifier {
 
 object M {
   def main(args: Array[String]): Unit = {
-    val classifier = SourceClassifier(true)
+    val classifier = SourceClassifier(false)
 
     Directory("/Users/janmachacek/Sandbox/adengine")
       .findAll(".scala")
