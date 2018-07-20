@@ -54,7 +54,7 @@ object SourceClassifier {
           row.sourceCodes().map { sc ⇒
             val doc = new LabelledDocument
             doc.setContent(sc)
-            doc.setLabels(row.tags(classes).asJava)
+            doc.setLabels(row.tags(classes).distinct.asJava)
             doc
           }
 
