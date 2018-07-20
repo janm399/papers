@@ -1,6 +1,7 @@
 package com.acme
 
 import java.io._
+import java.util
 
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors
 import org.deeplearning4j.text.documentiterator.{LabelAwareIterator, LabelledDocument, LabelsSource}
@@ -75,6 +76,8 @@ object SourceClassifier {
           .batchSize(100000)
           .epochs(20)
           .iterate(iterator)
+          .stopWords(util.Arrays.asList("<-", "←", "<:", "<%", "=", "=>", "⇒", ">:", "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final", "finally", "for", "forSome", "if", "implicit", "import", "lazy", "match", "new", "null", "object", "override", "package", "private", "protected", "return", "sealed", "super", "this", "throw", "trait", "true", "try", "type", "val", "var", "while", "with", "yield"))
+          .allowParallelTokenization(true)
           .trainWordVectors(true)
           .tokenizerFactory(tokenizerFactory)
           .build()
