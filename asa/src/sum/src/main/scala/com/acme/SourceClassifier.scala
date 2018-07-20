@@ -2,14 +2,13 @@ package com.acme
 
 import java.io._
 
-import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors
 import org.deeplearning4j.text.documentiterator.{LabelAwareIterator, LabelledDocument, LabelsSource}
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory
 
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 trait SourceClassifier {
 
@@ -85,12 +84,17 @@ object SourceClassifier {
         val oos = new ObjectOutputStream(new FileOutputStream(serializedFileName))
         oos.writeObject(paragraphVectors)
         oos.close()
-        // WordVectorSerializer.writeParagraphVectors(paragraphVectors, serializedFileName)
+//        WordVectorSerializer.writeParagraphVectors(paragraphVectors, serializedFileName)
 
         paragraphVectors
       }
 
-      def load(): Try[ParagraphVectors] = {
+      def load(): Try[ParagraphVectors] = Try {
+        val ois = new ObjectInputStream(new FileInputStream(serializedFileName))
+        val classifier = ois.readObject().asInstanceOf[ParagraphVectors]
+        ois.close()
+        classifier
+      }
 //        try {
 //          val pv = WordVectorSerializer.readParagraphVectors(serializedFileName)
 //          Success(pv)
@@ -99,21 +103,21 @@ object SourceClassifier {
 //            t.printStackTrace()
 //            Failure(t)
 //        }
-
-        try {
-          val ois = new ObjectInputStream(new FileInputStream(serializedFileName))
-          val classifier = ois.readObject().asInstanceOf[ParagraphVectors]
-          ois.close()
-          //val pvLabels = classifier.getLabelsSource.getLabels.asScala
-          Success(classifier)
-          //if (classes.forall(pvLabels.contains)) Success(classifier)
-          //else throw new RuntimeException("")
-        } catch {
-          case t: Throwable ⇒
-            t.printStackTrace()
-            Failure(t)
-        }
-      }
+//
+//        try {
+//          val ois = new ObjectInputStream(new FileInputStream(serializedFileName))
+//          val classifier = ois.readObject().asInstanceOf[ParagraphVectors]
+//          ois.close()
+//          //val pvLabels = classifier.getLabelsSource.getLabels.asScala
+//          Success(classifier)
+//          //if (classes.forall(pvLabels.contains)) Success(classifier)
+//          //else throw new RuntimeException("")
+//        } catch {
+//          case t: Throwable ⇒
+//            t.printStackTrace()
+//            Failure(t)
+//        }
+//      }
 
       val exampleDirectory = Directory("~/Downloads/so")
       val pv = load().getOrElse(train(exampleDirectory))
