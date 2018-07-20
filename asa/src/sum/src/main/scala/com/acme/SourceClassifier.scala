@@ -95,7 +95,7 @@ object SourceClassifier {
         else Failure(new RuntimeException("Mismatched classes"))
       }
 
-      val exampleDirectory = Directory("/Users/janmachacek/Downloads/so")
+      val exampleDirectory = Directory("~/Downloads/so")
       val pv = load().getOrElse(train(exampleDirectory))
       new PVec(pv)
     }
@@ -121,9 +121,9 @@ object SourceClassifier {
 object M {
 
   def main(args: Array[String]): Unit = {
-    val classifier = SourceClassifier(Directory("/Users/janmachacek/Downloads/so"))
+    val classifier = SourceClassifier(Directory("~/Downloads/so"))
 
-    Directory("/Users/janmachacek/Sandbox/adengine")
+    Directory("~/Sandbox/adengine")
       .findAll(".scala")
       .map(f ⇒ f → classifier.classify(f))
       .foreach(println)
