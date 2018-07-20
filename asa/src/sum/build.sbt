@@ -6,7 +6,8 @@ organization := "com.acme"
 
 libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  "org.scalanlp" % "nak" % "1.2.1" exclude ("org.apache.logging.log4j", "log4j-core"),
+  "org.nd4j" % "nd4j-native-platform" % "1.0.0-beta",
+  "org.deeplearning4j" % "deeplearning4j-nlp" % "1.0.0-beta",
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-csv" % "2.9.0",
   "org.apache.logging.log4j" % "log4j-core" % "2.11.0",
   "org.apache.logging.log4j" % "log4j-api" % "2.11.0",

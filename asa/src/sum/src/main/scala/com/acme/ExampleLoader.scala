@@ -18,6 +18,8 @@ object ExampleLoader {
       qTitle.toLowerCase.contains(tag) || qTags.contains(tag)
     }
 
+    def tags(allowedTags: Seq[String]): List[String] = qTags.filter(allowedTags.contains)
+
     def sourceCodes(): List[String] = {
       def i(fromIndex: Int): List[String] = {
         val start = body.indexOf("<pre><code>", fromIndex)

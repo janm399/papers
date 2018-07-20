@@ -2,13 +2,14 @@ package com.acme
 
 import java.io._
 
-import nak.core.FeaturizedClassifier
-import nak.data.{BowFeaturizer, Example}
-import nak.liblinear.{LiblinearConfig, SolverType}
 import org.apache.logging.log4j.LogManager
+import org.deeplearning4j.models.paragraphvectors.ParagraphVectors
+import org.deeplearning4j.text.documentiterator.{LabelAwareIterator, LabelledDocument, LabelsSource}
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory
 
 import scala.io.Source
-import scala.util.{Failure, Random, Success, Try}
+import scala.util.{Failure, Success, Try}
 
 trait SourceClassifier {
 
@@ -19,60 +20,96 @@ trait SourceClassifier {
 object SourceClassifier {
   private val log = LogManager.getLogger(SourceClassifier.getClass)
 
-  def apply(): SourceClassifier = {
-    import nak.NakContext._
-    type Classifier = FeaturizedClassifier[String, String]
-    val serializedModelFileName = "target/classifier.ser"
-    val classes = Seq(
-      "akka", "akka-http", "akka-stream", "sbt", "actor", "backpressure", "scalatest", "scalacheck", "validation",
-      "amazon-aws", "amazon-dynamo", "kafka", "amazon-kinesis", "amazon-s3", "protobuf", "concurrency", "future",
-      "logging", "monitoring"
-    )
+  def apply(exampleDirectory: Directory): SourceClassifier = {
+    PVec(exampleDirectory)
+  }
 
-    def train(exampleDirectory: Directory): Classifier = {
-      val sources = ExampleLoader.loadLabels(exampleDirectory)
-      log.info(s"Loaded ${sources.length} examples")
+  object PVec {
+    import scala.collection.JavaConverters._
+    private val serializedFileName = "target/pv.ser"
 
-      val stopwords = Set("<-", "←", "<:", "<%", "=", "=>", "⇒", ">:", "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final", "finally", "for", "forSome", "if", "implicit", "import", "lazy", "match", "new", "null", "object", "override", "package", "private", "protected", "return", "sealed", "super", "this", "throw", "trait", "true", "try", "type", "val", "var", "while", "with", "yield")
-      val config = LiblinearConfig(cost = 10.0, eps = 0.01, solverType = SolverType.L2R_LR_DUAL, showDebug = true)
-      val featurizer = new BowFeaturizer(stopwords)
-      val trainingExamples = classes.flatMap { cls ⇒
-        val t = sources.filter(_.isTagged(cls))
-        Random.shuffle(t).flatMap(_.sourceCodes().map(Example(cls, _)))
+    private class LDI(labelledDocuments: List[LabelledDocument], labelsSource: LabelsSource) extends LabelAwareIterator {
+      private var iterator = labelledDocuments.iterator.asJava
+
+      override def hasNextDocument: Boolean = iterator.hasNext
+      override def nextDocument(): LabelledDocument = iterator.next()
+      override def reset(): Unit = iterator = labelledDocuments.iterator.asJava
+      override def getLabelsSource: LabelsSource = labelsSource
+      override def shutdown(): Unit = ()
+      override def hasNext: Boolean = iterator.hasNext
+      override def next(): LabelledDocument = iterator.next()
+    }
+
+    def apply(exampleDirectory: Directory): PVec = {
+      val classes = Seq(
+        "akka", "akka-http", "akka-stream", "sbt", "actor", "backpressure", "scalatest", "scalacheck", "validation",
+        "amazon-aws", "amazon-dynamo", "kafka", "amazon-kinesis", "amazon-s3", "protobuf", "concurrency", "future",
+        "logging", "monitoring"
+      )
+
+      def train(exampleDirectory: Directory): ParagraphVectors = {
+        def exampleToLabelledDocuments(row: ExampleLoader.Row): List[LabelledDocument] =
+          row.sourceCodes().map { sc ⇒
+            val doc = new LabelledDocument
+            doc.setContent(sc)
+            doc.setLabels(row.tags(classes).asJava)
+            doc
+          }
+
+        val examples = ExampleLoader.loadLabels(exampleDirectory)
+        val labels = examples.flatMap(_.tags(classes))
+        val labelsSource = new LabelsSource(labels.asJava)
+        val labelledDocuments = examples.flatMap(exampleToLabelledDocuments)
+        val iterator = new LDI(labelledDocuments, labelsSource)
+        val tokenizerFactory = new DefaultTokenizerFactory
+        tokenizerFactory.setTokenPreProcessor(new CommonPreprocessor)
+        val paragraphVectors = new ParagraphVectors.Builder()
+          .learningRate(0.025)
+          .minLearningRate(0.001)
+          .batchSize(1000)
+          .epochs(20)
+          .iterate(iterator)
+          .trainWordVectors(true)
+          .tokenizerFactory(tokenizerFactory)
+          .build()
+        paragraphVectors.fit()
+
+        val oos = new ObjectOutputStream(new FileOutputStream(serializedFileName))
+        oos.writeObject(paragraphVectors)
+        oos.close()
+
+        paragraphVectors
       }
 
-      log.info("Training...")
-      val classifier = trainClassifier(config, featurizer, trainingExamples)
-      val oos = new ObjectOutputStream(new FileOutputStream(serializedModelFileName))
-      oos.writeObject(classifier)
-      oos.close()
-      log.info("Training completed.")
-      classifier
-    }
-
-    def loadTrained(): Try[Classifier] = Try {
-      val ois = new ObjectInputStream(new FileInputStream(serializedModelFileName))
-      val classifier = ois.readObject().asInstanceOf[Classifier]
-      ois.close()
-      classifier
-    }.flatMap { classifier ⇒
-      if (classes.forall(classifier.labels.contains)) Success(classifier)
-      else Failure(new RuntimeException("Mismatched classes"))
-    }
-
-    val exampleDirectory = Directory("/Users/janmachacek/Downloads/so")
-    val classifier = loadTrained().getOrElse(train(exampleDirectory))
-    val minScore = 0.7
-
-    new SourceClassifier {
-      override def classify(source: File): Seq[(String, Double)] = {
-        val contents = Source.fromFile(source, "UTF-8").mkString
-        for {
-          (score, idx) ← classifier.evalRaw(contents).zipWithIndex
-          if score > minScore
-        } yield (classifier.labelOfIndex(idx), score)
+      def load(): Try[ParagraphVectors] = Try {
+        val ois = new ObjectInputStream(new FileInputStream(serializedFileName))
+        val classifier = ois.readObject().asInstanceOf[ParagraphVectors]
+        ois.close()
+        classifier
+      }.flatMap { pv ⇒
+        val pvLabels = pv.getLabelsSource.getLabels.asScala
+        if (classes.forall(pvLabels.contains)) Success(pv)
+        else Failure(new RuntimeException("Mismatched classes"))
       }
+
+      val exampleDirectory = Directory("/Users/janmachacek/Downloads/so")
+      val pv = load().getOrElse(train(exampleDirectory))
+      new PVec(pv)
     }
+  }
+
+  class PVec(paragraphVectors: ParagraphVectors) extends SourceClassifier {
+
+    override def classify(source: File): Seq[(String, Double)] = {
+      import scala.collection.JavaConverters._
+
+      val meansBuilder = new MeansBuilder(paragraphVectors.getLookupTable, paragraphVectors.getTokenizerFactory)
+      val seeker = new LabelSeeker(paragraphVectors.getLookupTable, paragraphVectors.getLabelsSource.getLabels)
+      val documentAsCentroid = meansBuilder.documentAsVector(Source.fromFile(source).mkString)
+      val scores = seeker.getScores(documentAsCentroid)
+      scores.asScala.map(x ⇒ x.getFirst → x.getSecond.toDouble).toList
+    }
+
   }
 
 }
@@ -81,7 +118,7 @@ object SourceClassifier {
 object M {
 
   def main(args: Array[String]): Unit = {
-    val classifier = SourceClassifier()
+    val classifier = SourceClassifier(Directory("/Users/janmachacek/Downloads/so"))
 
     Directory("/Users/janmachacek/Sandbox/adengine")
       .findAll(".scala")
