@@ -2,7 +2,7 @@ package com.acme
 
 import java.io._
 
-import org.apache.logging.log4j.LogManager
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors
 import org.deeplearning4j.text.documentiterator.{LabelAwareIterator, LabelledDocument, LabelsSource}
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor
@@ -18,7 +18,9 @@ trait SourceClassifier {
 }
 
 object SourceClassifier {
-  private val log = LogManager.getLogger(SourceClassifier.getClass)
+
+  import org.slf4j.LoggerFactory
+  private val log = LoggerFactory.getLogger(SourceClassifier.getClass)
 
   def apply(exampleDirectory: Directory): SourceClassifier = {
     PVec(exampleDirectory)
@@ -56,12 +58,17 @@ object SourceClassifier {
             doc
           }
 
+        log.debug("Loading examples...")
         val examples = ExampleLoader.loadLabels(exampleDirectory)
-        val labels = examples.flatMap(_.tags(classes))
+        log.debug(s"Loaded ${examples.length} examples")
+
+        val labels = examples.flatMap(_.tags(classes)).distinct
         val labelsSource = new LabelsSource(labels.asJava)
         val labelledDocuments = examples.flatMap(exampleToLabelledDocuments)
         val iterator = new LDI(labelledDocuments, labelsSource)
         val tokenizerFactory = new DefaultTokenizerFactory
+        log.debug(s"Starting training for labels $labels")
+
         tokenizerFactory.setTokenPreProcessor(new CommonPreprocessor)
         val paragraphVectors = new ParagraphVectors.Builder()
           .learningRate(0.025)
@@ -73,19 +80,15 @@ object SourceClassifier {
           .tokenizerFactory(tokenizerFactory)
           .build()
         paragraphVectors.fit()
+        log.debug("Training finished")
 
-        val oos = new ObjectOutputStream(new FileOutputStream(serializedFileName))
-        oos.writeObject(paragraphVectors)
-        oos.close()
+        WordVectorSerializer.writeParagraphVectors(paragraphVectors, serializedFileName)
 
         paragraphVectors
       }
 
       def load(): Try[ParagraphVectors] = Try {
-        val ois = new ObjectInputStream(new FileInputStream(serializedFileName))
-        val classifier = ois.readObject().asInstanceOf[ParagraphVectors]
-        ois.close()
-        classifier
+        WordVectorSerializer.readParagraphVectors(serializedFileName)
       }.flatMap { pv ⇒
         val pvLabels = pv.getLabelsSource.getLabels.asScala
         if (classes.forall(pvLabels.contains)) Success(pv)
