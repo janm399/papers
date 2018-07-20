@@ -37,6 +37,8 @@ public class MeansBuilder {
      * @return the centroid
      */
     public INDArray documentAsVector(String documentContent) {
+        if (documentContent == null) throw new IllegalArgumentException("documentContent");
+        if (tokenizerFactory == null) throw new IllegalStateException("tokenizerFactory");
         List<String> documentAsTokens = tokenizerFactory.create(documentContent).getTokens();
         AtomicInteger cnt = new AtomicInteger(0);
         for (String word: documentAsTokens) {

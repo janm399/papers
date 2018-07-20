@@ -18,7 +18,9 @@ object ExampleLoader {
       qTitle.toLowerCase.contains(tag) || qTags.contains(tag)
     }
 
-    def tags(allowedTags: Seq[String]): List[String] = qTags.filter(allowedTags.contains)
+    def tags(allowedTags: List[String]): List[String] = {
+      (allowedTags.filter(isTagged) ++ qTags.filter(allowedTags.contains)).distinct
+    }
 
     def sourceCodes(): List[String] = {
       def i(fromIndex: Int): List[String] = {
