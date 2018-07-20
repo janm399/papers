@@ -148,6 +148,7 @@ object SourceClassifier {
 object M {
 
   def main(args: Array[String]): Unit = {
+    NDInitializer.init()
     val classifier = SourceClassifier(Directory("~/Downloads/so"))
 
     Directory("~/Sandbox")
