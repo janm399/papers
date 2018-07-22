@@ -13,6 +13,8 @@ import scala.util.Try
 
 trait SourceClassifier {
 
+  def classes: List[String]
+
   def classify(source: File): Seq[(String, Double)]
 
 }
@@ -20,6 +22,7 @@ trait SourceClassifier {
 object SourceClassifier {
 
   import org.slf4j.LoggerFactory
+
   private val log = LoggerFactory.getLogger(SourceClassifier.getClass)
 
   def apply(exampleDirectory: Directory): SourceClassifier = {
@@ -27,26 +30,33 @@ object SourceClassifier {
   }
 
   object PVec {
+
     import scala.collection.JavaConverters._
+
     private val serializedFileName = "target/pv.ser"
 
     private class LDI(labelledDocuments: List[LabelledDocument], labelsSource: LabelsSource) extends LabelAwareIterator {
       private var iterator = labelledDocuments.iterator.asJava
 
       override def hasNextDocument: Boolean = iterator.hasNext
+
       override def nextDocument(): LabelledDocument = iterator.next()
+
       override def reset(): Unit = iterator = labelledDocuments.iterator.asJava
+
       override def getLabelsSource: LabelsSource = labelsSource
+
       override def shutdown(): Unit = ()
+
       override def hasNext: Boolean = iterator.hasNext
+
       override def next(): LabelledDocument = iterator.next()
     }
 
     def apply(exampleDirectory: Directory): PVec = {
       val classes = List(
         "akka", "akka-http", "akka-stream", "sbt", "actor", "backpressure", "scalatest", "scalacheck", "validation",
-        "amazon-aws", "amazon-dynamo", "kafka", "amazon-kinesis", "amazon-s3", "protobuf", "concurrency", "future",
-        "logging", "monitoring"
+        "amazon-dynamo", "kafka", "amazon-kinesis", "amazon-s3", "protobuf", "concurrency", "future", "logging", "monitoring"
       )
 
       def train(exampleDirectory: Directory): ParagraphVectors = {
@@ -87,7 +97,7 @@ object SourceClassifier {
         val oos = new ObjectOutputStream(new FileOutputStream(serializedFileName))
         oos.writeObject(paragraphVectors)
         oos.close()
-//        WordVectorSerializer.writeParagraphVectors(paragraphVectors, serializedFileName)
+        //        WordVectorSerializer.writeParagraphVectors(paragraphVectors, serializedFileName)
 
         paragraphVectors
       }
@@ -96,53 +106,64 @@ object SourceClassifier {
         val ois = new ObjectInputStream(new FileInputStream(serializedFileName))
         val classifier = ois.readObject().asInstanceOf[ParagraphVectors]
         ois.close()
-        classifier
+        val classifierClasses = classifier.getLabelsSource.getLabels.asScala
+        if (classes.size == classifierClasses.size && classes.forall(classifierClasses.contains)) classifier
+        else throw new RuntimeException("Mismatched classes")
       }
-//        try {
-//          val pv = WordVectorSerializer.readParagraphVectors(serializedFileName)
-//          Success(pv)
-//        } catch {
-//          case t: Throwable ⇒
-//            t.printStackTrace()
-//            Failure(t)
-//        }
-//
-//        try {
-//          val ois = new ObjectInputStream(new FileInputStream(serializedFileName))
-//          val classifier = ois.readObject().asInstanceOf[ParagraphVectors]
-//          ois.close()
-//          //val pvLabels = classifier.getLabelsSource.getLabels.asScala
-//          Success(classifier)
-//          //if (classes.forall(pvLabels.contains)) Success(classifier)
-//          //else throw new RuntimeException("")
-//        } catch {
-//          case t: Throwable ⇒
-//            t.printStackTrace()
-//            Failure(t)
-//        }
-//      }
+      //        try {
+      //          val pv = WordVectorSerializer.readParagraphVectors(serializedFileName)
+      //          Success(pv)
+      //        } catch {
+      //          case t: Throwable ⇒
+      //            t.printStackTrace()
+      //            Failure(t)
+      //        }
+      //
+      //        try {
+      //          val ois = new ObjectInputStream(new FileInputStream(serializedFileName))
+      //          val classifier = ois.readObject().asInstanceOf[ParagraphVectors]
+      //          ois.close()
+      //          //val pvLabels = classifier.getLabelsSource.getLabels.asScala
+      //          Success(classifier)
+      //          //if (classes.forall(pvLabels.contains)) Success(classifier)
+      //          //else throw new RuntimeException("")
+      //        } catch {
+      //          case t: Throwable ⇒
+      //            t.printStackTrace()
+      //            Failure(t)
+      //        }
+      //      }
 
       val exampleDirectory = Directory("~/Downloads/so")
       val pv = load().getOrElse(train(exampleDirectory))
-      new PVec(pv)
+      new PVec(pv, classes)
     }
   }
 
-  class PVec(paragraphVectors: ParagraphVectors) extends SourceClassifier {
+  class PVec(paragraphVectors: ParagraphVectors, override val classes: List[String]) extends SourceClassifier {
 
     override def classify(source: File): Seq[(String, Double)] = {
+      def strip(source: File): String = Source
+        .fromFile(source)
+        .getLines()
+        .filterNot(_.startsWith("package"))
+        .filterNot(_.startsWith("import"))
+        .filterNot(_.startsWith("//"))
+        .filterNot(_.isEmpty)
+        .mkString("\n")
+
       import scala.collection.JavaConverters._
 
       val meansBuilder = new MeansBuilder(paragraphVectors.getLookupTable, new DefaultTokenizerFactory)
       val seeker = new LabelSeeker(paragraphVectors.getLookupTable, paragraphVectors.getLabelsSource.getLabels)
       try {
-        val documentAsCentroid = meansBuilder.documentAsVector(Source.fromFile(source).mkString)
+        val strippedContent = strip(source)
+        val documentAsCentroid = meansBuilder.documentAsVector(strippedContent)
         val scores = seeker.getScores(documentAsCentroid)
         scores.asScala.map(x ⇒ x.getFirst → x.getSecond.toDouble).toList
       } catch {
         case t: Throwable ⇒
-          println(source)
-          t.printStackTrace()
+          println("Skipping " + source)
           Nil
       }
     }
@@ -156,11 +177,29 @@ object M {
 
   def main(args: Array[String]): Unit = {
     NDInitializer.init()
-    val classifier = SourceClassifier(Directory("~/Downloads/so"))
+    val separator = ","
 
-    Directory("~/Sandbox")
+    def out(sourceDirectory: Directory, allClasses: List[String], bw: BufferedWriter)(f: File, classes: Seq[(String, Double)]): Unit = {
+      bw.append(sourceDirectory.relativeFileName(f)).append(separator)
+      val row = allClasses.map(c ⇒ classes.find(_._1 == c).map(_._2).getOrElse(0.0))
+      bw.append(row.mkString(separator))
+      bw.append("\n")
+    }
+
+    val sourceClassifier = SourceClassifier(Directory("~/Downloads/so"))
+    val allClasses = sourceClassifier.classes
+
+    val sourceDirectory = Directory("~/Sandbox")
+    val bw = new BufferedWriter(new FileWriter("target/out.csv"))
+    bw.append("file").append(separator)
+    bw.append(allClasses.mkString(separator))
+    bw.append("\n")
+    sourceDirectory
       .findAll(".scala")
-      .map(f ⇒ f → classifier.classify(f))
-      .foreach(println)
+      .foreach { f ⇒
+        val sourceClasses = sourceClassifier.classify(f)
+        out(sourceDirectory, allClasses, bw)(f, sourceClasses)
+      }
+    bw.close()
   }
 }

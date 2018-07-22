@@ -2,6 +2,12 @@ library(parcoords)
 library(dplyr)
 library(ggvis)
 asa <- read.csv("~/Desktop/x.tsv", sep = "\t", row.names = "name")
+sc <- read.csv("../sum/out.csv", row.names = "file")
+
+sc %>%
+  parcoords(brushMode = "1d-axes-multi"
+            ,reorderable = TRUE
+            ,alphaOnBrushed = 0.15)
 
 all <- asa %>% 
   select(score, performance, steps_to_deploy, logging)

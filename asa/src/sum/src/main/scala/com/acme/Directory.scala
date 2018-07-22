@@ -4,6 +4,7 @@ import java.io.File
 
 trait Directory {
   def findAll(extensions: String*): List[File]
+  def relativeFileName(file: File): String
 }
 
 object Directory {
@@ -20,6 +21,8 @@ object Directory {
             files.filter(_.isDirectory).flatMap(find(extensions))
         } else Array.empty
       }
+
+      override def relativeFileName(file: File): String = file.getAbsolutePath.replace(path, ".")
 
       override def findAll(extensions: String*): List[File] = {
         find(extensions)(new File(path)).toList
