@@ -180,10 +180,12 @@ object M {
     val separator = ","
 
     def out(sourceDirectory: Directory, allClasses: List[String], bw: BufferedWriter)(f: File, classes: Seq[(String, Double)]): Unit = {
-      bw.append(sourceDirectory.relativeFileName(f)).append(separator)
       val row = allClasses.map(c ⇒ classes.find(_._1 == c).map(_._2).getOrElse(0.0))
-      bw.append(row.mkString(separator))
-      bw.append("\n")
+      if (row.exists(_ != 0)) {
+        bw.append(sourceDirectory.relativeFileName(f)).append(separator)
+        bw.append(row.mkString(separator))
+        bw.append("\n")
+      }
     }
 
     val sourceClassifier = SourceClassifier(Directory("~/Downloads/so"))
