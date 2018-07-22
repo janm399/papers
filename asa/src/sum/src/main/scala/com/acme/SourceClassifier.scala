@@ -189,7 +189,7 @@ object M {
     val sourceClassifier = SourceClassifier(Directory("~/Downloads/so"))
     val allClasses = sourceClassifier.classes
 
-    val sourceDirectory = Directory("~/Sandbox")
+    val sourceDirectory = Directory("~/Sandbox/adengine")
     val bw = new BufferedWriter(new FileWriter("target/out.csv"))
     bw.append("file").append(separator)
     bw.append(allClasses.mkString(separator))
