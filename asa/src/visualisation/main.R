@@ -2,7 +2,7 @@ library(parcoords)
 library(dplyr)
 library(ggvis)
 library(htmlwidgets)
-asa <- read.csv("~/Desktop/x.tsv", sep = "\t", row.names = "name")
+asa <- read.csv("~/Desktop/asa/x.tsv", sep = "\t", row.names = "name")
 sc <- read.csv("../sum/target/out.csv", row.names = NULL) %>% select(-file)
 
 x <- sc %>% 
@@ -21,8 +21,7 @@ scChart <- sc %>%  parcoords(brushMode = "1d-axes-multi"
 saveWidget(scChart, file="~/Tmp/asa.html")
 scChart
 
-all <- asa %>% 
-  select(score, performance, steps_to_deploy, logging)
+all <- asa
 
 all %>%
   parcoords(brushMode = "1d-axes-multi"
