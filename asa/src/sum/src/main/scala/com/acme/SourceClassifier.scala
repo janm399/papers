@@ -56,7 +56,7 @@ object SourceClassifier {
     def apply(exampleDirectory: Directory): PVec = {
       val classes = List(
         "akka", "akka-http", "akka-stream", "sbt", "actor", "backpressure", "scalatest", "scalacheck", "validation",
-        "amazon-dynamo", "kafka", "amazon-kinesis", "amazon-s3", "protobuf", "concurrency", "future", "logging", "monitoring"
+        "amazon-dynamo", "kafka", "amazon-kinesis", "protobuf", "concurrency", "future", "logging", "monitoring"
       )
 
       def train(exampleDirectory: Directory): ParagraphVectors = {
@@ -182,6 +182,7 @@ object M {
     def out(sourceDirectory: Directory, allClasses: List[String], bw: BufferedWriter)(f: File, classes: Seq[(String, Double)]): Unit = {
       val row = allClasses.map(c ⇒ classes.find(_._1 == c).map(_._2).getOrElse(0.0))
       if (row.exists(_ != 0)) {
+        bw.append(sourceDirectory.fileName).append(separator)
         bw.append(sourceDirectory.relativeFileName(f)).append(separator)
         bw.append(row.mkString(separator))
         bw.append("\n")
@@ -191,17 +192,23 @@ object M {
     val sourceClassifier = SourceClassifier(Directory("~/Downloads/so"))
     val allClasses = sourceClassifier.classes
 
-    val sourceDirectory = Directory("~/Sandbox/adengine")
     val bw = new BufferedWriter(new FileWriter("target/out.csv"))
-    bw.append("file").append(separator)
+    bw.append("project").append(separator).append("file").append(separator)
     bw.append(allClasses.mkString(separator))
     bw.append("\n")
-    sourceDirectory
-      .findAll(".scala")
-      .foreach { f ⇒
-        val sourceClasses = sourceClassifier.classify(f)
-        out(sourceDirectory, allClasses, bw)(f, sourceClasses)
+
+    Directory("~/Sandbox/asa-data/projects")
+      .findDirectories()
+      .foreach { sourceDirectory ⇒
+        sourceDirectory
+          .exclude("target")
+          .findFilesR(".scala")
+          .foreach { f ⇒
+            val sourceClasses = sourceClassifier.classify(f)
+            out(sourceDirectory, allClasses, bw)(f, sourceClasses)
+          }
       }
     bw.close()
+
   }
 }

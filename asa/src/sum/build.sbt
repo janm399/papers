@@ -2,7 +2,7 @@ import sbt.Keys._
 
 import scala.util.{Success, Try}
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.12.6"
 
 organization := "com.acme"
 

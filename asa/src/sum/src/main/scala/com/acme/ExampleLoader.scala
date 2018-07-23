@@ -56,7 +56,7 @@ object ExampleLoader {
   def loadLabels(directory: Directory): List[Row] = {
     import scala.collection.JavaConverters._
     val schema = CsvSchema.emptySchema().withHeader()
-    directory.findAll(".csv").flatMap { csvFile ⇒
+    directory.findFilesR(".csv").flatMap { csvFile ⇒
       val mapper = new CsvMapper()
       val jcontents: MappingIterator[java.util.Map[String, String]] =
         mapper.readerFor(classOf[java.util.Map[_, _]]).`with`(schema).readValues(csvFile)
