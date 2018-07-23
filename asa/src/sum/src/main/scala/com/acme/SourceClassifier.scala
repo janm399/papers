@@ -5,7 +5,6 @@ import java.util
 
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors
 import org.deeplearning4j.text.documentiterator.{LabelAwareIterator, LabelledDocument, LabelsSource}
-import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory
 
 import scala.io.Source
@@ -78,14 +77,15 @@ object SourceClassifier {
         val iterator = new LDI(labelledDocuments, labelsSource)
         val tokenizerFactory = new DefaultTokenizerFactory
         log.debug(s"Starting training for labels $labels")
+        // tokenizerFactory.setTokenPreProcessor(new CommonPreprocessor)
 
-        tokenizerFactory.setTokenPreProcessor(new CommonPreprocessor)
         val paragraphVectors = new ParagraphVectors.Builder()
           .learningRate(0.025)
           .minLearningRate(0.001)
           .batchSize(100000)
           .epochs(20)
           .iterate(iterator)
+          .layerSize(500)
           .stopWords(util.Arrays.asList("<-", "←", "<:", "<%", "=", "=>", "⇒", ">:", "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final", "finally", "for", "forSome", "if", "implicit", "import", "lazy", "match", "new", "null", "object", "override", "package", "private", "protected", "return", "sealed", "super", "this", "throw", "trait", "true", "try", "type", "val", "var", "while", "with", "yield"))
           .allowParallelTokenization(true)
           .trainWordVectors(true)
@@ -97,7 +97,6 @@ object SourceClassifier {
         val oos = new ObjectOutputStream(new FileOutputStream(serializedFileName))
         oos.writeObject(paragraphVectors)
         oos.close()
-        //        WordVectorSerializer.writeParagraphVectors(paragraphVectors, serializedFileName)
 
         paragraphVectors
       }
@@ -108,31 +107,11 @@ object SourceClassifier {
         ois.close()
         val classifierClasses = classifier.getLabelsSource.getLabels.asScala
         if (classes.size == classifierClasses.size && classes.forall(classifierClasses.contains)) classifier
-        else throw new RuntimeException("Mismatched classes")
+        else {
+          log.warn("Mismatched classes; will re-train.")
+          throw new RuntimeException("Mismatched classes")
+        }
       }
-      //        try {
-      //          val pv = WordVectorSerializer.readParagraphVectors(serializedFileName)
-      //          Success(pv)
-      //        } catch {
-      //          case t: Throwable ⇒
-      //            t.printStackTrace()
-      //            Failure(t)
-      //        }
-      //
-      //        try {
-      //          val ois = new ObjectInputStream(new FileInputStream(serializedFileName))
-      //          val classifier = ois.readObject().asInstanceOf[ParagraphVectors]
-      //          ois.close()
-      //          //val pvLabels = classifier.getLabelsSource.getLabels.asScala
-      //          Success(classifier)
-      //          //if (classes.forall(pvLabels.contains)) Success(classifier)
-      //          //else throw new RuntimeException("")
-      //        } catch {
-      //          case t: Throwable ⇒
-      //            t.printStackTrace()
-      //            Failure(t)
-      //        }
-      //      }
 
       val exampleDirectory = Directory("~/Downloads/so")
       val pv = load().getOrElse(train(exampleDirectory))
